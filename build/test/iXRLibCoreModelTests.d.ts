@@ -1,0 +1,13 @@
+import { iXRAIProxy, iXRStorageData } from "../iXRLibCoreModel";
+import { iXRLocationData, iXRApplication, iXREvent, iXRLog, iXRTelemetry, iXRStorage, iXRDbContext } from "../iXRLibCoreModel";
+export declare function FakeUpSomeRandomCrapApplication(obj: iXRApplication): void;
+export declare function FakeUpSomeRandomCrapLocation(obj: iXRLocationData): void;
+export declare function FakeUpSomeRandomCrapLog(obj: iXRLog): void;
+export declare function FakeUpSomeRandomCrapTelemetry(obj: iXRTelemetry): void;
+export declare function FakeUpSomeRandomCrapAIProxy(obj: iXRAIProxy): void;
+export declare function FakeUpSomeCrapEvent(obj: iXREvent): void;
+export declare function FakeUpSomeDifferentCrapEvent(obj: iXREvent): void;
+export declare function FakeUpSomeRandomCrapEvent(obj: iXREvent, bWantChildObjects: boolean): void;
+export declare function FakeUpSomeRandomCrapStorageData(obj: iXRStorageData): void;
+export declare function FakeUpSomeRandomCrapStorage(obj: iXRStorage): void;
+export declare function FakeUpSomeRandomCrapDbContext(obj: iXRDbContext): void;

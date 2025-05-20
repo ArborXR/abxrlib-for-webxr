@@ -1,0 +1,14 @@
+# After installing latest "docker compose" it insists this is obsolete and being ignored.  So I'll comment it out for now.
+# version: '3.8'
+
+services:
+  abxrlibforwebxr:
+    container_name: abxrlibforwebxr
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./build:/opt/informxr/build
+      - ./dist:/opt/informxr/dist

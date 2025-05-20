@@ -1,0 +1,112 @@
+/// <reference types="node" />
+/// <reference types="node" />
+import { iXRLibAsync } from './iXRLibAsync';
+import { AuthTokenRequest, Partner } from './iXRLibClient';
+import { iXRAIProxy, iXRBase, iXRDbContext, iXRStorage } from './iXRLibCoreModel';
+import { CurlHttp } from './network/types';
+import { DbSet } from './network/utils/DataObjectBase';
+import { iXRResult, DateTime, StringList, iXRDictStrings } from './network/utils/DotNetishTypes';
+declare class Authentication {
+    m_szApiToken: string;
+    m_szApiSecret: string;
+    m_szSessionId: string;
+    m_dtTokenExpiration: DateTime;
+    m_szAppID: string;
+    m_szOrgID: string;
+    m_ePartner: Partner;
+    m_szAuthSecret: string;
+    m_objAuthTokenRequest: AuthTokenRequest;
+    constructor();
+    SetHeadersFromCurrentState(objRequest: CurlHttp, pbBodyContent: Buffer, bHasBody: boolean): Promise<void>;
+    TokenExpirationImminent(): boolean;
+}
+export declare class iXRLibInit {
+    static m_ixrLibAuthentication: Authentication;
+    static InitStatics(): void;
+    static Start(): void;
+    static End(): void;
+    private static AuthenticateGuts;
+    static Authenticate(szAppId: string, szOrgId: string, szDeviceId: string, szAuthSecret: string, ePartner: Partner): Promise<iXRResult>;
+    static FinalAuthenticate(): Promise<iXRResult>;
+    static ReAuthenticate(bObtainAuthSecret: boolean): Promise<iXRResult>;
+    static ForceSendUnsentSynchronous(): Promise<iXRResult>;
+    static get_ApiToken(): string;
+    static set_ApiToken(szApiToken: string): void;
+    static get_ApiSecret(): string;
+    static set_ApiSecret(szApiSecret: string): void;
+    static get_AppID(): string;
+    static set_AppID(szAppID: string): void;
+    static get_OrgID(): string;
+    static set_OrgID(szOrgID: string): void;
+    static get_TokenExpiration(): DateTime;
+    static set_TokenExpiration(dtTokenExpiration: DateTime): void;
+    static get_Partner(): Partner;
+    static set_Partner(value: Partner): void;
+    static get_OsVersion(): string;
+    static set_OsVersion(szOsVersion: string): void;
+    static get_IpAddress(): string;
+    static set_IpAddress(szIpAddress: string): void;
+    static get_XrdmVersion(): string;
+    static set_XrdmVersion(szXrdmVersion: string): void;
+    static get_AppVersion(): string;
+    static set_AppVersion(szAppVersion: string): void;
+    static get_UnityVersion(): string;
+    static set_UnityVersion(szUnityVersion: string): void;
+    static get_DeviceModel(): string;
+    static set_DeviceModel(szDeviceModel: string): void;
+    static get_UserId(): string;
+    static set_UserId(szUserId: string): void;
+    static get_Tags(): StringList;
+    static set_Tags(lszTags: StringList): void;
+    static get_GeoLocation(): iXRDictStrings;
+    static set_GeoLocation(dictGeoLocation: iXRDictStrings): void;
+    static get_AuthMechanism(): iXRDictStrings;
+    static set_AuthMechanism(dictAuthMechanism: iXRDictStrings): void;
+}
+export type iXRLibAnalyticsGeneralCallback = (eResult: iXRResult, szExceptionMessage: string) => void;
+export type iXRLibAnalyticsAIProxyCallback = (ixrAIProxy: iXRAIProxy, eResult: iXRResult, szExceptionMessage: string) => void;
+export type iXRLibAnalyticsStorageCallback = (ixrStorage: iXRStorage, eResult: iXRResult, szExceptionMessage: string) => void;
+export type iXRLibGetAuthSecretCallback = (pUserData: object | null) => string;
+export type iXRLibDiagnosticCallback = (szDiagnostic: string) => void;
+export declare class iXRLibAnalytics {
+    static m_ixrLibAsync: iXRLibAsync;
+    static m_listErrors: StringList;
+    static m_dtLastSuccessfulSend: DateTime;
+    static m_bCheckForStragglers: boolean;
+    static m_pfnGetAuthSecretCallback: iXRLibGetAuthSecretCallback;
+    static m_pvGetAuthSecretCallbackData: object | null;
+    private static m_szUserId;
+    private static m_szDeviceId;
+    private static m_dssCurrentData;
+    static InitStatics(): void;
+    static get_UserId(): string;
+    static set_UserId(value: string): void;
+    static get_DeviceId(): string;
+    static set_DeviceId(value: string): void;
+    static get_CurrentId(): string;
+    static set_CurrentId(value: string): void;
+    static DefaultGetAuthSecretCallback(pUserData: object | null): string;
+    static FinalUrl(szEndpoint: string): string;
+    static GetCurrentId(): string;
+    static TaskErrorReturn(eResult: iXRResult, bNoCallbackOnSuccess: boolean, pfnStatusCallback: iXRLibAnalyticsGeneralCallback, szExceptionMessage: string): iXRResult;
+    private static TaskErrorReturnT;
+    static AddXXXTask<T extends iXRBase>(ixrT: T, tTypeOfT: any, szTableName: string, pfnPostIXRXXX: (listpT: DbSet<T>, bOneAtATime: boolean, rpResponse: {
+        szResponse: string;
+    }) => Promise<iXRResult>, bOneAtATime: boolean, bNoCallbackOnSuccess: boolean, pfnStatusCallback: ((ixrXXX: T, eResult: iXRResult, szExceptionMessage: string) => void) | null): Promise<iXRResult>;
+    private static DeleteXXXTask;
+    protected static SendUnsentXXXs<T extends iXRBase>(ixrDbContext: iXRDbContext, dsIXRXXX: DbSet<T> | null, tTypeOfT: any, szTableName: string, pfnPostIXRXXX: (listpT: DbSet<T>, bOneAtATime: boolean, rpResponse: {
+        szResponse: string;
+    }) => Promise<iXRResult>, bOneAtATime: boolean, nConfiguredXXXPerSendAttempt: number, bSendingStragglers: boolean): Promise<iXRResult>;
+    private static AddXXXNoDbTask;
+    static ForceSendUnsentSynchronous(): Promise<iXRResult>;
+    static SetHeadersFromCurrentStateStringBody(objRequest: CurlHttp, szBodyContent: string, bHasBody: boolean, bIncludeAuthHeaders: boolean): Promise<void>;
+    static SetHeadersFromCurrentState(objRequest: CurlHttp, pbBodyContent: Buffer, bHasBody: boolean, bIncludeAuthHeaders: boolean): Promise<void>;
+    static AddAIProxySynchronous0(szPrompt: string, szLMMProvider: string): Promise<iXRResult>;
+    static AddAIProxySynchronous1(szPrompt: string, szPastMessages: string, szLMMProvider: string): Promise<iXRResult>;
+    static AddAIProxySynchronous2(szPrompt: string, dictPastMessages: iXRDictStrings, szLMMProvider: string): Promise<iXRResult>;
+    static AddAIProxySynchronous(ixrAIProxy: iXRAIProxy): Promise<iXRResult>;
+    static AddAIProxyEntrySynchronous(ixrAIProxy: iXRAIProxy): Promise<iXRResult>;
+    static DefaultDiagnosticCallback(szLine: string): void;
+    static DiagnosticWriteLine(szLine: string): void;
+}
+export {};
