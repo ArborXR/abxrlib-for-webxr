@@ -8,7 +8,8 @@ RUN apt-get update && \
 
 RUN mkdir /opt/informxr
 WORKDIR /opt/informxr
-COPY package.json ts-node-config.json tsconfig.json webpack.config.js .eslintignore .eslintrc.json .npmignore ./ 
+#COPY package.json ts-node-config.json tsconfig.json webpack.config.js .eslintignore .eslintrc.json .npmignore ./ 
+COPY package.json ts-node-config.json tsconfig.json webpack.config.js ./ 
 COPY abxr-buildall.sh ./ 
 RUN chmod +x abxr-buildall.sh
 COPY src ./src
