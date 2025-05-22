@@ -176,7 +176,7 @@ export class AbxrLibConfiguration extends DataObjectBase
 		this.m_dictAuthMechanism = new AbxrDictStrings();
 		// ---
 		// Default URL... can be overriden by App.config or accessors in C# and C++.
-		this.SetRestUrl("https://libapi.informxr.io/v1/");
+		this.SetRestUrl("https://lib-backend.xrdm.dev/v1/");
 	}
 	public SetRestUrl(szRestUrl: string): void
 	{
@@ -1101,7 +1101,7 @@ export class AbxrDbContext extends DbContext
 		this.m_dsABXRStorage = new DbSet<AbxrStorage>(AbxrStorage);
 		this.m_szDbPath = "";
 		// ---
-	// 	m_szDbPath = NormalizePath("InformXR.db").c_str();
+	// 	m_szDbPath = NormalizePath("ArborXR.db").c_str();
 	// 	if (bDeleteIfExists)
 	// 	{
 	// 		std.filesystem.path	fpDbPath(m_szDbPath.c_str());

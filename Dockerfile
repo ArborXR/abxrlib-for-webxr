@@ -6,8 +6,8 @@ RUN apt-get update && \
     apt-utils \
     npm
 
-RUN mkdir /opt/informxr
-WORKDIR /opt/informxr
+RUN mkdir /opt/arborxr
+WORKDIR /opt/arborxr
 COPY package.json ts-node-config.json tsconfig.json webpack.config.js .eslintignore .eslintrc.json .npmignore ./ 
 COPY abxr-buildall.sh ./ 
 RUN chmod +x abxr-buildall.sh

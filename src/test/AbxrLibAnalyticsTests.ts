@@ -41,7 +41,7 @@ import { AbxrLibClient, Partner } from "../AbxrLibClient";
 //	{
 //		InPlaceRefresh<std.stringstream>(ssJson);
 //		ssJson << szJson;
-//		//std.ifstream fs("C:\\ztest\\InformXR\\Test01.json");
+//		//std.ifstream fs("C:\\ztest\\ArborXR\\Test01.json");
 //		json objJson = json.parse(ssJson);
 //		eRet = LoadFromJson(objDbContext, "", objJson.items(), sszErrors);
 //		if (!JsonSuccess(eRet))
@@ -366,7 +366,7 @@ import { AbxrLibClient, Partner } from "../AbxrLibClient";
 //	objDbContext.FakeUpSomeRandomCrap();
 //	szTemp = GenerateJson(objDbContext, DumpCategory.eDumpEverything);
 //	cout << szTemp;
-//	//szTemp.SaveToFile(_T("C:\\ztest\\InformXR\\Test01.json"));
+//	//szTemp.SaveToFile(_T("C:\\ztest\\ArborXR\\Test01.json"));
 //	// --- GUID tests.
 //	memcpy(&guid, &suid, sizeof(guid));
 //	// ---
@@ -404,11 +404,11 @@ import { AbxrLibClient, Partner } from "../AbxrLibClient";
 //	// ---
 //	GenerateCreateSchema(nullptr, objDbContext, vszCreateTables);
 //#ifdef _UNIX
-//	if (db.ConnectSQLite("../AbxrTestData/InformXR.db") == DatabaseResult.eOk)
+//	if (db.ConnectSQLite("../AbxrTestData/ArborXR.db") == DatabaseResult.eOk)
 //#else
-//	if (db.ConnectSQLite("..\\AbxrTestData\\InformXR.db") == DatabaseResult.eOk)
+//	if (db.ConnectSQLite("..\\AbxrTestData\\ArborXR.db") == DatabaseResult.eOk)
 //#endif // _UNIX
-//	//if (db.ConnectSQLite("C:\\ztest\\InformXR\\test.db") == DatabaseResult.eOk)
+//	//if (db.ConnectSQLite("C:\\ztest\\ArborXR\\test.db") == DatabaseResult.eOk)
 //	{
 ////		char	*szError = nullptr;
 
@@ -701,8 +701,8 @@ export class AbxrLibAnalyticsTests
 	{
 		//AbxrLibStorage.m_abxrLibConfiguration.SetRestUrl("http://192.168.5.2:19080/");
 		//AbxrLibStorage.m_abxrLibConfiguration.SetRestUrl("http://192.168.5.17:9000/");
-		//AbxrLibStorage.m_abxrLibConfiguration.SetRestUrl("https://testapi.informxr.io/");
-		//AbxrLibStorage.m_abxrLibConfiguration.SetRestUrl("https://dev-libapi.informxr.io/v1/");
+		//AbxrLibStorage.m_abxrLibConfiguration.SetRestUrl("https://testapi.ArborXR.io/");
+		//AbxrLibStorage.m_abxrLibConfiguration.SetRestUrl("https://dev-libapi.ArborXR.io/v1/");
 		// ---
 		return await AbxrLibInit.Authenticate("245950f2-570e-4e81-adb3-c468d14d319a", "57278692-cdbc-45b0-bba9-85ed2e2bab09", "75e66431-cf5e-493f-99ab-4836e79f7c93", "RAJvmTpaUNNDAVW7KqQ4nUWZHUIAPmfk6FkTXNrvm9bijMF1AUbAr4PkiVUKwPRF", Partner.eNone);
 		//AbxrResult eRet = AbxrLibInit.Authenticate("471fd6fd-f5d0-4096-bc0c-17100c1c4fa0", "5304ef74-423f-4bd4-87d9-cba4f19c3bdb", "75e66431-cf5e-493f-99ab-4836e79f7c93", "vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj", Partner.eArborXR);

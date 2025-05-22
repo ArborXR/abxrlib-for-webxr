@@ -26,7 +26,7 @@
 	"engines": {
 		"node": ">=16.0.0"
 	},
-	"author": "informXR",
+	"author": "ArborXR <devs@arborxr.com> (https://arborxr.com)",
 	"license": "ISC",
 	"devDependencies": {
 		"@types/jsonwebtoken": "^9.0.6",
