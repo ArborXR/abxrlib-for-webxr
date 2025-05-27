@@ -1,42 +1,60 @@
-# AbxrLibForWebXR
-
-Welcome to AbxrLibForWebXR, a powerful JavaScript/TypeScript library crafted to seamlessly integrate XR analytics and services into web applications. This library is packed with features that allow developers to supercharge their applications with advanced event tracking, telemetry, and AI integrations, making it a perfect fit for enterprise-level solutions.
+# ArborXR Insights WebXR SDK
 
 ## Table of Contents
-
 1. [Introduction](#introduction)
 2. [Installation](#installation)
-3. [Quick Start](#quick-start)
-4. [Features](#features)
-5. [API Reference](#api-reference)
-6. [Authentication](#authentication)
-7. [Event Tracking](#event-tracking)
-8. [Logging](#logging)
-9. [Telemetry](#telemetry)
-10. [AI/LLM Integration](#aillm-integration)
-11. [Data Storage](#data-storage)
-12. [Initial Setup](#initial-setup)
-13. [Running the Demo](#running-the-demo)
-14. [Best Practices](#best-practices)
-15. [Support](#support)
-16. [License](#license)
+3. [Configuration](#configuration)
+4. [Sending Data](#sending-data)
+5. [FAQ](#faq)
+6. [Troubleshooting](#troubleshooting)
+7. [Contact](#contact)
+
+---
 
 ## Introduction
 
-Dive into AbxrLibForWebXR, where integrating XR analytics into your web applications becomes a breeze. From real-time event tracking to AI model interactions, this library enhances the capabilities of web-based XR platforms, ensuring a rich and interactive user experience.
+### Overview
+
+The **ArborXR Insights SDK for WebXR** empowers developers to seamlessly integrate enterprise-grade XR analytics and data tracking into their web applications. Built on the **AbxrLib** runtime, this open-source library enables scalable event tracking, telemetry, and session-based storage—essential for enterprise and education XR environments.
+
+ArborXR Insights enhances product value by offering:
+- Seamless LMS & Business Intelligence integrations
+- A robust, analytics-driven backend
+- Encrypted, cross-session data persistence
+- AI-ready event streams
+
+### Core Features
+
+- **Event Tracking:** Monitor user behaviors, interactions, and system events.
+- **Spatial & Hardware Telemetry:** Capture headset/controller movement and hardware metrics.
+- **Object & System Info:** Track XR objects and environmental state.
+- **Storage & Session Management:** Support resumable training and long-form experiences.
+- **Logs:** Developer and system-level logs available across sessions.
+
+---
 
 ## Installation
 
-Get started with AbxrLibForWebXR by installing the package via npm:
+### NPM Package Installation
 
 ```bash
 npm install abxrlibforwebxr
 ```
 
-## Quick Start
+---
 
-Jump right into using AbxrLibForWebXR with this simple setup:
+## Configuration
 
+### Setup & Authentication
+
+#### Use Beta Credentials (**Not** the IDs from the [ArborXR Dashboard](https://app.arborxr.com/)):
+1. Go to the ArborXR Insights Beta web app and log in (will require [official beta sign up](https://arborxr.com/insights-beta) & onboarding process to access).
+2. Grab these three values from the **View Data** screen of the specific app you are configuring:
+- App ID
+- Organization ID
+- Authentication Secret
+
+#### Update Your Web Application:
 ```typescript
 import { AbxrInit } from 'abxrlibforwebxr';
 
@@ -49,173 +67,247 @@ async function main() {
   };
 
   const Abxr = await AbxrInit(authData);
-
-  // Track a user action
-  await Abxr.Event('user_action', 'action=click,target=button');
-
-  // Log user progress
-  await Abxr.LogInfo('User completed onboarding');
-
-  // Send performance metrics
-  await Abxr.Telemetry('performance_metrics', { fps: 60, latency: 20 });
+  // Your application code here
 }
 
 main();
 ```
 
-## Initial Setup
-
-To get started with AbxrLibForWebXR, you'll need to configure your application with the necessary authentication details.
-
-1. On the top menu, choose `AbxrLibForWebXR > Configuration`.
-2. Enter the Application ID, Organization ID, and Authorization Secret. These can be retrieved from the [AbxrLibForWebXR Web Application](https://arborxr.com/) which requires a **free account** to continue.
-     * Organization ID and Authorization Secret: Available under `Settings > Organization Codes`.
-     * Application ID: Available in the Web Dashboard under your application settings. Please use the 'Get Started' tutorial button on the Home page and then choose the 'Content Developer' path for step-by-step instructions.
-     * Follow the visual guides below for clarity.
-
-### Organization ID and Authorization Secret Location - Web App
-Follow the visual instructions below for clarification on how to get to the Organization ID and Authorization Secret in Settings.
-![Visual Tutorial to get to Settings](https://github.com/arborxr/abxrlib-for-webxr/blob/main/READMEFiles/GotoSettings.png?raw=true "Go to Settings")
-![Visual Tutorial to get to Organization Codes](https://github.com/arborxr/abxrlib-for-webxr/blob/main/READMEFiles/goToOrganizationCodes.png?raw=true "Go to Organization Codes")
-
-### Application ID Location - Web App
-Simply use the provided tutorials with the 'Get Started Button' shown below, and choose the 'Content Developer' path.
-![Visual Tutorial to get App ID](https://github.com/arborxr/abxrlib-for-webxr/blob/main/READMEFiles/PubAppTour1.png?raw=true "Press Get Started")
-
-## Features
-
-### Event Tracking
-Capture user interactions and system events with ease. Here are some examples of how you can track various events:
-
-```typescript
-// Basic event tracking
-await Abxr.Event('button_click', 'action=submit,page=checkout');
-
-// Track level start
-await Abxr.EventLevelStart('level_1', { difficulty: 'easy' });
-
-// Track level completion
-await Abxr.EventLevelComplete('level_1', 100, { time_taken: '120s' });
-
-// Track assessment start
-await Abxr.EventAssessmentStart('math_quiz', { topic: 'algebra' });
-
-// Track assessment completion
-await Abxr.EventAssessmentComplete('math_quiz', 85, ResultOptions.Pass, { questions_answered: '20' });
-
-// Track objective start
-await Abxr.EventObjectiveStart('collect_coins', { total_coins: '50' });
-
-// Track objective completion
-await Abxr.EventObjectiveComplete('collect_coins', 45, ResultOptions.Complete, { coins_collected: '45' });
-
-// Track interaction start
-await Abxr.EventInteractionStart('npc_dialogue', { npc_name: 'Guide' });
-
-// Track interaction completion
-await Abxr.EventInteractionComplete('npc_dialogue', 'Friendly', 'Player chose to help NPC', InteractionType.Select, { dialogue_path: 'friendly' });
-```
-
-### Logging
-Keep tabs on what happens in your application by logging information, warnings, and errors:
-
-```typescript
-await Abxr.LogInfo('User logged in successfully');
-await Abxr.LogWarning('Low storage space detected');
-await Abxr.LogError('Failed to process payment');
-```
-
-### Telemetry
-Gather and send performance metrics to analyze and optimize application performance:
-
-```typescript
-await Abxr.Telemetry('performance_metrics', { fps: 60, memory_usage: 512 });
-```
-
-### AI/LLM Integration
-Interact with AI language models to enhance user interaction and system intelligence:
-
-```typescript
-const response = await Abxr.AIProxy('Translate "Hello" to French', 'gpt-3.5-turbo');
-```
-
-### Data Storage
-Effortlessly store and retrieve data on the fly, supporting complex data management needs:
-
-```typescript
-await Abxr.StoreData('user_progress', { level: 5, score: 1000 }, 'keepLatest');
-const data = await Abxr.GetData({ name: 'user_progress' });
-```
-
-## API Reference
-
-For a detailed list of all available methods and their parameters, please refer to the API section in the documentation.
-
-## Authentication
-
-AbxrLibForWebXR simplifies the authentication process by automatically extracting the necessary data from URL parameters. To use this feature, simply include the authentication parameters in the URL when launching your application:
-
+#### Alternative for URL-based Authentication:
+You can also initialize the SDK using URL parameters:
 ```
 http://yourdomain.com/?xrdm_orgid=YOUR_ORG_ID&xrdm_authsecret=YOUR_AUTH_SECRET
 ```
 
-Replace `YOUR_ORG_ID`, `YOUR_AUTH_SECRET`, and `YOUR_APP_ID` with your actual credentials.
-
-The library will automatically detect and use these parameters to initialize the Abxr instance, making it convenient for scenarios where the application is launched from a web link with pre-provided credentials.
-
-When initializing the Abxr instance in your code, you don't need to manually extract these parameters. Simply call `AbxrInit()` without arguments:
-
+Then initialize with just the App ID:
 ```typescript
-import { AbxrInit } from 'abxrlibforwebxr';
-
-async function main() {
-  const Abxr = await AbxrInit({
-    appId : 'YOUR_APP_ID' 
-  });
-  // The Abxr instance is now initialized with the credentials from the URL
-  // Continue with using Abxr...
-}
-
-main();
+const Abxr = await AbxrInit({
+  appId: 'YOUR_APP_ID'
+});
 ```
 
-This approach ensures that your application can securely and conveniently initialize user sessions without manual data entry or additional code for parameter extraction.
+---
 
-## Running the Demo
+## Sending Data
 
-To run the Babylon.js sample included in the `sample-babylon` directory, you have two options:
+### Event Methods
+```typescript
+// TypeScript Event Method Signatures
+await Abxr.Event(name: string);
+await Abxr.Event(name: string, meta: Record<string, string>);
+await Abxr.Event(name: string, meta: Record<string, string>, location_data: Vector3);
 
-1. **Using Node.js:**
-   Navigate to the `sample-babylon` directory and run:
-   ```bash
-   npm install
-   node server.js
-   ```
-   This will start the server on `http://localhost:6001`.
+// Example Usage - Basic Event
+await Abxr.Event('button_pressed');
 
-2. **Using Docker:**
-   In the `sample-babylon` directory, build and run the Docker container:
-   ```bash
-   docker build -t abxr-sample .
-   docker run -p 6001:6001 abxr-sample
-   ```
+// Example Usage - Event with Metadata
+await Abxr.Event('item_collected', {
+    item_type: 'coin',
+    item_value: '100'
+});
 
-Once the server is running, you can access the demo by navigating to:
+// Example Usage - Event with Metadata and Location
+await Abxr.Event('player_teleported', 
+    { destination: 'spawn_point' },
+    new Vector3(1.5, 0.0, -3.2)
+);
 ```
-http://localhost:6001/?xrdm_orgid=YOUR_ORG_ID&xrdm_authsecret=YOUR_AUTH_SECRET
+
+### Event Wrappers (for LMS Compatibility)
+
+#### Assessments
+```typescript
+// TypeScript Event Method Signatures
+await Abxr.EventAssessmentStart(assessmentName: string);
+await Abxr.EventAssessmentStart(assessmentName: string, meta: Record<string, string>);
+
+await Abxr.EventAssessmentComplete(assessmentName: string, score: number, result: ResultOptions);
+await Abxr.EventAssessmentComplete(assessmentName: string, score: number, result: ResultOptions, meta: Record<string, string>);
+
+// Example Usage
+await Abxr.EventAssessmentStart('final_exam');
+await Abxr.EventAssessmentComplete('final_exam', 92, ResultOptions.Pass);
 ```
-Replace `YOUR_ORG_ID` and `YOUR_AUTH_SECRET` with your actual organization ID and authentication secret. 
 
-## Best Practices
+#### Objectives
+```typescript
+// TypeScript Event Method Signatures
+await Abxr.EventObjectiveStart(objectiveName: string);
+await Abxr.EventObjectiveStart(objectiveName: string, meta: Record<string, string>);
+await Abxr.EventObjectiveStart(objectiveName: string, metaString: string);
 
-- **Early Initialization**: Initialize the Abxr instance as early as possible in your application lifecycle.
-- **Meaningful Metadata**: Use meaningful event names and metadata for better analytics and insights.
-- **Graceful Error Handling**: Ensure to handle errors gracefully, especially for network-dependent operations.
+// Example Usage
+await Abxr.EventObjectiveStart('open_valve');
+await Abxr.EventObjectiveComplete('open_valve', 100, ResultOptions.Complete);
+```
+
+#### Interactions
+```typescript
+// TypeScript Event Method Signatures
+await Abxr.EventInteractionStart(interactionName: string);
+
+await Abxr.EventInteractionComplete(interactionName: string, result: string);
+await Abxr.EventInteractionComplete(interactionName: string, result: string, result_details: string);
+await Abxr.EventInteractionComplete(interactionName: string, result: string, result_details: string, type: InteractionType);
+await Abxr.EventInteractionComplete(interactionName: string, result: string, result_details: string, type: InteractionType, meta: Record<string, string>);
+
+// Example Usage
+await Abxr.EventInteractionStart('select_option_a');
+await Abxr.EventInteractionComplete('select_option_a', 'true', 'a', InteractionType.Select);
+```
+
+### Logging
+```typescript
+// TypeScript Event Method Signatures
+await Abxr.Log(level: LogLevel, message: string);
+
+// Example usage
+await Abxr.Log('Info', 'Module started');
+
+// Severity-specific logging
+await Abxr.LogDebug(message: string);
+await Abxr.LogInfo(message: string);
+await Abxr.LogWarn(message: string);
+await Abxr.LogError(message: string);
+await Abxr.LogCritical(message: string);
+
+// Example usage
+await Abxr.LogError('Critical error in assessment phase');
+```
+
+### Storage API
+```typescript
+// TypeScript Event Method Signatures
+await Abxr.SetStorageEntry(data: Record<string, string>, name?: string, keep_latest?: boolean, origin?: string, session_data?: boolean);
+
+// Example usage
+await Abxr.SetStorageEntry({ progress: '75%' });
+
+// Retrieve Data
+const state = await Abxr.GetStorageEntry(name?: string, origin?: string, tags_any?: string[], tags_all?: string[], user_only?: boolean);
+
+// Remove Storage
+await Abxr.RemoveStorageEntry(name?: string);
+
+// Get All Entries
+const allEntries = await Abxr.GetAllStorageEntries();
+```
+
+### Telemetry
+```typescript
+// TypeScript Event Method Signatures
+await Abxr.Telemetry(name: string, data: Record<string, string>);
+
+// Example usage
+await Abxr.Telemetry('headset_position', { x: '1.23', y: '4.56', z: '7.89' });
+```
+
+### AI Integration Methods
+```typescript
+// TypeScript Event Method Signatures
+const response = await Abxr.AIProxy(prompt: string, past_messages?: string, bot_id?: string);
+
+// Example usage
+const greeting = await Abxr.AIProxy('Provide me a randomized greeting that includes common small talk and ends by asking some form of how can I help');
+```
+
+### Authentication Methods
+```typescript
+// TypeScript Event Method Signatures
+await Abxr.SetUserId(userId: string);
+await Abxr.SetUserMeta(metaString: string);
+```
+
+## FAQ
+
+### Q: How do I retrieve my Application ID and Authorization Secret?
+A: Your Application ID can be found in the Web Dashboard under the application details. For the Authorization Secret, navigate to Settings > Organization Codes on the same dashboard.
+
+### Q: How do I enable object tracking?
+A: Object tracking can be enabled by adding the Track Object component to any GameObject in your scene via the Unity Inspector.
+
+## Troubleshooting
+
+---
+
+## Backend Integration: ArborXR Insights Storage API
+
+All WebXR data is securely routed to the **ArborXR Insights Storage API**, which:
+- Validates authentication via signed JWTs
+- Ensures session continuity across user/device
+- Persists structured logs into MongoDB Atlas
+- Provides async-ready responses for batch telemetry logging
+
+Example endpoints:
+- `/v1/collect/event` → Event logging
+- `/v1/collect/log` → Developer log ingestion
+- `/v1/collect/telemetry` → Positional + hardware data
+- `/v1/storage` → Persisted user/device state
+
+---
+
+## Web UI + Insights User API
+
+For dashboards, analytics queries, impersonation, and integration management, use the **ArborXR Insights User API**, accessible through the platform's admin portal.
+
+Example features:
+- Visualize training completion & performance by cohort
+- Export SCORM/xAPI-compatible results
+- Query trends in interaction data
+
+Endpoints of note:
+- `/v1/analytics/dashboard`
+- `/v1/admin/system/organization/{org_id}`
+- `/v1/analytics/data`
+
+---
 
 ## Support
 
-Encountered an issue or have a feature request? Please open an issue on our [GitHub repository](https://github.com/your-repo).
+- **Docs:** [https://help.arborxr.com/](https://help.arborxr.com/)
+- **GitHub:** [https://github.com/ArborXR/abxrlib-for-webxr](https://github.com/ArborXR/abxrlib-for-webxr)
 
-## License
+---
 
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+## Building from Source
+
+### Using Docker
+
+To build the package using Docker:
+
+1. Build the Docker container:
+```bash
+docker build -t abxrlib-for-webxr .
+```
+
+2. Run the container:
+```bash
+docker run -p 6001:6001 abxrlib-for-webxr
+```
+
+This will start the development server on `http://localhost:6001`.
+
+### Using Node.js
+
+Alternatively, you can build and run the package using Node.js:
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
+npm run dev
+```
+
+The server will be available at `http://localhost:6001`.
+
+### Testing the Build
+
+Once the server is running, you can test the build by navigating to:
+```
+http://localhost:6001/?xrdm_orgid=YOUR_ORG_ID&xrdm_authsecret=YOUR_AUTH_SECRET
+```
+
+Replace `YOUR_ORG_ID` and `YOUR_AUTH_SECRET` with your actual organization ID and authentication secret.
