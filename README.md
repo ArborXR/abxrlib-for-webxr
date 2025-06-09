@@ -17,6 +17,8 @@
 
 The **ArborXR Insights SDK for WebXR** empowers developers to seamlessly integrate enterprise-grade XR analytics and data tracking into their web applications. Built on the **AbxrLib** runtime, this open-source library enables scalable event tracking, telemetry, and session-based storage—essential for enterprise and education XR environments.
 
+> **Fun Fact:** The name "Abxr" stands for "All 'Bout XR" - a playful nod to our passion for everything XR!
+
 ArborXR Insights enhances product value by offering:
 - Seamless LMS & Business Intelligence integrations
 - A robust, analytics-driven backend
