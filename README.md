@@ -58,7 +58,7 @@ Developers can implement their own backend services by following the ABXR protoc
 ### NPM Package Installation
 
 ```bash
-npm install abxrlibforwebxr
+npm install abxrlib-for-webxr
 ```
 
 ---
