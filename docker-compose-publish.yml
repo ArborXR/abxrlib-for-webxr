@@ -10,7 +10,7 @@ services:
     env_file:
       - .env
     command: ["--publish"]
-    volumes:
-      - ./build:/opt/arborxr/build
-      - ./dist:/opt/arborxr/dist
-      - ./abxrlib-for-webxr:/opt/arborxr/abxrlib-for-webxr
+    #volumes:
+    #  - ./build:/opt/arborxr/build
+    #  - ./dist:/opt/arborxr/dist
+    #  - ./abxrlib-for-webxr:/opt/arborxr/abxrlib-for-webxr
