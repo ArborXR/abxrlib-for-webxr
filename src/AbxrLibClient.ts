@@ -64,23 +64,23 @@ export class AuthTokenRequest extends DataObjectBase
 	// ---
 	public static m_mapProperties: FieldPropertiesRecordContainer = new FieldPropertiesRecordContainer(Object.assign({},
 		super.m_mapProperties.m_rfp,
-	 	{m_szAppId: new FieldProperties("app_id")},
-	 	{m_szOrgId: new FieldProperties("org_id")},
-	 	{m_szAuthSecret: new FieldProperties("auth_secret")},
-	 	{m_szDeviceId: new FieldProperties("device_id")},
-	 	{m_szSessionId: new FieldProperties("session_id")},
+	 	{m_szAppId: new FieldProperties("appId")},
+	 	{m_szOrgId: new FieldProperties("orgId")},
+	 	{m_szAuthSecret: new FieldProperties("authSecret")},
+	 	{m_szDeviceId: new FieldProperties("deviceId")},
+	 	{m_szSessionId: new FieldProperties("sessionId")},
 	 	{m_szPartner: new FieldProperties("partner")},
 	 	// ---
-	 	{m_szOsVersion: new FieldProperties("os_version", FieldPropertyFlags.bfStringOnly)},
-	 	{m_szIpAddress: new FieldProperties("ip_address")},
-	 	{m_szXrdmVersion: new FieldProperties("xrdm_version", FieldPropertyFlags.bfStringOnly)},
-	 	{m_szAppVersion: new FieldProperties("app_version", FieldPropertyFlags.bfStringOnly)},
-	 	{m_szUnityVersion: new FieldProperties("unity_version", FieldPropertyFlags.bfStringOnly)},
-	 	{m_szDeviceModel: new FieldProperties("device_model")},
-	 	{m_szUserId: new FieldProperties("user_id")},
+	 	{m_szOsVersion: new FieldProperties("osVersion", FieldPropertyFlags.bfStringOnly)},
+	 	{m_szIpAddress: new FieldProperties("ipAddress")},
+	 	{m_szXrdmVersion: new FieldProperties("xrdmVersion", FieldPropertyFlags.bfStringOnly)},
+	 	{m_szAppVersion: new FieldProperties("appVersion", FieldPropertyFlags.bfStringOnly)},
+	 	{m_szUnityVersion: new FieldProperties("unityVersion", FieldPropertyFlags.bfStringOnly)},
+	 	{m_szDeviceModel: new FieldProperties("deviceModel")},
+	 	{m_szUserId: new FieldProperties("userId")},
 	 	{m_lszTags: new FieldProperties("tags")},
 	 	{m_dictGeoLocation: new FieldProperties("geolocation")},
-	 	{m_dictAuthMechanism: new FieldProperties("auth_mechanism")}));
+	 	{m_dictAuthMechanism: new FieldProperties("authMechanism")}));
 	// ---
 	public GetMapProperties(): FieldPropertiesRecordContainer // virtual
 	{
