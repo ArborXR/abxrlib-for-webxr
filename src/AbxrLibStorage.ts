@@ -33,6 +33,8 @@ export class AbxrLibStorage
 	{
 		var	eRet:	AbxrResult = await AbxrLibClient.GetABXRConfig(AbxrLibStorage.m_abxrLibConfiguration);
 
+		// If config request fails (e.g., server returns {"config":[]}), we can still proceed
+		// since the authentication was successful and we have default config values
 		if (eRet === AbxrResult.eOk)
 		{
 			if (bLookForAuthMechanism)
@@ -44,6 +46,15 @@ export class AbxrLibStorage
 				AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism.clear();
 				AbxrLibStorage.m_abxrLibConfiguration.m_dictAuthMechanism.clear();
 			}
+		}
+		else if (eRet === AbxrResult.ePostObjectsBadJsonResponse)
+		{
+			// Server returned unexpected response format (like {"config":[]}), but this is not critical
+			// since we have default configuration values. Clear auth mechanism and continue.
+			console.log("Config request returned unexpected format, using default configuration");
+			AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism.clear();
+			AbxrLibStorage.m_abxrLibConfiguration.m_dictAuthMechanism.clear();
+			eRet = AbxrResult.eOk; // Treat as success since we can continue with defaults
 		}
 		// ---
 		return eRet;

@@ -148,9 +148,8 @@
       // Store the original fetch implementation
       const originalFetch = window.fetch;
       let requestData;
-      let responseData;
       
-      // Temporarily override fetch to capture the request and response
+      // Temporarily override fetch to capture the request
       window.fetch = async (...args) => {
         const [url, options] = args;
         if (options && options.body) {
@@ -167,34 +166,7 @@
           console.log("Request headers:", options.headers);
         }
         
-        const response = await originalFetch(...args);
-        
-        // Capture the response for debugging
-        let responseText;
-        try {
-          responseText = await response.text();
-          console.log("Authentication response text:", responseText);
-          console.log("Response status:", response.status);
-          console.log("Response headers:", response.headers);
-          
-          try {
-            responseData = JSON.parse(responseText);
-            console.log("Parsed response object:", responseData);
-          } catch (parseError) {
-            console.log("Failed to parse response as JSON:", parseError);
-            console.log("Raw response (first 500 chars):", responseText.substring(0, 500));
-          }
-        } catch (responseError) {
-          console.log("Error reading response:", responseError);
-          responseText = "";
-        }
-        
-        // Return a new response with the same data
-        return new Response(responseText, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers
-        });
+        return originalFetch(...args);
       };
       
       try {
@@ -221,7 +193,7 @@
         if (result === 0) {
           displayText = `Complete\nToken Data:\n- Token: ${tokenData.token.substring(0, 20)}...\n- Secret: ${tokenData.secret.substring(0, 20)}...\n- Expires: ${tokenData.expiration}`;
         } else {
-          displayText = `Error: Unexpected result code ${result} (${AbxrResultToString ? AbxrResultToString(result) : 'Unknown'})\n\nResponse Data:\n${JSON.stringify(responseData, null, 2)}`;
+          displayText = `Error: Unexpected result code ${result} (${AbxrResultToString ? AbxrResultToString(result) : 'Unknown'})`;
         }
 
         document.getElementById('authenticate_result').style.whiteSpace = 'pre-line';
