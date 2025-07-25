@@ -9,7 +9,7 @@ module.exports = {
 	},
 	output: {
 		path: path.resolve(__dirname, './dist'),
-		filename: "AbxrLibForWebXR.js" // <--- Will be compiled to this single file
+		filename: "abxrlib-for-webxr.js" // <--- Will be compiled to this single file
 	},
 	resolve: {
 		extensions: [".ts", ".tsx", ".js"],

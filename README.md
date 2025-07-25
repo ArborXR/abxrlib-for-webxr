@@ -78,7 +78,7 @@ To use the ABXR SDK with ArborXR Insights Early Access program:
 
 #### Configure Web Application
 ```typescript
-import { AbxrInit } from 'abxrlibforwebxr';
+import { AbxrInit } from 'abxrlib-for-webxr';
 
 async function main() {
   const authData = {

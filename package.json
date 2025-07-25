@@ -2,7 +2,6 @@
 	"name": "abxrlib-for-webxr",
 	"version": "1.0.0",
 	"main": "index.js",
-	"type": "commonjs",
 	"module": "index.js",
 	"browser": "index.js",
 	"types": "index.d.ts",
@@ -52,11 +51,8 @@
 	},
 	"files": [
 		"index.js",
-		"build/**/*",
-		"tsconfig.json",
-		"ts-node-config.json",
-		"test.ts",
 		"index.d.ts",
+		"*.d.ts",
 		"network/**/*",
 		"README.md",
 		"LICENSE"

@@ -9,7 +9,7 @@ module.exports = {
 	},
 	output: {
 		path: path.resolve(__dirname, './dist'),
-		filename: "AbxrLibForWebXR.js",
+		filename: "abxrlib-for-webxr.js",
 		library: 'AbxrLib',
 		libraryTarget: 'umd',
 		globalObject: 'this'

@@ -176,7 +176,7 @@ export class AbxrLibConfiguration extends DataObjectBase
 		this.m_dictAuthMechanism = new AbxrDictStrings();
 		// ---
 		// Default URL... can be overriden by App.config or accessors in C# and C++.
-		this.SetRestUrl("https://lib-backend.xrdm.dev/v1/");
+		this.SetRestUrl("https://lib-backend.xrdm.app/v1/");
 	}
 	public SetRestUrl(szRestUrl: string): void
 	{

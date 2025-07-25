@@ -3,18 +3,50 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Test AbxrLibForWebXR.js</title>
+  <title>Test abxrlib-for-webxr.js</title>
   <!-- Include your bundled JS file -->
-  <script src="dist/AbxrLibForWebXR.js"></script>
+  <script src="dist/abxrlib-for-webxr.js"></script>
   <script>
     // Authentication configuration
     const app_id = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
     const org_id = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
     const device_id = 'AbxrLibForWebXR_js';
     const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
-    const partner_id = 'arborxrs';
+    const partner_id = 'arborxr';
     Abxr = AbxrLib.AbxrLibSend;
     Abxr.DictStrings = AbxrLib.AbxrDictStrings;
+    
+    // Helper function to convert AbxrResult codes to strings
+    function AbxrResultToString(result) {
+      const resultNames = {
+        0: "eOk",
+        1: "eNotInitialized", 
+        2: "eAnalyticsDisabled",
+        3: "eTooManyItems",
+        4: "eSizeLimitReached",
+        5: "eTooManyRequests",
+        6: "eInvalidData",
+        7: "eUnsupportedPlatform",
+        8: "eEnableEventFailed",
+        9: "eEventNotEnabled",
+        10: "eEventCached",
+        11: "eSendEventFailed",
+        12: "ePostObjectsFailed",
+        13: "ePostObjectsFailedNetworkError",
+        14: "ePostObjectsBadJsonResponse",
+        15: "eDeleteObjectsFailed",
+        16: "eDeleteObjectsFailedNetworkError",
+        17: "eDeleteObjectsFailedDatabase",
+        18: "eDeleteObjectsBadJsonResponse",
+        19: "eAuthenticateFailed",
+        20: "eAuthenticateFailedNetworkError",
+        21: "eCouldNotObtainAuthSecret",
+        22: "eCorruptJson",
+        23: "eSetEnvironmentDataFailed",
+        24: "eObjectNotFound"
+      };
+      return resultNames[result] || "Unknown";
+    }
   </script>
   <style>
     table {
@@ -39,11 +71,16 @@
   </style>
 </head>
 <body>
-  <h1>Testing AbxrLibForWebXR.js</h1>
+  <h1>Testing abxrlib-for-webxr.js</h1>
   
   <table>
     <tr>
-      <td><button class="action-button" onclick="setAppConfig()">1. Set App Config</button></td>
+      <td>
+        <button class="action-button" onclick="setAppConfig()">1. Set App Config</button>
+        <br><br>
+        <input type="text" id="rest_url_input" value="http://localhost:8080/v1/" style="width: 300px;" placeholder="Enter REST URL">
+        <br><small style="color: #666;">Note: Server must have proper CORS headers configured</small>
+      </td>
       <td class="result-cell" id="setAppConfig_result">Not executed</td>
     </tr>
     <tr>
@@ -81,7 +118,14 @@
   <script>
     function setAppConfig() {
       console.log("Executing AbxrLib.AbxrLibBaseSetup.SetAppConfig()");
-      const result = AbxrLib.AbxrLibBaseSetup.SetAppConfig();
+      
+      // Get the REST URL from the input field
+      const restUrl = document.getElementById('rest_url_input').value;
+      
+      // Create minimal config with just the REST_URL override
+      const customConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+      
+      const result = AbxrLib.AbxrLibBaseSetup.SetAppConfig(customConfig);
       document.getElementById('setAppConfig_result').textContent = result === undefined ? 'Complete' : result;
     }
 
@@ -99,6 +143,60 @@
 
     async function authenticate() {
       console.log("Executing AbxrLib.AbxrLibInit.Authenticate()");
+      console.log("Auth parameters:", { app_id, org_id, device_id, auth_secret, partner_id });
+      
+      // Store the original fetch implementation
+      const originalFetch = window.fetch;
+      let requestData;
+      let responseData;
+      
+      // Temporarily override fetch to capture the request and response
+      window.fetch = async (...args) => {
+        const [url, options] = args;
+        if (options && options.body) {
+          try {
+            requestData = JSON.parse(options.body);
+            console.log("Authentication request body:", requestData);
+          } catch (e) {
+            console.log("Could not parse request body:", options.body);
+          }
+        }
+        
+        // Log headers for debugging
+        if (options && options.headers) {
+          console.log("Request headers:", options.headers);
+        }
+        
+        const response = await originalFetch(...args);
+        
+        // Capture the response for debugging
+        let responseText;
+        try {
+          responseText = await response.text();
+          console.log("Authentication response text:", responseText);
+          console.log("Response status:", response.status);
+          console.log("Response headers:", response.headers);
+          
+          try {
+            responseData = JSON.parse(responseText);
+            console.log("Parsed response object:", responseData);
+          } catch (parseError) {
+            console.log("Failed to parse response as JSON:", parseError);
+            console.log("Raw response (first 500 chars):", responseText.substring(0, 500));
+          }
+        } catch (responseError) {
+          console.log("Error reading response:", responseError);
+          responseText = "";
+        }
+        
+        // Return a new response with the same data
+        return new Response(responseText, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers
+        });
+      };
+      
       try {
         const result = await AbxrLib.AbxrLibInit.Authenticate(
           app_id,
@@ -108,6 +206,9 @@
           partner_id
         );
         
+        // Restore original fetch
+        window.fetch = originalFetch;
+        
         // Get token data after successful authentication
         const tokenData = {
           token: AbxrLib.AbxrLibInit.get_ApiToken(),
@@ -116,9 +217,12 @@
         };
 
         // Create formatted display string
-        const displayText = result === 0 ? 
-          `Complete\nToken Data:\n- Token: ${tokenData.token.substring(0, 20)}...\n- Secret: ${tokenData.secret.substring(0, 20)}...\n- Expires: ${tokenData.expiration}` :
-          `Error: Unexpected result code ${result}`;
+        let displayText;
+        if (result === 0) {
+          displayText = `Complete\nToken Data:\n- Token: ${tokenData.token.substring(0, 20)}...\n- Secret: ${tokenData.secret.substring(0, 20)}...\n- Expires: ${tokenData.expiration}`;
+        } else {
+          displayText = `Error: Unexpected result code ${result} (${AbxrResultToString ? AbxrResultToString(result) : 'Unknown'})\n\nResponse Data:\n${JSON.stringify(responseData, null, 2)}`;
+        }
 
         document.getElementById('authenticate_result').style.whiteSpace = 'pre-line';
         document.getElementById('authenticate_result').textContent = displayText;

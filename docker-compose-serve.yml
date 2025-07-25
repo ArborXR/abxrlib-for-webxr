@@ -2,13 +2,16 @@
 # version: '3.8'
 
 services:
-  abxrlibforwebxr:
-    container_name: abxrlibforwebxr
+  abxrlib-for-webxr:
+    container_name: abxrlib-for-webxr
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
       - .env
+    command: ["--serve"]
+    ports:
+      - "8000:8000"
     volumes:
       - ./build:/opt/arborxr/build
       - ./dist:/opt/arborxr/dist
