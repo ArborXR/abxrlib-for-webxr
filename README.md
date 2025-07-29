@@ -17,7 +17,7 @@ The name "ABXR" stands for "Analytics Backbone for XR"—a flexible, open-source
 
 ### Overview
 
-The **ABXR SDK for Unity** is an open-source analytics and data collection library that provides developers with the tools to collect and send XR data to any service of their choice. This library enables scalable event tracking, telemetry, and session-based storage—essential for enterprise and education XR environments.
+The **ABXR SDK for WebXR** is an open-source analytics and data collection library that provides developers with the tools to collect and send XR data to any service of their choice. This library enables scalable event tracking, telemetry, and session-based storage—essential for enterprise and education XR environments.
 
 **Why Use ABXR SDK?**
 
@@ -58,7 +58,7 @@ Developers can implement their own backend services by following the ABXR protoc
 ### NPM Package Installation
 
 ```bash
-npm install abxrlibforwebxr
+npm install abxrlib-for-webxr
 ```
 
 ---
@@ -78,18 +78,24 @@ To use the ABXR SDK with ArborXR Insights Early Access program:
 
 #### Configure Web Application
 ```typescript
-import { AbxrInit } from 'abxrlib-for-webxr';
+import { Abxr } from 'abxrlib-for-webxr';
 
 async function main() {
-  const authData = {
-    appId: 'your-app-id',
-    orgId: 'your-org-id',
-    deviceId: 'web-xr',
-    authSecret: 'your-auth-secret'
-  };
+  // Initialize the library
+  Abxr.Start();
+  
+  // Authenticate with ArborXR
+  const authResult = await Abxr.Authenticate(
+    'your-app-id',
+    'your-org-id',
+    'web-xr-device',
+    'your-auth-secret'
+  );
 
-  const Abxr = await AbxrInit(authData);
-  // Your application code here
+  if (authResult === 0) { // AbxrResult.eOk
+    console.log('Successfully authenticated');
+    // Your application code here
+  }
 }
 
 main();
@@ -103,9 +109,18 @@ http://yourdomain.com/?xrdm_orgid=YOUR_ORG_ID&xrdm_authsecret=YOUR_AUTH_SECRET
 
 Then initialize with just the App ID:
 ```typescript
-const Abxr = await AbxrInit({
-  appId: 'YOUR_APP_ID'
-});
+import { Abxr } from 'abxrlib-for-webxr';
+
+// Initialize the library
+Abxr.Start();
+
+// Authenticate with URL parameters
+const authResult = await Abxr.Authenticate(
+  'YOUR_APP_ID',
+  '', // orgId will be read from URL
+  'web-xr-device',
+  '' // authSecret will be read from URL
+);
 ```
 
 ### Using with Other Backend Services
@@ -117,130 +132,143 @@ For information on implementing your own backend service or using other compatib
 
 ### Event Methods
 ```typescript
-// TypeScript Event Method Signatures
-await Abxr.Event(name: string);
-await Abxr.Event(name: string, meta: Record<string, string>);
-await Abxr.Event(name: string, meta: Record<string, string>, location_data: Vector3);
+import { Abxr } from 'abxrlib-for-webxr';
 
-// Example Usage - Basic Event
+// Send a simple event
 await Abxr.Event('button_pressed');
 
-// Example Usage - Event with Metadata
-await Abxr.Event('item_collected', {
-    item_type: 'coin',
-    item_value: '100'
-});
-
-// Example Usage - Event with Metadata and Location
-await Abxr.Event('player_teleported', 
-    { destination: 'spawn_point' },
-    new Vector3(1.5, 0.0, -3.2)
-);
+// Send an event with metadata
+const meta = new Abxr.DictStrings();
+meta.set('item_type', 'coin');
+meta.set('item_value', '100');
+await Abxr.Event('item_collected', meta);
 ```
 
 ### Event Wrappers (for LMS Compatibility)
 
 #### Assessments
 ```typescript
-// TypeScript Event Method Signatures
-await Abxr.EventAssessmentStart(assessmentName: string);
-await Abxr.EventAssessmentStart(assessmentName: string, meta: Record<string, string>);
+import { Abxr, ResultOptions } from 'abxrlib-for-webxr';
 
-await Abxr.EventAssessmentComplete(assessmentName: string, score: number, result: ResultOptions);
-await Abxr.EventAssessmentComplete(assessmentName: string, score: number, result: ResultOptions, meta: Record<string, string>);
+// Start assessment
+const startMeta = new Abxr.DictStrings();
+startMeta.set('assessment_name', 'final_exam');
+await Abxr.Event('assessment_start', startMeta);
 
-// Example Usage
-await Abxr.EventAssessmentStart('final_exam');
-await Abxr.EventAssessmentComplete('final_exam', 92, ResultOptions.Pass);
+// Complete assessment
+const completeMeta = new Abxr.DictStrings();
+completeMeta.set('assessment_name', 'final_exam');
+completeMeta.set('score', '92');
+completeMeta.set('result', ResultOptions.Pass.toString());
+await Abxr.Event('assessment_complete', completeMeta);
 ```
 
 #### Objectives
 ```typescript
-// TypeScript Event Method Signatures
-await Abxr.EventObjectiveStart(objectiveName: string);
-await Abxr.EventObjectiveStart(objectiveName: string, meta: Record<string, string>);
-await Abxr.EventObjectiveStart(objectiveName: string, metaString: string);
+import { Abxr, ResultOptions } from 'abxrlib-for-webxr';
 
-// Example Usage
-await Abxr.EventObjectiveStart('open_valve');
-await Abxr.EventObjectiveComplete('open_valve', 100, ResultOptions.Complete);
+// Start objective
+const startMeta = new Abxr.DictStrings();
+startMeta.set('objective_name', 'open_valve');
+await Abxr.Event('objective_start', startMeta);
+
+// Complete objective
+const completeMeta = new Abxr.DictStrings();
+completeMeta.set('objective_name', 'open_valve');
+completeMeta.set('score', '100');
+completeMeta.set('result', ResultOptions.Complete.toString());
+await Abxr.Event('objective_complete', completeMeta);
 ```
 
 #### Interactions
 ```typescript
-// TypeScript Event Method Signatures
-await Abxr.EventInteractionStart(interactionName: string);
+import { Abxr, InteractionType } from 'abxrlib-for-webxr';
 
-await Abxr.EventInteractionComplete(interactionName: string, result: string);
-await Abxr.EventInteractionComplete(interactionName: string, result: string, result_details: string);
-await Abxr.EventInteractionComplete(interactionName: string, result: string, result_details: string, type: InteractionType);
-await Abxr.EventInteractionComplete(interactionName: string, result: string, result_details: string, type: InteractionType, meta: Record<string, string>);
+// Start interaction
+const startMeta = new Abxr.DictStrings();
+startMeta.set('interaction_name', 'select_option_a');
+await Abxr.Event('interaction_start', startMeta);
 
-// Example Usage
-await Abxr.EventInteractionStart('select_option_a');
-await Abxr.EventInteractionComplete('select_option_a', 'true', 'a', InteractionType.Select);
+// Complete interaction
+const completeMeta = new Abxr.DictStrings();
+completeMeta.set('interaction_name', 'select_option_a');
+completeMeta.set('result', 'true');
+completeMeta.set('result_details', 'a');
+completeMeta.set('type', InteractionType.Select.toString());
+await Abxr.Event('interaction_complete', completeMeta);
 ```
 
 ### Logging
 ```typescript
-// TypeScript Event Method Signatures
-await Abxr.Log(level: LogLevel, message: string);
+import { Abxr } from 'abxrlib-for-webxr';
 
-// Example usage
-await Abxr.Log('Info', 'Module started');
+// Send logs with different levels
+await Abxr.LogDebug('Debug message');
+await Abxr.LogInfo('Info message');
+await Abxr.LogWarn('Warning message');
+await Abxr.LogError('Error message');
+await Abxr.LogCritical('Critical error');
 
-// Severity-specific logging
-await Abxr.LogDebug(message: string);
-await Abxr.LogInfo(message: string);
-await Abxr.LogWarn(message: string);
-await Abxr.LogError(message: string);
-await Abxr.LogCritical(message: string);
-
-// Example usage
-await Abxr.LogError('Critical error in assessment phase');
+// Or use the generic Log method
+await Abxr.Log(LogLevel.Info, 'Module started');
 ```
 
 ### Storage API
 ```typescript
-// TypeScript Event Method Signatures
-await Abxr.SetStorageEntry(data: Record<string, string>, name?: string, keep_latest?: boolean, origin?: string, session_data?: boolean);
+import { Abxr } from 'abxrlib-for-webxr';
 
-// Example usage
-await Abxr.SetStorageEntry({ progress: '75%' });
+// Store data
+await Abxr.SetStorageEntry('user_progress', '75%');
 
-// Retrieve Data
-const state = await Abxr.GetStorageEntry(name?: string, origin?: string, tags_any?: string[], tags_all?: string[], user_only?: boolean);
+// Store data with more options
+const data = new Abxr.DictStrings();
+data.set('progress', '75%');
+data.set('level', 'intermediate');
+await Abxr.SetStorageEntry(data, true, 'game', false, 'user_progress');
 
-// Remove Storage
-await Abxr.RemoveStorageEntry(name?: string);
+// Retrieve data
+const entry = await Abxr.GetStorageEntry('user_progress');
 
-// Get All Entries
-const allEntries = await Abxr.GetAllStorageEntries();
+// Remove storage entry
+await Abxr.RemoveStorageEntry('user_progress');
 ```
 
 ### Telemetry
 ```typescript
-// TypeScript Event Method Signatures
-await Abxr.Telemetry(name: string, data: Record<string, string>);
+import { Abxr } from 'abxrlib-for-webxr';
 
-// Example usage
-await Abxr.Telemetry('headset_position', { x: '1.23', y: '4.56', z: '7.89' });
+// Send telemetry data
+const telemetryData = new Abxr.DictStrings();
+telemetryData.set('x', '1.23');
+telemetryData.set('y', '4.56');
+telemetryData.set('z', '7.89');
+await Abxr.Telemetry('headset_position', telemetryData);
 ```
 
 ### AI Integration Methods
 ```typescript
-// TypeScript Event Method Signatures
-const response = await Abxr.AIProxy(prompt: string, past_messages?: string, bot_id?: string);
+import { Abxr } from 'abxrlib-for-webxr';
 
-// Example usage
-const greeting = await Abxr.AIProxy('Provide me a randomized greeting that includes common small talk and ends by asking some form of how can I help');
+// Send AI proxy request
+const response = await Abxr.AIProxy(
+  'Provide me a randomized greeting that includes common small talk and ends by asking some form of how can I help',
+  '', // past messages
+  'default' // bot id
+);
 ```
 
 ### Authentication Methods
 ```typescript
-// TypeScript Event Method Signatures
-await Abxr.SetUserId(userId: string);
-await Abxr.SetUserMeta(metaString: string);
+import { Abxr } from 'abxrlib-for-webxr';
+
+// Set user ID
+Abxr.set_UserId('user123');
+
+// Set user metadata
+Abxr.m_dssCurrentData = { 
+  user_role: 'student',
+  user_level: 'intermediate'
+};
 ```
 
 ## FAQ
@@ -267,7 +295,7 @@ When integrated with **ArborXR Insights**, session state data is securely stored
 - Configurable behaviors (e.g., `keepLatest`, append history)
 - Seamless AI and analytics integration for stored user states
 
-To use this feature, simply call the storage functions provided in the SDK (`SetStorageEntry`, `GetStorageEntry`, etc.). These entries are automatically synced with ArborXR’s cloud infrastructure, ensuring consistent data across sessions.
+To use this feature, simply call the storage functions provided in the SDK (`AddStorage`, `GetStorageEntry`, etc.). These entries are automatically synced with ArborXR's cloud infrastructure, ensuring consistent data across sessions.
 
 ---
 
@@ -336,3 +364,50 @@ http://localhost:6001/?xrdm_orgid=YOUR_ORG_ID&xrdm_authsecret=YOUR_AUTH_SECRET
 ```
 
 Replace `YOUR_ORG_ID` and `YOUR_AUTH_SECRET` with your actual organization ID and authentication secret.
+
+### Browser (UMD)
+
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+  // Set up global scope (optional - only needed for browser usage)
+  AbxrLib.Abxr.init();
+  
+  // Initialize the library
+  AbxrLib.Abxr.Start();
+  
+  // Authenticate
+  AbxrLib.Abxr.Authenticate('app-id', 'org-id', 'device-id', 'auth-secret')
+    .then(result => {
+      if (result === 0) {
+        // Send events
+        AbxrLib.Abxr.Event('button_click');
+        AbxrLib.Abxr.LogDebug('User action completed');
+      }
+    });
+</script>
+```
+
+### Alternative Browser Setup (Manual)
+
+If you prefer to set up the global scope manually:
+
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+  // Manual setup (equivalent to AbxrLib.Abxr.init())
+  Abxr = AbxrLib.Abxr;
+  AbxrLibInit = AbxrLib.AbxrLibInit;
+  AbxrLibSend = AbxrLib.AbxrLibSend;
+  AbxrDictStrings = AbxrLib.AbxrDictStrings;
+  
+  // Initialize and use
+  Abxr.Start();
+  Abxr.Authenticate('app-id', 'org-id', 'device-id', 'auth-secret')
+    .then(result => {
+      if (result === 0) {
+        Abxr.Event('button_click');
+      }
+    });
+</script>
+```

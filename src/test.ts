@@ -262,7 +262,7 @@ async function TestJson(): Promise<void>
 	var tsTest:			TimeSpan = TimeSpan.Parse("12:34:56");
 	var abxrEvent:		AbxrEvent = new AbxrEvent();
 	var suidTest:		SUID = new SUID();
-	var bufferTest:		Buffer = Buffer.from([23, 56, 26, 78, 45, 12, 89, 54]);
+	var bufferTest:		Buffer = Buffer.from(new Uint8Array([23, 56, 26, 78, 45, 12, 89, 54]));
 	var objTestScalarContainer:	AbxrXXXTestScalarContainer<TestData> = new AbxrXXXTestScalarContainer<TestData>(TestData);
 
 	try

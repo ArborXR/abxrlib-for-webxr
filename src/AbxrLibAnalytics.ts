@@ -11,6 +11,18 @@ import { AbxrResult, DateTime, TimeSpan, StringList, AbxrDictStrings, JsonResult
 import { DatabaseResult } from './network/utils/AbxrLibSQLite';
 import { JWTDecode } from './network/utils/JWT';
 
+// Buffer type definition for browser environments
+declare global {
+    interface Buffer extends Uint8Array {
+        toString(encoding?: string): string;
+        from(data: string | ArrayBuffer | ArrayBufferView, encoding?: string): Buffer;
+    }
+    var Buffer: {
+        new(data: string | ArrayBuffer | ArrayBufferView): Buffer;
+        from(data: string | ArrayBuffer | ArrayBufferView, encoding?: string): Buffer;
+    };
+}
+
 /// <summary>
 /// Object for authenticating with Abxr webservice.
 /// </summary>

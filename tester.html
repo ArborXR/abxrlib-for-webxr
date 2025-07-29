@@ -7,14 +7,16 @@
   <!-- Include your bundled JS file -->
   <script src="dist/abxrlib-for-webxr.js"></script>
   <script>
+    
     // Authentication configuration
     const app_id = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
     const org_id = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
     const device_id = 'AbxrLibForWebXR_js';
     const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
-    const partner_id = 'arborxr';
-    Abxr = AbxrLib.AbxrLibSend;
-    Abxr.DictStrings = AbxrLib.AbxrDictStrings;
+    const partner_id = 1; // Partner.eArborXR
+    
+    // Set up global scope for browser usage
+    AbxrLib.Abxr.init();
     
     // Helper function to convert AbxrResult codes to strings
     function AbxrResultToString(result) {
@@ -117,7 +119,7 @@
 
   <script>
     function setAppConfig() {
-      console.log("Executing AbxrLib.AbxrLibBaseSetup.SetAppConfig()");
+      console.log("Executing Abxr.SetAppConfig()");
       
       // Get the REST URL from the input field
       const restUrl = document.getElementById('rest_url_input').value;
@@ -125,24 +127,24 @@
       // Create minimal config with just the REST_URL override
       const customConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
       
-      const result = AbxrLib.AbxrLibBaseSetup.SetAppConfig(customConfig);
+      const result = Abxr.SetAppConfig(customConfig);
       document.getElementById('setAppConfig_result').textContent = result === undefined ? 'Complete' : result;
     }
 
     function initStatics() {
-      console.log("Executing AbxrLib.AbxrLibInit.InitStatics()");
-      const result = AbxrLib.AbxrLibInit.InitStatics();
+      console.log("Executing Abxr.InitStatics()");
+      const result = Abxr.InitStatics();
       document.getElementById('initStatics_result').textContent = result === undefined ? 'Complete' : result;
     }
 
     function startLib() {
-      console.log("Executing AbxrLib.AbxrLibInit.Start()");
-      const result = AbxrLib.AbxrLibInit.Start();
+      console.log("Executing Abxr.Start()");
+      const result = Abxr.Start();
       document.getElementById('startLib_result').textContent = result === undefined ? 'Complete' : result;
     }
 
     async function authenticate() {
-      console.log("Executing AbxrLib.AbxrLibInit.Authenticate()");
+      console.log("Executing Abxr.Authenticate()");
       console.log("Auth parameters:", { app_id, org_id, device_id, auth_secret, partner_id });
       
       // Store the original fetch implementation
@@ -170,7 +172,7 @@
       };
       
       try {
-        const result = await AbxrLib.AbxrLibInit.Authenticate(
+        const result = await Abxr.Authenticate(
           app_id,
           org_id,
           device_id,
@@ -181,17 +183,10 @@
         // Restore original fetch
         window.fetch = originalFetch;
         
-        // Get token data after successful authentication
-        const tokenData = {
-          token: AbxrLib.AbxrLibInit.get_ApiToken(),
-          secret: AbxrLib.AbxrLibInit.get_ApiSecret(),
-          expiration: AbxrLib.AbxrLibInit.get_TokenExpiration()
-        };
-
         // Create formatted display string
         let displayText;
         if (result === 0) {
-          displayText = `Complete\nToken Data:\n- Token: ${tokenData.token.substring(0, 20)}...\n- Secret: ${tokenData.secret.substring(0, 20)}...\n- Expires: ${tokenData.expiration}`;
+          displayText = `Complete - Authentication successful`;
         } else {
           displayText = `Error: Unexpected result code ${result} (${AbxrResultToString ? AbxrResultToString(result) : 'Unknown'})`;
         }
@@ -220,11 +215,15 @@
           const response = await originalFetch(...args);
           // Clone the response so we can read it multiple times
           const clone = response.clone();
-          responseData = await clone.json();
+          try {
+            responseData = await clone.json();
+          } catch (e) {
+            responseData = { error: "Could not parse response as JSON" };
+          }
           return response;
         };
         
-        // Call the original method
+        // Call the simple Event method
         const result = await Abxr.Event(eventValue, dictMeta);
         
         // Restore original fetch
@@ -243,6 +242,7 @@
       console.log("Executing Abxr.LogDebug()");
       try {
         const debugValue = document.getElementById('log_input').value;
+        
         // Store the original fetch implementation
         const originalFetch = window.fetch;
         let responseData;
@@ -252,11 +252,15 @@
           const response = await originalFetch(...args);
           // Clone the response so we can read it multiple times
           const clone = response.clone();
-          responseData = await clone.json();
+          try {
+            responseData = await clone.json();
+          } catch (e) {
+            responseData = { error: "Could not parse response as JSON" };
+          }
           return response;
         };
         
-        // Call the original method
+        // Call the simple LogDebug method
         const result = await Abxr.LogDebug(debugValue);
         
         // Restore original fetch
