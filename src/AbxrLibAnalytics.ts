@@ -76,7 +76,7 @@ class Authentication
 		}
 		catch (error)
 		{
-			console.log("Error: ", error);
+			console.log("AbxrLib Error: ", error);
 		}
 	}
 	public TokenExpirationImminent(): boolean
@@ -543,7 +543,7 @@ export class AbxrLibAnalytics
 		}
 		catch (error)
 		{
-			console.log("Error: ", error);
+			console.log("AbxrLib Error: ", error);
 			//AbxrLibClient.WriteLine($"Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
 			// ---
 			return AbxrLibAnalytics.TaskErrorReturnT<T>(AbxrResult.eSendEventFailed, abxrT, bNoCallbackOnSuccess, pfnStatusCallback, "Caught exception.");
@@ -632,7 +632,7 @@ export class AbxrLibAnalytics
 		}
 		catch (error)
 		{
-			console.log("Error: ", error);
+			console.log("AbxrLib Error: ", error);
 			//AbxrLibClient.WriteLine($"Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
 			// ---
 			return AbxrLibAnalytics.TaskErrorReturnT<T>(AbxrResult.eSendEventFailed, abxrT, bNoCallbackOnSuccess, pfnStatusCallback, "Caught exception.");
@@ -948,7 +948,7 @@ export class AbxrLibAnalytics
 		}
 		catch (error)
 		{
-			console.log("Error: ", error);
+			console.log("AbxrLib Error: ", error);
 		}
 	}
 	// --- API (C++ dll and C# dll) versions of AddAIProxy().
@@ -1025,6 +1025,6 @@ export class AbxrLibAnalytics
 	}
 	public static DiagnosticWriteLine(szLine: string): void
 	{
-		console.log(szLine);
+		console.log("AbxrLib: " + szLine);
 	}
 };

@@ -51,7 +51,7 @@ export class AbxrLibStorage
 		{
 			// Server returned unexpected response format (like {"config":[]}), but this is not critical
 			// since we have default configuration values. Clear auth mechanism and continue.
-			console.log("Config request returned unexpected format, using default configuration");
+			console.log("AbxrLib: Config request returned unexpected format, using default configuration");
 			AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism.clear();
 			AbxrLibStorage.m_abxrLibConfiguration.m_dictAuthMechanism.clear();
 			eRet = AbxrResult.eOk; // Treat as success since we can continue with defaults

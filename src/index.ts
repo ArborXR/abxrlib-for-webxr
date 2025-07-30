@@ -15,6 +15,41 @@ AbxrLibAsync.InitStatics();
 AbxrBase.InitStatics;
 AbxrEvent.InitStatics();
 
+// Utility function to generate a GUID
+function generateGuid(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+// Utility function to get URL parameters
+function getUrlParameter(name: string): string | null {
+    if (typeof window === 'undefined') return null;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+}
+
+// Utility function to get or create device ID
+function getOrCreateDeviceId(): string {
+    if (typeof window === 'undefined') {
+        // Not in browser environment, generate a new GUID
+        return generateGuid();
+    }
+    
+    const storageKey = 'abxr_device_id';
+    let deviceId = localStorage.getItem(storageKey);
+    
+    if (!deviceId) {
+        deviceId = generateGuid();
+        localStorage.setItem(storageKey, deviceId);
+    }
+    
+    return deviceId;
+}
+
 class AbxrLibBaseSetup {
     public static SetAppConfig(customConfig?: string): void
     {
@@ -41,7 +76,7 @@ class AbxrLibBaseSetup {
             '</configuration>';
 
         const szAppConfig = customConfig || defaultConfig;
-        console.log(`Using ${customConfig ? 'user-defined' : 'default'} config`);
+        console.log(`AbxrLib: Using ${customConfig ? 'user-defined' : 'default'} config`);
         ConfigurationManager.DebugSetAppConfig(szAppConfig);
     }
 
@@ -49,170 +84,6 @@ class AbxrLibBaseSetup {
     public static InitializeAll(): void {
         AbxrLibBaseSetup.SetAppConfig();
         // Add any other initialization steps needed
-    }
-}
-
-// Simple Abxr wrapper class for clean developer experience
-class Abxr {
-    private static isInitialized = false;
-    private static isAuthenticated = false;
-
-    // Initialize the library
-    public static Start(): void {
-        AbxrLibInit.Start();
-        this.isInitialized = true;
-    }
-
-    // Authenticate with the service
-    public static async Authenticate(appId: string, orgId: string, deviceId: string, authSecret: string, partner: Partner = Partner.eArborXR): Promise<AbxrResult> {
-        if (!this.isInitialized) {
-            this.Start();
-        }
-        
-        const result = await AbxrLibInit.Authenticate(appId, orgId, deviceId, authSecret, partner);
-        if (result === AbxrResult.eOk) {
-            this.isAuthenticated = true;
-        }
-        return result;
-    }
-
-    // Simple event API
-    public static async Event(name: string, meta?: AbxrDictStrings): Promise<AbxrResult> {
-        if (!this.isAuthenticated) {
-            throw new Error("Must authenticate before sending events");
-        }
-
-        const event = new AbxrEvent();
-        event.Construct(name, meta || new AbxrDictStrings());
-        
-        return await AbxrLibSend.EventCore(event);
-    }
-
-    // Simple log API
-    public static async Log(level: LogLevel, message: string): Promise<AbxrResult> {
-        if (!this.isAuthenticated) {
-            throw new Error("Must authenticate before sending logs");
-        }
-
-        const log = new AbxrLog();
-        log.Construct(level, message, new AbxrDictStrings());
-        
-        return await AbxrLibSend.AddLog(log);
-    }
-
-    // Convenience log methods
-    public static async LogDebug(message: string): Promise<AbxrResult> {
-        return this.Log(LogLevel.eDebug, message);
-    }
-
-    public static async LogInfo(message: string): Promise<AbxrResult> {
-        return this.Log(LogLevel.eInfo, message);
-    }
-
-    public static async LogWarn(message: string): Promise<AbxrResult> {
-        return this.Log(LogLevel.eWarn, message);
-    }
-
-    public static async LogError(message: string): Promise<AbxrResult> {
-        return this.Log(LogLevel.eError, message);
-    }
-
-    public static async LogCritical(message: string): Promise<AbxrResult> {
-        return this.Log(LogLevel.eCritical, message);
-    }
-
-    // Storage API
-    public static async SetStorageEntry(data: string | AbxrDictStrings, keepLatest: boolean = true, origin: string = "web", sessionData: boolean = false, name: string = "state"): Promise<AbxrResult> {
-        if (!this.isAuthenticated) {
-            throw new Error("Must authenticate before using storage");
-        }
-
-        return await AbxrLibStorage.SetEntry(data, keepLatest, origin, sessionData, name);
-    }
-
-    public static async GetStorageEntry(name: string = "state"): Promise<string> {
-        if (!this.isAuthenticated) {
-            throw new Error("Must authenticate before using storage");
-        }
-
-        return await AbxrLibStorage.GetEntryAsString(name);
-    }
-
-    public static async RemoveStorageEntry(name: string = "state"): Promise<AbxrResult> {
-        if (!this.isAuthenticated) {
-            throw new Error("Must authenticate before using storage");
-        }
-
-        return await AbxrLibStorage.RemoveEntry(name);
-    }
-
-    // Telemetry API
-    public static async Telemetry(name: string, data: AbxrDictStrings): Promise<AbxrResult> {
-        if (!this.isAuthenticated) {
-            throw new Error("Must authenticate before sending telemetry");
-        }
-
-        const telemetry = new AbxrTelemetry();
-        telemetry.Construct(name, data);
-        
-        return await AbxrLibSend.AddTelemetryEntryCore(telemetry);
-    }
-
-    // AI Proxy API
-    public static async AIProxy(prompt: string, pastMessages?: string, botId?: string): Promise<AbxrResult> {
-        if (!this.isAuthenticated) {
-            throw new Error("Must authenticate before using AI proxy");
-        }
-
-        const aiProxy = new AbxrAIProxy();
-        aiProxy.Construct0(prompt, pastMessages || "", botId || "default");
-        
-        return await AbxrLibAnalytics.AddAIProxy(aiProxy);
-    }
-
-    // Configuration helpers
-    public static SetAppConfig(customConfig?: string): void {
-        AbxrLibBaseSetup.SetAppConfig(customConfig);
-    }
-
-    public static InitStatics(): void {
-        AbxrLibInit.InitStatics();
-    }
-
-    // Getter for DictStrings constructor
-    public static get DictStrings(): typeof AbxrDictStrings {
-        return AbxrDictStrings;
-    }
-
-    // Initialize global scope for browser usage
-    public static init(): void {
-        if (typeof window !== 'undefined') {
-            // Set up the simple Abxr API
-            (window as any).Abxr = Abxr;
-            
-            // Set up the full library for advanced users
-            (window as any).AbxrLib = {
-                AbxrLibInit,
-                AbxrLibStorage,
-                AbxrLibAsync,
-                AbxrLibSend,
-                AbxrLibClient,
-                AbxrLibAnalytics,
-                AbxrLibBaseSetup,
-                AbxrDictStrings,
-                AbxrEvent,
-                AbxrLog,
-                AbxrStorage,
-                AbxrTelemetry,
-                AbxrAIProxy,
-                LogLevel,
-                Partner,
-                InteractionType,
-                ResultOptions
-            };
-            
-            console.log('AbxrLib loaded into global scope. Use Abxr for simple API or AbxrLib for advanced features.');
-        }
     }
 }
 
@@ -235,6 +106,363 @@ export {
     LogLevel,
     Partner,
     InteractionType,
-    ResultOptions,
-    Abxr
+    ResultOptions
 };
+
+// Global Abxr class that gets configured by Abxr_init()
+export class Abxr {
+    private static enableDebug: boolean = false;
+    private static isAuthenticated: boolean = false;
+    private static appConfig: string = '';
+    private static authParams: {
+        appId?: string;
+        orgId?: string;
+        authSecret?: string;
+    } = {};
+    
+    // Expose commonly used types and enums for easy access
+    static readonly ResultOptions = ResultOptions;
+    static readonly InteractionType = InteractionType;
+    static readonly LogLevel = LogLevel;
+    static readonly Partner = Partner;
+    static readonly AbxrDictStrings = AbxrDictStrings;
+    
+    // Configuration methods
+    static setDebugMode(enabled: boolean): void {
+        this.enableDebug = enabled;
+    }
+    
+    static getDebugMode(): boolean {
+        return this.enableDebug;
+    }
+    
+    static isConfigured(): boolean {
+        return this.isAuthenticated;
+    }
+    
+    static getAuthParams(): any {
+        return { ...this.authParams };
+    }
+    
+    // Event methods
+    static async Event(name: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Event not sent - not authenticated');
+            }
+            return 0; // Return success even when not authenticated
+        }
+        const event = new AbxrEvent();
+        event.Construct(name, meta || new AbxrDictStrings());
+        return await AbxrLibSend.EventCore(event);
+    }
+    
+    // Assessment Events
+    static async EventAssessmentStart(assessmentName: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Assessment start event not sent - not authenticated');
+            }
+            return 0;
+        }
+        const dictMeta = meta || new AbxrDictStrings();
+        return await AbxrLibSend.EventAssessmentStart(assessmentName, dictMeta);
+    }
+    
+    static async EventAssessmentComplete(assessmentName: string, score: string, resultOptions: ResultOptions, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Assessment complete event not sent - not authenticated');
+            }
+            return 0;
+        }
+        const dictMeta = meta || new AbxrDictStrings();
+        return await AbxrLibSend.EventAssessmentComplete(assessmentName, score, resultOptions, dictMeta);
+    }
+    
+    // Objective Events
+    static async EventObjectiveStart(objectiveName: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Objective start event not sent - not authenticated');
+            }
+            return 0;
+        }
+        const dictMeta = meta || new AbxrDictStrings();
+        return await AbxrLibSend.EventObjectiveStart(objectiveName, dictMeta);
+    }
+    
+    static async EventObjectiveComplete(objectiveName: string, score: string, resultOptions: ResultOptions, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Objective complete event not sent - not authenticated');
+            }
+            return 0;
+        }
+        const dictMeta = meta || new AbxrDictStrings();
+        return await AbxrLibSend.EventObjectiveComplete(objectiveName, score, resultOptions, dictMeta);
+    }
+    
+    // Interaction Events
+    static async EventInteractionStart(interactionName: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Interaction start event not sent - not authenticated');
+            }
+            return 0;
+        }
+        const dictMeta = meta || new AbxrDictStrings();
+        return await AbxrLibSend.EventInteractionStart(interactionName, dictMeta);
+    }
+    
+    static async EventInteractionComplete(interactionName: string, result: string, resultDetails: string, interactionType: InteractionType, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Interaction complete event not sent - not authenticated');
+            }
+            return 0;
+        }
+        const dictMeta = meta || new AbxrDictStrings();
+        return await AbxrLibSend.EventInteractionComplete(interactionName, result, resultDetails, interactionType, dictMeta);
+    }
+    
+    // Level Events
+    static async EventLevelStart(levelName: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Level start event not sent - not authenticated');
+            }
+            return 0;
+        }
+        const dictMeta = meta || new AbxrDictStrings();
+        return await AbxrLibSend.EventLevelStart(levelName, dictMeta);
+    }
+    
+    static async EventLevelComplete(levelName: string, score: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Level complete event not sent - not authenticated');
+            }
+            return 0;
+        }
+        const dictMeta = meta || new AbxrDictStrings();
+        return await AbxrLibSend.EventLevelComplete(levelName, score, dictMeta);
+    }
+    
+    static async LogDebug(message: string): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eDebug, message, new AbxrDictStrings());
+        return await AbxrLibSend.AddLog(log);
+    }
+    
+    static async LogInfo(message: string): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eInfo, message, new AbxrDictStrings());
+        return await AbxrLibSend.AddLog(log);
+    }
+    
+    static async LogWarn(message: string): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eWarn, message, new AbxrDictStrings());
+        return await AbxrLibSend.AddLog(log);
+    }
+    
+    static async LogError(message: string): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eError, message, new AbxrDictStrings());
+        return await AbxrLibSend.AddLog(log);
+    }
+    
+    static async LogCritical(message: string): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eCritical, message, new AbxrDictStrings());
+        return await AbxrLibSend.AddLog(log);
+    }
+    
+    // Storage methods
+    static async SetStorageEntry(data: any, keepLatest: boolean = true, origin: string = "web", sessionData: boolean = false, name: string = "state"): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Storage not set - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibStorage.SetEntry(data, keepLatest, origin, sessionData, name);
+    }
+    
+    static async GetStorageEntry(name: string = "state"): Promise<string> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Storage not retrieved - not authenticated');
+            }
+            return "";
+        }
+        return await AbxrLibStorage.GetEntryAsString(name);
+    }
+    
+    static async RemoveStorageEntry(name: string = "state"): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Storage not removed - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibStorage.RemoveEntry(name);
+    }
+    
+    // Telemetry methods
+    static async Telemetry(name: string, data: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Telemetry not sent - not authenticated');
+            }
+            return 0;
+        }
+        const telemetry = new AbxrTelemetry();
+        telemetry.Construct(name, data);
+        return await AbxrLibSend.AddTelemetryEntryCore(telemetry);
+    }
+    
+    // AI Proxy methods
+    static async AIProxy(prompt: string, pastMessages?: string, botId?: string): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: AI Proxy not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibAnalytics.AddAIProxy(new AbxrAIProxy().Construct0(prompt, pastMessages || "", botId || "default"));
+    }
+    
+    // Internal configuration method
+    static setAuthenticated(authenticated: boolean): void {
+        this.isAuthenticated = authenticated;
+    }
+    
+    static setAuthParams(params: { appId?: string; orgId?: string; authSecret?: string }): void {
+        this.authParams = { ...params };
+    }
+    
+    static setAppConfig(config: string): void {
+        this.appConfig = config;
+    }
+}
+
+// Global scope setup - happens immediately when library loads
+if (typeof window !== 'undefined') {
+    // Expose the Abxr class directly with its static methods
+    (window as any).Abxr = Abxr;
+    
+    (window as any).AbxrLib = { 
+        AbxrLibInit,
+        AbxrLibAnalytics,
+        AbxrLibSend,
+        AbxrLibStorage,
+        AbxrLibClient,
+        AbxrLibAsync,
+        AbxrEvent,
+        AbxrLog,
+        AbxrStorage,
+        AbxrTelemetry,
+        AbxrAIProxy,
+        AbxrDictStrings,
+        LogLevel,
+        Partner,
+        AbxrResult,
+        Abxr
+    };
+    // Also expose the global function directly
+    (window as any).Abxr_init = Abxr_init;
+    console.log('AbxrLib: Loaded into global scope. Use Abxr for simple API or AbxrLib for advanced features.');
+}
+
+// Global function for easy access
+export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string): void {
+    
+    // Validate required appId
+    if (!appId) {
+        console.error('AbxrLib: appId is required for initialization');
+        return;
+    }
+    
+    // Try to get orgId and authSecret from URL parameters first, then fall back to function parameters
+    const finalOrgId = getUrlParameter('abxr_orgid') || orgId || undefined;
+    const finalAuthSecret = getUrlParameter('abxr_auth_secret') || authSecret || undefined;
+    
+    // Generate or retrieve device ID
+    const deviceId = getOrCreateDeviceId();
+    
+    // Store auth parameters (without deviceId since it's handled internally)
+    Abxr.setAuthParams({ appId, orgId: finalOrgId, authSecret: finalAuthSecret });
+    
+    // If we have all required authentication parameters, attempt to authenticate
+    if (appId && finalOrgId && finalAuthSecret) {
+        // Set default app config if none provided
+        const defaultConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="https://lib-backend.xrdm.app/v1/"/></appSettings></configuration>';
+        const configToUse = appConfig || defaultConfig;
+        
+        // Store app config
+        Abxr.setAppConfig(configToUse);
+        
+        try {
+            // Configure the library
+            AbxrLibBaseSetup.SetAppConfig(configToUse);
+            AbxrLibInit.InitStatics();
+            AbxrLibInit.Start();
+            
+            // Attempt authentication
+            AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR)
+                .then((result: number) => {
+                    if (result === 0) {
+                        console.log('AbxrLib: Authentication successful');
+                        Abxr.setAuthenticated(true);
+                    } else {
+                        console.warn(`AbxrLib: Authentication failed with code ${result}`);
+                    }
+                })
+                .catch((error: any) => {
+                    console.error('AbxrLib: Authentication error:', error);
+                });
+        } catch (error: any) {
+            console.error('AbxrLib: Configuration error:', error);
+        }
+    } else {
+        console.warn('AbxrLib: Missing authentication parameters. Library will operate in debug mode.');
+        if (!finalOrgId) {
+            console.warn('AbxrLib: orgId not provided and not found in URL parameter "abxr_orgid"');
+        }
+        if (!finalAuthSecret) {
+            console.warn('AbxrLib: authSecret not provided and not found in URL parameter "abxr_auth_secret"');
+        }
+    }
+}

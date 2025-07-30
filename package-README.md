@@ -8,127 +8,252 @@ A JavaScript library for WebXR applications, providing tools for XR development,
 npm install abxrlib-for-webxr
 ```
 
-## Usage
+## Simple Setup
+
+The easiest way to get started is with a single function call:
+
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+    // Initialize and authenticate in one call
+    Abxr_init('app123', 'org456', 'secret789');
+    
+    // Start using the library immediately
+    Abxr.Event('user_action', { action: 'button_click' });
+    Abxr.LogDebug('User clicked button');
+    
+    // Enable debug mode to see when operations are skipped
+    Abxr.setDebugMode(true);
+</script>
+```
+
+### URL Parameter Authentication
+
+You can provide authentication credentials via URL parameters, which take precedence over function parameters:
+
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+    // URL: https://yourdomain.com/?abxr_orgid=org456&abxr_auth_secret=secret789
+    Abxr_init('app123'); // URL parameters will be automatically detected
+    
+    // Start using immediately
+    Abxr.Event('user_action', { action: 'button_click' });
+</script>
+```
+
+### Custom Configuration
+
+You can provide custom app configuration:
+
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+    const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="https://your-server.com/v1/"/></appSettings></configuration>';
+    
+    Abxr_init('app123', 'org456', 'secret789', appConfig);
+</script>
+```
+
+### Debug Mode
+
+When authentication fails or isn't provided, the library operates in debug mode:
+
+```javascript
+Abxr_init('app123'); // Missing orgId and authSecret
+
+Abxr.setDebugMode(true); // Enable debug logging
+
+// These will log debug messages but won't send data
+Abxr.Event('test_event');
+Abxr.LogDebug('test message');
+```
+
+### Configuration Methods
+
+- `Abxr.setDebugMode(enabled)` - Enable/disable debug logging
+- `Abxr.getDebugMode()` - Get current debug mode
+- `Abxr.isConfigured()` - Check if library is authenticated
+- `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
+
+### Available Types and Enums
+
+The `Abxr` class exposes commonly used types and enums for easy access:
+
+```javascript
+// Result options for assessments and objectives
+Abxr.ResultOptions.ePassed
+Abxr.ResultOptions.eFailed
+Abxr.ResultOptions.eIncomplete
+
+// Interaction types
+Abxr.InteractionType.eClick
+Abxr.InteractionType.eDrag
+Abxr.InteractionType.eType
+
+// Log levels
+Abxr.LogLevel.eDebug
+Abxr.LogLevel.eInfo
+Abxr.LogLevel.eWarn
+Abxr.LogLevel.eError
+Abxr.LogLevel.eCritical
+
+// Dictionary for metadata
+Abxr.AbxrDictStrings
+```
+
+### Usage Examples
+
+```javascript
+// Initialize
+Abxr_init('app123', 'org456', 'secret789');
+
+// Enable debug mode
+Abxr.setDebugMode(true);
+
+// Assessment with result options
+Abxr.EventAssessmentComplete('math_test', '85', Abxr.ResultOptions.ePassed, { time_spent: '30min' });
+
+// Interaction with interaction type
+Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
+
+// Create metadata dictionary
+const meta = new Abxr.AbxrDictStrings();
+meta.set('custom_field', 'value');
+Abxr.Event('custom_event', meta);
+```
+
+## Advanced Setup
+
+For more control over the initialization process:
 
 ### TypeScript/ES6 Modules
 
 ```typescript
-import { Abxr } from 'abxrlib-for-webxr';
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
-// Initialize the library
-Abxr.Start();
+// Simple initialization with all parameters
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
 
-// Authenticate with your credentials
-const authResult = await Abxr.Authenticate(
-  'your-app-id',
-  'your-org-id', 
-  'your-device-id',
-  'your-auth-secret'
-);
+// Or use URL parameters for orgId and authSecret
+// URL: https://yourdomain.com/?abxr_orgid=YOUR_ORG_ID&abxr_auth_secret=YOUR_AUTH_SECRET
+Abxr_init('your-app-id');
 
-if (authResult === 0) { // AbxrResult.eOk
-  // Send events
-  await Abxr.Event('user_action');
-  
-  // Send logs
-  await Abxr.LogDebug('User completed tutorial');
-  
-  // Store data
-  await Abxr.SetStorageEntry('user_progress', '75%');
-}
+// Start using immediately
+Abxr.Event('user_action', { action: 'button_click' });
+Abxr.LogDebug('User completed tutorial');
+
+// Store data
+Abxr.SetStorageEntry('user_progress', '75%');
 ```
 
-### Browser (UMD)
+## Browser (UMD)
+
+For browser environments, include the bundled JavaScript file and initialize the global scope:
 
 ```html
 <script src="node_modules/abxrlib-for-webxr/index.js"></script>
 <script>
-  // Set up global scope (optional - only needed for browser usage)
-  AbxrLib.Abxr.init();
-  
-  // Initialize the library
-  AbxrLib.Abxr.Start();
-  
-  // Authenticate
-  AbxrLib.Abxr.Authenticate('app-id', 'org-id', 'device-id', 'auth-secret')
-    .then(result => {
-      if (result === 0) {
-        // Send events
-        AbxrLib.Abxr.Event('button_click');
-        AbxrLib.Abxr.LogDebug('User action completed');
-      }
-    });
+    // Simple initialization with all parameters
+    Abxr_init('app123', 'org456', 'secret789');
+    
+    // Or use URL parameters for orgId and authSecret
+    // URL: https://yourdomain.com/?abxr_orgid=org456&abxr_auth_secret=secret789
+    Abxr_init('app123');
+    
+    // Start using the library immediately
+    Abxr.Event('user_action', { action: 'button_click' });
+    Abxr.LogDebug('User clicked button');
+    
+    // Enable debug mode to see when operations are skipped
+    Abxr.setDebugMode(true);
 </script>
 ```
 
-### Alternative Browser Setup (Manual)
+### URL Parameter Authentication
 
-If you prefer to set up the global scope manually:
+You can provide authentication credentials via URL parameters, which take precedence over function parameters:
 
 ```html
 <script src="node_modules/abxrlib-for-webxr/index.js"></script>
 <script>
-  // Manual setup (equivalent to AbxrLib.Abxr.init())
-  Abxr = AbxrLib.Abxr;
-  AbxrLibInit = AbxrLib.AbxrLibInit;
-  AbxrLibSend = AbxrLib.AbxrLibSend;
-  AbxrDictStrings = AbxrLib.AbxrDictStrings;
-  
-  // Initialize and use
-  Abxr.Start();
-  Abxr.Authenticate('app-id', 'org-id', 'device-id', 'auth-secret')
-    .then(result => {
-      if (result === 0) {
-        Abxr.Event('button_click');
-      }
-    });
+    // URL: https://yourdomain.com/?abxr_orgid=org456&abxr_auth_secret=secret789
+    Abxr_init('app123'); // URL parameters will be automatically detected
+    
+    // Start using immediately
+    Abxr.Event('user_action', { action: 'button_click' });
+</script>
+```
+
+### Custom Configuration
+
+You can provide custom app configuration:
+
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+    const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="https://your-server.com/v1/"/></appSettings></configuration>';
+    
+    Abxr_init('app123', 'org456', 'secret789', appConfig);
 </script>
 ```
 
 ### Analytics Integration
 
 ```typescript
-import { Abxr } from 'abxrlib-for-webxr';
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
+
+// Initialize
+Abxr_init('app123', 'org456', 'secret789');
 
 // Track events
-await Abxr.Event('button_click');
+Abxr.Event('button_click');
 
 // Send logs
-await Abxr.LogDebug('User completed tutorial');
+Abxr.LogDebug('User completed tutorial');
 ```
 
 ### Storage API
 
 ```typescript
-import { Abxr } from 'abxrlib-for-webxr';
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
+
+// Initialize
+Abxr_init('app123', 'org456', 'secret789');
 
 // Store data
-await Abxr.SetStorageEntry('user_progress', '75%');
+Abxr.SetStorageEntry('user_progress', '75%');
 
 // Retrieve data
-const entry = await Abxr.GetStorageEntry('user_progress');
+const entry = Abxr.GetStorageEntry('user_progress');
 ```
 
 ### Telemetry
 
 ```typescript
-import { Abxr } from 'abxrlib-for-webxr';
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
+
+// Initialize
+Abxr_init('app123', 'org456', 'secret789');
 
 // Send telemetry data
-const data = new Abxr.DictStrings();
+const data = new Abxr.AbxrDictStrings();
 data.set('x', '1.23');
 data.set('y', '4.56');
 data.set('z', '7.89');
-await Abxr.Telemetry('headset_position', data);
+Abxr.Telemetry('headset_position', data);
 ```
 
 ### AI Integration
 
 ```typescript
-import { Abxr } from 'abxrlib-for-webxr';
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
+
+// Initialize
+Abxr_init('app123', 'org456', 'secret789');
 
 // Send AI proxy request
-const response = await Abxr.AIProxy(
+Abxr.AIProxy(
   'Provide a greeting message',
   '', // past messages
   'default' // bot id
@@ -137,16 +262,40 @@ const response = await Abxr.AIProxy(
 
 ## API Reference
 
+### Initialization
+
+- `Abxr_init(appId, orgId?, authSecret?, appConfig?)` - Initialize and authenticate the library
+  - `appId` (required): Your application ID
+  - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
+  - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)
+  - `appConfig` (optional): Custom XML configuration string
+
 ### Core Methods
 
-- `Abxr.Start()` - Initialize the library
-- `Abxr.Authenticate(appId, orgId, deviceId, authSecret)` - Authenticate with the service
-- `Abxr.Event(name, meta?)` - Send an event
-- `Abxr.LogDebug(message)` - Send a debug log
-- `Abxr.LogInfo(message)` - Send an info log
-- `Abxr.LogWarn(message)` - Send a warning log
-- `Abxr.LogError(message)` - Send an error log
-- `Abxr.LogCritical(message)` - Send a critical log
+- `Abxr.Event(name, meta?)` - Send a custom event
+- `Abxr.LogDebug(message)` - Send a debug log message
+- `Abxr.LogInfo(message)` - Send an info log message
+- `Abxr.LogWarn(message)` - Send a warning log message
+- `Abxr.LogError(message)` - Send an error log message
+- `Abxr.LogCritical(message)` - Send a critical log message
+
+### Specialized Event Methods
+
+#### Assessment Events
+- `Abxr.EventAssessmentStart(assessmentName, meta?)` - Start an assessment
+- `Abxr.EventAssessmentComplete(assessmentName, score, resultOptions, meta?)` - Complete an assessment
+
+#### Objective Events
+- `Abxr.EventObjectiveStart(objectiveName, meta?)` - Start an objective
+- `Abxr.EventObjectiveComplete(objectiveName, score, resultOptions, meta?)` - Complete an objective
+
+#### Interaction Events
+- `Abxr.EventInteractionStart(interactionName, meta?)` - Start an interaction
+- `Abxr.EventInteractionComplete(interactionName, result, resultDetails, interactionType, meta?)` - Complete an interaction
+
+#### Level Events
+- `Abxr.EventLevelStart(levelName, meta?)` - Start a level
+- `Abxr.EventLevelComplete(levelName, score, meta?)` - Complete a level
 
 ### Storage Methods
 
@@ -158,31 +307,60 @@ const response = await Abxr.AIProxy(
 
 - `Abxr.Telemetry(name, data)` - Send telemetry data
 
-### AI Methods
+### AI Integration Methods
 
 - `Abxr.AIProxy(prompt, pastMessages?, botId?)` - Send AI proxy request
 
-## Configuration
+### Configuration Methods
 
-You can customize the library behavior by setting a custom configuration:
+- `Abxr.setDebugMode(enabled)` - Enable/disable debug logging
+- `Abxr.getDebugMode()` - Get current debug mode
+- `Abxr.isConfigured()` - Check if library is authenticated
+- `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
 
-```typescript
-import { Abxr } from 'abxrlib-for-webxr';
+### Available Types and Enums
 
-const customConfig = `
-<?xml version="1.0" encoding="utf-8" ?>
-<configuration>
-  <appSettings>
-    <add key="REST_URL" value="https://your-backend.com/v1/"/>
-    <add key="SendRetriesOnFailure" value="3"/>
-    <add key="EventsPerSendAttempt" value="10"/>
-  </appSettings>
-</configuration>
-`;
+The `Abxr` class exposes commonly used types and enums for easy access:
 
-Abxr.SetAppConfig(customConfig);
+```javascript
+// Result options for assessments and objectives
+Abxr.ResultOptions.ePassed
+Abxr.ResultOptions.eFailed
+Abxr.ResultOptions.eIncomplete
+
+// Interaction types
+Abxr.InteractionType.eClick
+Abxr.InteractionType.eDrag
+Abxr.InteractionType.eType
+
+// Log levels
+Abxr.LogLevel.eDebug
+Abxr.LogLevel.eInfo
+Abxr.LogLevel.eWarn
+Abxr.LogLevel.eError
+Abxr.LogLevel.eCritical
+
+// Dictionary for metadata
+Abxr.AbxrDictStrings
 ```
 
-## License
+### Usage Examples
 
-MIT License - see LICENSE file for details. 
+```javascript
+// Initialize
+Abxr_init('app123', 'org456', 'secret789');
+
+// Simple debug mode setting
+Abxr.debugMode = true;
+
+// Assessment with result options
+Abxr.EventAssessmentComplete('math_test', '85', Abxr.ResultOptions.ePassed, { time_spent: '30min' });
+
+// Interaction with interaction type
+Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
+
+// Create metadata dictionary
+const meta = new Abxr.AbxrDictStrings();
+meta.set('custom_field', 'value');
+Abxr.Event('custom_event', meta);
+```

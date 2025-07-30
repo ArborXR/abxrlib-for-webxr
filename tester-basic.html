@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Simple AbxrLib Test</title>
+  <script src="dist/abxrlib-for-webxr.js"></script>
+  <script>
+    Abxr_init(
+        '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0',  // App ID (required)
+        '5304ef74-423f-4bd4-87d9-cba4f19c3bdb',  // Org ID (optional)
+        'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj', // Auth Secret (optional)
+        '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="http://localhost:8080/v1/"/></appSettings></configuration>' // App Config (optional)
+    );
+    
+    // Enable debug mode
+    Abxr.setDebugMode(true);
+       
+    // Send a simple event
+    async function sendEvent() {
+        console.log("Executing Abxr.Event()");
+        try {
+            if (typeof Abxr === 'undefined') {
+                document.getElementById('eventStatus').textContent = '❌ Please initialize the library first';
+                return;
+            }
+            
+            // Store the original fetch implementation
+            const originalFetch = window.fetch;
+            let responseData = undefined;
+            let requestCount = 0;
+            
+            // Temporarily override fetch to capture the response
+            window.fetch = async (...args) => {
+                const [url, options] = args;
+                requestCount++;
+                
+                const response = await originalFetch(...args);
+                
+                // Clone the response so we can read it multiple times
+                const clone = response.clone();
+                try {
+                    const data = await clone.json();
+                    responseData = data;
+                } catch (e) {
+                    responseData = { error: "Could not parse response as JSON" };
+                }
+                
+                return response;
+            };
+            
+            const result = await Abxr.Event('user_action', { action: 'button_click', source: 'demo' });
+            
+            // Restore original fetch
+            window.fetch = originalFetch;
+            
+            document.getElementById('eventStatus').textContent = 
+                `Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+        } catch (error) {
+            document.getElementById('eventStatus').textContent = `❌ Error: ${error.message}`;
+        }
+    }
+    
+    // Send a debug log
+    async function sendLog() {
+        console.log("Executing Abxr.LogDebug()");
+        try {
+            if (typeof Abxr === 'undefined') {
+                document.getElementById('logStatus').textContent = '❌ Please initialize the library first';
+                return;
+            }
+            
+            // Store the original fetch implementation
+            const originalFetch = window.fetch;
+            let responseData = undefined;
+            let requestCount = 0;
+            
+            // Temporarily override fetch to capture the response
+            window.fetch = async (...args) => {
+                const [url, options] = args;
+                requestCount++;
+                
+                const response = await originalFetch(...args);
+                
+                // Clone the response so we can read it multiple times
+                const clone = response.clone();
+                try {
+                    const data = await clone.json();
+                    responseData = data;
+                } catch (e) {
+                    responseData = { error: "Could not parse response as JSON" };
+                }
+                
+                return response;
+            };
+            
+            const result = await Abxr.LogDebug('User performed an action');
+            
+            // Restore original fetch
+            window.fetch = originalFetch;
+            
+            document.getElementById('logStatus').textContent = 
+                `Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+        } catch (error) {
+            document.getElementById('logStatus').textContent = `❌ Error: ${error.message}`;
+        }
+    }
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .success { background-color: #d4edda; border-color: #c3e6cb; }
+    .info { background-color: #d1ecf1; border-color: #bee5eb; }
+    .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+    
+    button {
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { background: #0056b3; }
+    button:disabled { background: #6c757d; cursor: not-allowed; }
+    
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      min-height: 20px;
+    }
+    
+    h1 { color: #333; text-align: center; }
+    h2 { color: #555; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Simple AbxrLib Test</h1>
+    
+    <div class="section success">
+      <h2>Send Events</h2>
+      <p>Send a simple event to test the library:</p>
+      <button onclick="sendEvent()">📤 Send Event</button>
+      <div id="eventStatus" class="result">Click the button to send an event</div>
+    </div>
+    
+    <div class="section success">
+      <h2>Send Logs</h2>
+      <p>Send a debug log to test the library:</p>
+      <button onclick="sendLog()">📝 Send Log</button>
+      <div id="logStatus" class="result">Click the button to send a log</div>
+    </div>
+    
+    <div class="section warning">
+      <h2>💡 Code Example</h2>
+      <p>This is how simple it is now:</p>
+      <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;">
+// 1. Include the library
+&lt;script src="node_modules/abxrlib-for-webxr/index.js"&gt;&lt;/script&gt;
+
+// 2. Initialize and authenticate in one call
+// appId is required, orgId and authSecret are optional
+Abxr_init('app123', 'org456', 'secret789');
+
+// 3. Or use URL parameters for orgId and authSecret
+// URL: ?abxr_orgid=org456&abxr_auth_secret=secret789
+Abxr_init('app123');
+
+// 4. Start using immediately
+Abxr.Event('user_action', { action: 'button_click' });
+Abxr.LogDebug('User clicked button');
+
+// 5. Optional: Enable debug mode
+Abxr.setDebugMode(true);</pre>
+    </div>
+  </div>
+</body>
+</html> 

@@ -288,7 +288,7 @@ export class AbxrLibConfiguration extends DataObjectBase
 		}
 		catch (error)
 		{
-			console.log("Error: ", error);
+			console.log("AbxrLib Error: ", error);
 			// ---
 			return false;
 		}

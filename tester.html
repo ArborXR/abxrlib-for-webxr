@@ -15,8 +15,66 @@
     const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
     const partner_id = 1; // Partner.eArborXR
     
-    // Set up global scope for browser usage
-    AbxrLib.Abxr.init();
+    let Abxr = null; // Global Abxr object
+    
+    // Wait for the library to load before initializing
+    function initializeLibrary() {
+        try {
+            // Check for Abxr_init in different possible locations
+            let abxrInitFunction = null;
+            
+            if (typeof Abxr_init === 'function') {
+                abxrInitFunction = Abxr_init;
+                console.log('Found Abxr_init in global scope');
+            } else if (typeof AbxrLib !== 'undefined' && typeof AbxrLib.Abxr_init === 'function') {
+                abxrInitFunction = AbxrLib.Abxr_init;
+                console.log('Found Abxr_init in AbxrLib.Abxr_init');
+            } else if (typeof AbxrLib !== 'undefined' && typeof AbxrLib.Abxr !== 'undefined' && typeof AbxrLib.Abxr.init === 'function') {
+                abxrInitFunction = AbxrLib.Abxr.init;
+                console.log('Found Abxr.init in AbxrLib.Abxr.init');
+            }
+            
+            if (abxrInitFunction) {
+                console.log('Library loaded successfully');
+                console.log('Library initialized successfully');
+                
+                // Debug: Check what's available in global scope
+                console.log('Global scope check:');
+                console.log('Abxr_init:', typeof Abxr_init);
+                console.log('AbxrLib:', typeof AbxrLib);
+                if (typeof AbxrLib !== 'undefined') {
+                    console.log('AbxrLib.Abxr_init:', typeof AbxrLib.Abxr_init);
+                    console.log('AbxrLib.Abxr:', typeof AbxrLib.Abxr);
+                    console.log('AbxrLib keys:', Object.keys(AbxrLib));
+                }
+                console.log('Abxr:', typeof Abxr);
+                
+                if (typeof Abxr === 'undefined') {
+                    console.error('Abxr is not defined in global scope!');
+                    console.log('Available globals:', Object.keys(window).filter(key => key.includes('Abxr')));
+                } else {
+                    console.log('Abxr is properly defined');
+                }
+            } else {
+                console.error('Abxr_init function not found. Library may not be loaded properly.');
+                console.log('Available globals:', Object.keys(window).filter(key => key.includes('Abxr')));
+                if (typeof AbxrLib !== 'undefined') {
+                    console.log('AbxrLib contents:', AbxrLib);
+                }
+                // Retry after a short delay
+                setTimeout(initializeLibrary, 100);
+            }
+        } catch (error) {
+            console.error('Error initializing library:', error);
+        }
+    }
+    
+    // Initialize when the page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeLibrary);
+    } else {
+        initializeLibrary();
+    }
     
     // Helper function to convert AbxrResult codes to strings
     function AbxrResultToString(result) {
@@ -49,16 +107,406 @@
       };
       return resultNames[result] || "Unknown";
     }
+
+    // Tab switching function
+    function switchTab(tabName) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(content => content.style.display = 'none');
+        
+        // Remove active class from all tabs
+        const tabs = document.querySelectorAll('.tab-button');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        
+        // Show selected tab content and mark tab as active
+        document.getElementById(tabName + '-content').style.display = 'block';
+        document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+    }
+
+    // Simple One-Step Setup
+    async function simpleInit() {
+        console.log("Executing Simple One-Step Setup");
+        try {
+            const restUrl = document.getElementById('rest_url_input').value;
+            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // Use the new simplified API
+            Abxr_init(app_id, org_id, auth_secret, appConfig);
+            
+            // Enable debug mode - use the global Abxr object
+            if (typeof window.Abxr !== 'undefined') {
+                window.Abxr.setDebugMode(true);
+            }
+            
+            // Wait a moment for authentication to complete, then check status
+            setTimeout(async () => {
+                try {
+                    // Check if authentication was successful
+                    if (typeof window.Abxr !== 'undefined' && window.Abxr.isConfigured()) {
+                        document.getElementById('simpleInit_result').textContent = '✅ Authentication successful! Library is ready to use.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl;
+                        document.getElementById('simpleInit_result').style.color = 'green';
+                        
+                        // Enable the shared event and log buttons
+                        document.getElementById('eventBtn').disabled = false;
+                        document.getElementById('logDebugBtn').disabled = false;
+                    } else {
+                        document.getElementById('simpleInit_result').textContent = '⚠️ Library initialized but authentication may still be in progress. Try the Event/Log buttons below.';
+                        document.getElementById('simpleInit_result').style.color = 'orange';
+                        
+                        // Enable buttons anyway since the library is initialized
+                        document.getElementById('eventBtn').disabled = false;
+                        document.getElementById('logDebugBtn').disabled = false;
+                    }
+                } catch (error) {
+                    document.getElementById('simpleInit_result').textContent = '❌ Error checking authentication status: ' + error.message;
+                    document.getElementById('simpleInit_result').style.color = 'red';
+                }
+            }, 1000);
+            
+        } catch (error) {
+            document.getElementById('simpleInit_result').textContent = '❌ Error: ' + error.message;
+            document.getElementById('simpleInit_result').style.color = 'red';
+        }
+    }
+
+    // Step-by-step functions (for testing individual components)
+    function setAppConfig() {
+        console.log("Executing AbxrLibBaseSetup.SetAppConfig()");
+        
+        try {
+            const restUrl = document.getElementById('rest_url_input_debug').value;
+            const customConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // Use the correct static method
+            AbxrLib.AbxrLibBaseSetup.SetAppConfig(customConfig);
+            document.getElementById('setAppConfig_result').textContent = '✅ Complete - App config set successfully';
+        } catch (error) {
+            document.getElementById('setAppConfig_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    function initStatics() {
+        console.log("Executing AbxrLibInit.InitStatics()");
+        try {
+            AbxrLib.AbxrLibInit.InitStatics();
+            document.getElementById('initStatics_result').textContent = '✅ Complete - Statics initialized successfully';
+        } catch (error) {
+            document.getElementById('initStatics_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    function startLib() {
+        console.log("Executing AbxrLibInit.Start()");
+        try {
+            AbxrLib.AbxrLibInit.Start();
+            document.getElementById('startLib_result').textContent = '✅ Complete - Library started successfully';
+        } catch (error) {
+            document.getElementById('startLib_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    async function authenticate() {
+        console.log("Executing AbxrLibInit.Authenticate()");
+        console.log("Auth parameters:", { app_id, org_id, device_id, auth_secret, partner_id });
+        
+        try {
+            // Store the original fetch implementation
+            const originalFetch = window.fetch;
+            let requestData;
+            let responseData;
+            
+            // Temporarily override fetch to capture both request and response
+            window.fetch = async (...args) => {
+                const [url, options] = args;
+                if (options && options.body) {
+                    try {
+                        requestData = JSON.parse(options.body);
+                        console.log("Authentication request body:", requestData);
+                    } catch (e) {
+                        console.log("Could not parse request body:", options.body);
+                    }
+                }
+                
+                // Log headers for debugging
+                if (options && options.headers) {
+                    console.log("Request headers:", options.headers);
+                }
+                
+                const response = await originalFetch(...args);
+                
+                // Capture response data
+                const clone = response.clone();
+                try {
+                    responseData = await clone.json();
+                    console.log("Authentication response:", responseData);
+                } catch (e) {
+                    console.log("Could not parse response as JSON");
+                }
+                
+                return response;
+            };
+            
+            const result = await AbxrLib.AbxrLibInit.Authenticate(
+                app_id,
+                org_id,
+                'AbxrLibForWebXR_js', // Use a default device ID for testing
+                auth_secret,
+                partner_id
+            );
+            
+            // Restore original fetch
+            window.fetch = originalFetch;
+            
+            // Set the authentication flag if authentication was successful
+            if (result === 0 && typeof window.Abxr !== 'undefined' && typeof window.Abxr.setAuthenticated === 'function') {
+                window.Abxr.setAuthenticated(true);
+                console.log('AbxrLib: Authentication flag set to true');
+            }
+            
+            // Create formatted display string
+            let displayText;
+            if (result === 0) {
+                displayText = `✅ Complete - Authentication successful\n\nAuth Details:\n- App ID: ${app_id}\n- Org ID: ${org_id}\n- Partner ID: ${partner_id}\n\nResponse: ${JSON.stringify(responseData, null, 2)}`;
+            } else {
+                displayText = `❌ Error: Unexpected result code ${result} (${AbxrResultToString ? AbxrResultToString(result) : 'Unknown'})\n\nResponse: ${JSON.stringify(responseData, null, 2)}`;
+            }
+
+            document.getElementById('authenticate_result').style.whiteSpace = 'pre-line';
+            document.getElementById('authenticate_result').textContent = displayText;
+
+            // Enable the shared event and log buttons after successful authentication
+            document.getElementById('eventBtn').disabled = false;
+            document.getElementById('logDebugBtn').disabled = false;
+
+        } catch (error) {
+            document.getElementById('authenticate_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    async function try_Event() {
+        console.log("Executing Abxr.Event()");
+        try {
+            const eventValue = document.getElementById('event_input').value;
+            const dictMeta = { verb: "started", assessment_name: eventValue };
+            
+            // Store the original fetch implementation
+            const originalFetch = window.fetch;
+            let responseData = undefined;
+            let requestCount = 0;
+            
+            // Temporarily override fetch to capture the response
+            window.fetch = async (...args) => {
+                const [url, options] = args;
+                requestCount++;               
+                const response = await originalFetch(...args);
+                
+                // Clone the response so we can read it multiple times
+                const clone = response.clone();
+                try {
+                    const data = await clone.json();
+                    responseData = data;
+                    //console.log(`Event: Response #${requestCount}:`, data);
+                } catch (e) {
+                    //console.log(`Event: Could not parse response #${requestCount} as JSON:`, e);
+                    responseData = { error: "Could not parse response as JSON" };
+                }
+                
+                return response;
+            };
+            
+            // Use the simplified API if available, otherwise fall back to static method
+            let result;
+            if (typeof window.Abxr !== 'undefined' && typeof window.Abxr.Event === 'function') {
+                result = await window.Abxr.Event(eventValue, dictMeta);
+            } else {
+                // Fall back to static method
+                const abxr = getAbxr();
+                result = await abxr.Event(eventValue, dictMeta);
+            }
+            
+            // Restore original fetch
+            window.fetch = originalFetch;
+                        
+            document.getElementById('event_result').textContent = 
+                `Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+                
+        } catch (error) {
+            document.getElementById('event_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    async function try_logDebug() {
+        console.log("Executing Abxr.LogDebug()");
+        try {
+            const debugValue = document.getElementById('log_input').value;
+            
+            // Store the original fetch implementation
+            const originalFetch = window.fetch;
+            let responseData = undefined;
+            let requestCount = 0;
+            
+            // Temporarily override fetch to capture the response
+            window.fetch = async (...args) => {
+                const [url, options] = args;
+                requestCount++;                
+                const response = await originalFetch(...args);
+                
+                // Clone the response so we can read it multiple times
+                const clone = response.clone();
+                try {
+                    const data = await clone.json();
+                    responseData = data;
+                    //console.log(`LogDebug: Response #${requestCount}:`, data);
+                } catch (e) {
+                    //console.log(`LogDebug: Could not parse response #${requestCount} as JSON:`, e);
+                    responseData = { error: "Could not parse response as JSON" };
+                }
+                
+                return response;
+            };
+            
+            // Use the simplified API if available, otherwise fall back to static method
+            let result;
+            if (typeof window.Abxr !== 'undefined' && typeof window.Abxr.LogDebug === 'function') {
+                result = await window.Abxr.LogDebug(debugValue);
+            } else {
+                // Fall back to static method
+                const abxr = getAbxr();
+                result = await abxr.LogDebug(debugValue);
+            }
+            
+            // Restore original fetch
+            window.fetch = originalFetch;
+            
+            document.getElementById('logDebug_result').textContent = 
+                `Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+                
+        } catch (error) {
+            document.getElementById('logDebug_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    // Helper function to get Abxr object (either direct or from AbxrLib)
+    function getAbxr() {
+        if (typeof window.Abxr !== 'undefined') {
+            return window.Abxr;
+        } else if (typeof AbxrLib !== 'undefined' && AbxrLib.Abxr) {
+            return AbxrLib.Abxr;
+        } else {
+            console.error('Abxr not found. Available globals:', Object.keys(window).filter(key => key.includes('Abxr')));
+            if (typeof AbxrLib !== 'undefined') {
+                console.log('AbxrLib contents:', AbxrLib);
+            }
+            throw new Error('Abxr is not available. Library may not be properly initialized.');
+        }
+    }
   </script>
   <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .tab-container {
+      margin-bottom: 30px;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      border-bottom: 2px solid #ddd;
+      margin-bottom: 20px;
+    }
+    
+    .tab-button {
+      background: #f8f9fa;
+      border: none;
+      padding: 15px 30px;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 8px 8px 0 0;
+      margin-right: 5px;
+      transition: all 0.3s ease;
+    }
+    
+    .tab-button:hover {
+      background: #e9ecef;
+    }
+    
+    .tab-button.active {
+      background: #007bff;
+      color: white;
+    }
+    
+    .tab-content {
+      display: none;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 0 8px 8px 8px;
+      background: white;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .section {
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    
+    .simple-section {
+      background: #f0f8ff;
+      border: 1px solid #b3d9ff;
+    }
+    
+    .debug-section {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+    }
+    
+    .shared-section {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      margin-top: 30px;
+    }
+    
     table {
       border-collapse: separate;
       border-spacing: 20px 10px;
+      width: 100%;
     }
     
     .action-button {
       width: 150px;
       height: 40px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .action-button:hover {
+      background: #0056b3;
+    }
+    
+    .action-button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
     }
 
     .result-cell {
@@ -70,211 +518,138 @@
       width: 400px;
       vertical-align: middle;
     }
+    
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      min-height: 20px;
+    }
+    
+    h1 { 
+      color: #333; 
+      text-align: center; 
+      margin-bottom: 30px;
+    }
+    
+    h2 { 
+      color: #555; 
+      margin-top: 0; 
+    }
   </style>
 </head>
 <body>
-  <h1>Testing abxrlib-for-webxr.js</h1>
-  
-  <table>
-    <tr>
-      <td>
-        <button class="action-button" onclick="setAppConfig()">1. Set App Config</button>
-        <br><br>
-        <input type="text" id="rest_url_input" value="http://localhost:8080/v1/" style="width: 300px;" placeholder="Enter REST URL">
-        <br><small style="color: #666;">Note: Server must have proper CORS headers configured</small>
-      </td>
-      <td class="result-cell" id="setAppConfig_result">Not executed</td>
-    </tr>
-    <tr>
-      <td><button class="action-button" onclick="initStatics()">2. Init Statics</button></td>
-      <td class="result-cell" id="initStatics_result">Not executed</td>
-    </tr>
-    <tr>
-      <td><button class="action-button" onclick="startLib()">3. Start Library</button></td>
-      <td class="result-cell" id="startLib_result">Not executed</td>
-    </tr>
-    <tr>
-      <td><button class="action-button" onclick="authenticate()">4. Authenticate</button></td>
-      <td class="result-cell" id="authenticate_result">Not executed</td>
-    </tr>
-    <tr>
-      <td colspan="2">
-        <input type="text" id="event_input" value="Event Testing 123" style="width: 300px; margin-bottom: 10px;">
-      </td>
-    </tr>
-    <tr>
-      <td><button class="action-button" onclick="try_Event()">5. Event</button></td>
-      <td class="result-cell" id="try_Event_result">Not executed</td>
-    </tr>
-    <tr>
-      <td colspan="2">
-        <input type="text" id="log_input" value="Log Testing 123" style="width: 300px; margin-bottom: 10px;">
-      </td>
-    </tr>
-    <tr>
-      <td><button class="action-button" onclick="try_logDebug()">6. Log Debug</button></td>
-      <td class="result-cell" id="try_logDebug_result">Not executed</td>
-    </tr>
-  </table>
-
-  <script>
-    function setAppConfig() {
-      console.log("Executing Abxr.SetAppConfig()");
+  <div class="container">
+    <h1>🚀 Testing abxrlib-for-webxr.js</h1>
+    
+    <!-- Tab Navigation -->
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <button class="tab-button active" onclick="switchTab('simple')">🚀 Simple Setup</button>
+        <button class="tab-button" onclick="switchTab('debug')">🔧 Step-by-Step Debug</button>
+      </div>
+    </div>
+    
+    <!-- Simple Setup Tab -->
+    <div id="simple-content" class="tab-content" style="display: block;">
+      <div class="section simple-section">
+        <h2>🚀 Simple One-Step Setup (Recommended)</h2>
+        <p>Most users will want to use this approach - initialize and authenticate in one call:</p>
+        
+        <div style="margin-bottom: 15px;">
+          <label for="rest_url_input" style="display: block; margin-bottom: 5px; font-weight: bold;">REST Server URL:</label>
+          <input type="text" id="rest_url_input" value="http://localhost:8080/v1/" style="width: 500px;" placeholder="Enter REST server URL">
+          <small style="color: #666; display: block; margin-top: 2px;">Make sure your server is running and has proper CORS headers</small>
+        </div>
+        
+        <button onclick="simpleInit()" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+          🚀 Initialize & Authenticate
+        </button>
+        
+        <div id="simpleInit_result" class="result">
+          Click the button above to initialize and authenticate in one step
+        </div>
+        
+        <div style="margin-top: 15px; color: #666; font-size: 14px;">
+          <p>💡 After successful initialization, use the Event and Log buttons below to send data.</p>
+          <p>🔧 The library will automatically handle authentication in the background.</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Step-by-Step Debug Tab -->
+    <div id="debug-content" class="tab-content">
+      <div class="section debug-section">
+        <h2>🔧 Step-by-Step Testing (Debug Mode)</h2>
+        <p>Use these buttons to test each step individually:</p>
+      </div>
       
-      // Get the REST URL from the input field
-      const restUrl = document.getElementById('rest_url_input').value;
+      <table>
+        <tr>
+          <td>
+            <button class="action-button" onclick="setAppConfig()">1. Set App Config</button>
+            <br><br>
+            <input type="text" id="rest_url_input_debug" value="http://localhost:8080/v1/" style="width: 300px;" placeholder="Enter REST URL">
+            <br><small style="color: #666;">Note: Server must have proper CORS headers configured</small>
+          </td>
+          <td class="result-cell" id="setAppConfig_result">Not executed</td>
+        </tr>
+        <tr>
+          <td><button class="action-button" onclick="initStatics()">2. Init Statics</button></td>
+          <td class="result-cell" id="initStatics_result">Not executed</td>
+        </tr>
+        <tr>
+          <td><button class="action-button" onclick="startLib()">3. Start Library</button></td>
+          <td class="result-cell" id="startLib_result">Not executed</td>
+        </tr>
+        <tr>
+          <td><button class="action-button" onclick="authenticate()">4. Authenticate</button></td>
+          <td class="result-cell" id="authenticate_result">Not executed</td>
+        </tr>
+      </table>
+    </div>
+    
+    <!-- Shared Event and Log Section -->
+    <div class="section shared-section">
+      <h2>📤 Send Events and Logs</h2>
+      <p>Use these buttons to test sending events and debug logs after initialization:</p>
       
-      // Create minimal config with just the REST_URL override
-      const customConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+      <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+        <div style="flex: 1;">
+          <label for="event_input" style="display: block; margin-bottom: 5px; font-weight: bold;">Event Name:</label>
+          <input type="text" id="event_input" value="Event Testing 123" placeholder="Enter event name">
+          <button id="eventBtn" class="action-button" onclick="try_Event()" disabled style="margin-top: 10px;">📤 Send Event</button>
+        </div>
+        
+        <div style="flex: 1;">
+          <label for="log_input" style="display: block; margin-bottom: 5px; font-weight: bold;">Debug Message:</label>
+          <input type="text" id="log_input" value="Log Testing 123" placeholder="Enter debug message">
+          <button id="logDebugBtn" class="action-button" onclick="try_logDebug()" disabled style="margin-top: 10px;">📝 Send Log Debug</button>
+        </div>
+      </div>
       
-      const result = Abxr.SetAppConfig(customConfig);
-      document.getElementById('setAppConfig_result').textContent = result === undefined ? 'Complete' : result;
-    }
-
-    function initStatics() {
-      console.log("Executing Abxr.InitStatics()");
-      const result = Abxr.InitStatics();
-      document.getElementById('initStatics_result').textContent = result === undefined ? 'Complete' : result;
-    }
-
-    function startLib() {
-      console.log("Executing Abxr.Start()");
-      const result = Abxr.Start();
-      document.getElementById('startLib_result').textContent = result === undefined ? 'Complete' : result;
-    }
-
-    async function authenticate() {
-      console.log("Executing Abxr.Authenticate()");
-      console.log("Auth parameters:", { app_id, org_id, device_id, auth_secret, partner_id });
-      
-      // Store the original fetch implementation
-      const originalFetch = window.fetch;
-      let requestData;
-      
-      // Temporarily override fetch to capture the request
-      window.fetch = async (...args) => {
-        const [url, options] = args;
-        if (options && options.body) {
-          try {
-            requestData = JSON.parse(options.body);
-            console.log("Authentication request body:", requestData);
-          } catch (e) {
-            console.log("Could not parse request body:", options.body);
-          }
-        }
+      <div style="display: flex; gap: 20px;">
+        <div style="flex: 1;">
+          <h3>Event Result:</h3>
+          <div id="event_result" class="result">Initialize first to enable</div>
+        </div>
         
-        // Log headers for debugging
-        if (options && options.headers) {
-          console.log("Request headers:", options.headers);
-        }
-        
-        return originalFetch(...args);
-      };
-      
-      try {
-        const result = await Abxr.Authenticate(
-          app_id,
-          org_id,
-          device_id,
-          auth_secret,
-          partner_id
-        );
-        
-        // Restore original fetch
-        window.fetch = originalFetch;
-        
-        // Create formatted display string
-        let displayText;
-        if (result === 0) {
-          displayText = `Complete - Authentication successful`;
-        } else {
-          displayText = `Error: Unexpected result code ${result} (${AbxrResultToString ? AbxrResultToString(result) : 'Unknown'})`;
-        }
-
-        document.getElementById('authenticate_result').style.whiteSpace = 'pre-line';
-        document.getElementById('authenticate_result').textContent = displayText;
-      } catch (error) {
-        document.getElementById('authenticate_result').textContent = 'Error: ' + error.message;
-      }
-    }
-
-    async function try_Event() {
-      console.log("Executing Abxr.Event()");
-      try {
-        const eventValue = document.getElementById('event_input').value;
-        const dictMeta = new Abxr.DictStrings();
-        dictMeta.set("verb", "started");
-        dictMeta.set("assessment_name", eventValue);
-        
-        // Store the original fetch implementation
-        const originalFetch = window.fetch;
-        let responseData;
-        
-        // Temporarily override fetch to capture the response
-        window.fetch = async (...args) => {
-          const response = await originalFetch(...args);
-          // Clone the response so we can read it multiple times
-          const clone = response.clone();
-          try {
-            responseData = await clone.json();
-          } catch (e) {
-            responseData = { error: "Could not parse response as JSON" };
-          }
-          return response;
-        };
-        
-        // Call the simple Event method
-        const result = await Abxr.Event(eventValue, dictMeta);
-        
-        // Restore original fetch
-        window.fetch = originalFetch;
-        
-        document.getElementById('try_Event_result').textContent = 
-          `Status Code: ${result}\n` +
-          `Response: ${JSON.stringify(responseData, null, 2)}`;
-          
-      } catch (error) {
-        document.getElementById('try_Event_result').textContent = 'Error: ' + error.message;
-      }
-    }
-
-    async function try_logDebug() {
-      console.log("Executing Abxr.LogDebug()");
-      try {
-        const debugValue = document.getElementById('log_input').value;
-        
-        // Store the original fetch implementation
-        const originalFetch = window.fetch;
-        let responseData;
-        
-        // Temporarily override fetch to capture the response
-        window.fetch = async (...args) => {
-          const response = await originalFetch(...args);
-          // Clone the response so we can read it multiple times
-          const clone = response.clone();
-          try {
-            responseData = await clone.json();
-          } catch (e) {
-            responseData = { error: "Could not parse response as JSON" };
-          }
-          return response;
-        };
-        
-        // Call the simple LogDebug method
-        const result = await Abxr.LogDebug(debugValue);
-        
-        // Restore original fetch
-        window.fetch = originalFetch;
-        
-        document.getElementById('try_logDebug_result').textContent = 
-          `Status Code: ${result}\n` +
-          `Response: ${JSON.stringify(responseData, null, 2)}`;
-          
-      } catch (error) {
-        document.getElementById('try_logDebug_result').textContent = 'Error: ' + error.message;
-      }
-    }
-
-  </script>
+        <div style="flex: 1;">
+          <h3>Log Debug Result:</h3>
+          <div id="logDebug_result" class="result">Initialize first to enable</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

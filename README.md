@@ -77,50 +77,75 @@ To use the ABXR SDK with ArborXR Insights Early Access program:
 - Authentication Secret
 
 #### Configure Web Application
+
+The ABXR SDK now provides a simplified initialization API. The `appId` is required, while `orgId` and `authSecret` are optional and can be provided via URL parameters.
+
 ```typescript
-import { Abxr } from 'abxrlib-for-webxr';
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
-async function main() {
-  // Initialize the library
-  Abxr.Start();
-  
-  // Authenticate with ArborXR
-  const authResult = await Abxr.Authenticate(
-    'your-app-id',
-    'your-org-id',
-    'web-xr-device',
-    'your-auth-secret'
-  );
+// Simple initialization with all parameters
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
 
-  if (authResult === 0) { // AbxrResult.eOk
-    console.log('Successfully authenticated');
-    // Your application code here
-  }
-}
+// Or use URL parameters for orgId and authSecret
+// URL: https://yourdomain.com/?abxr_orgid=YOUR_ORG_ID&abxr_auth_secret=YOUR_AUTH_SECRET
+Abxr_init('your-app-id');
 
-main();
+// With custom app configuration
+const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="https://your-server.com/v1/"/></appSettings></configuration>';
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret', appConfig);
+
+// Now you can use the Abxr class
+Abxr.Event('user_action', { action: 'button_click' });
+Abxr.LogDebug('Debug message');
 ```
 
-#### Alternative for URL-based Authentication:
-You can also initialize the SDK using URL parameters:
+#### URL Parameter Authentication
+
+You can provide authentication credentials via URL parameters, which take precedence over function parameters:
+
 ```
-http://yourdomain.com/?xrdm_orgid=YOUR_ORG_ID&xrdm_authsecret=YOUR_AUTH_SECRET
+https://yourdomain.com/?abxr_orgid=YOUR_ORG_ID&abxr_auth_secret=YOUR_AUTH_SECRET
 ```
 
 Then initialize with just the App ID:
 ```typescript
-import { Abxr } from 'abxrlib-for-webxr';
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
-// Initialize the library
-Abxr.Start();
+// URL parameters will be automatically detected
+Abxr_init('your-app-id');
 
-// Authenticate with URL parameters
-const authResult = await Abxr.Authenticate(
-  'YOUR_APP_ID',
-  '', // orgId will be read from URL
-  'web-xr-device',
-  '' // authSecret will be read from URL
-);
+// Now you can use the Abxr class
+Abxr.Event('user_action', { action: 'button_click' });
+```
+
+#### Device ID Management
+
+The SDK automatically handles device ID generation and persistence:
+- **Browser environments**: Device ID is stored in localStorage and persists across sessions
+- **Non-browser environments**: A new GUID is generated for each initialization
+
+#### Import Options
+
+You have several options for importing the library:
+
+**Option 1: Import both initialization and main class**
+```typescript
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
+```
+
+**Option 2: Import everything**
+```typescript
+import { Abxr_init, Abxr, AbxrLib } from 'abxrlib-for-webxr';
+```
+
+**Option 3: Browser global scope (no import needed)**
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+    // Abxr_init and Abxr are available globally
+    Abxr_init('app123', 'org456', 'secret789');
+    Abxr.Event('user_action', { action: 'button_click' });
+</script>
 ```
 
 ### Using with Other Backend Services
@@ -365,49 +390,183 @@ http://localhost:6001/?xrdm_orgid=YOUR_ORG_ID&xrdm_authsecret=YOUR_AUTH_SECRET
 
 Replace `YOUR_ORG_ID` and `YOUR_AUTH_SECRET` with your actual organization ID and authentication secret.
 
-### Browser (UMD)
+## Browser (UMD)
+
+For browser environments, include the bundled JavaScript file and initialize the global scope:
 
 ```html
 <script src="node_modules/abxrlib-for-webxr/index.js"></script>
 <script>
-  // Set up global scope (optional - only needed for browser usage)
-  AbxrLib.Abxr.init();
-  
-  // Initialize the library
-  AbxrLib.Abxr.Start();
-  
-  // Authenticate
-  AbxrLib.Abxr.Authenticate('app-id', 'org-id', 'device-id', 'auth-secret')
-    .then(result => {
-      if (result === 0) {
-        // Send events
-        AbxrLib.Abxr.Event('button_click');
-        AbxrLib.Abxr.LogDebug('User action completed');
-      }
-    });
+    // Simple initialization with all parameters
+    Abxr_init('app123', 'org456', 'secret789');
+    
+    // Or use URL parameters for orgId and authSecret
+    // URL: https://yourdomain.com/?abxr_orgid=org456&abxr_auth_secret=secret789
+    Abxr_init('app123');
+    
+    // Start using the library immediately
+    Abxr.Event('user_action', { action: 'button_click' });
+    Abxr.LogDebug('User clicked button');
+    
+    // Enable debug mode to see when operations are skipped
+    Abxr.setDebugMode(true);
 </script>
 ```
 
-### Alternative Browser Setup (Manual)
+### URL Parameter Authentication
 
-If you prefer to set up the global scope manually:
+You can provide authentication credentials via URL parameters, which take precedence over function parameters:
 
 ```html
 <script src="node_modules/abxrlib-for-webxr/index.js"></script>
 <script>
-  // Manual setup (equivalent to AbxrLib.Abxr.init())
-  Abxr = AbxrLib.Abxr;
-  AbxrLibInit = AbxrLib.AbxrLibInit;
-  AbxrLibSend = AbxrLib.AbxrLibSend;
-  AbxrDictStrings = AbxrLib.AbxrDictStrings;
-  
-  // Initialize and use
-  Abxr.Start();
-  Abxr.Authenticate('app-id', 'org-id', 'device-id', 'auth-secret')
-    .then(result => {
-      if (result === 0) {
-        Abxr.Event('button_click');
-      }
-    });
+    // URL: https://yourdomain.com/?abxr_orgid=org456&abxr_auth_secret=secret789
+    Abxr_init('app123'); // URL parameters will be automatically detected
+    
+    // Start using immediately
+    Abxr.Event('user_action', { action: 'button_click' });
 </script>
 ```
+
+### Custom Configuration
+
+You can provide custom app configuration:
+
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+    const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="https://your-server.com/v1/"/></appSettings></configuration>';
+    
+    Abxr_init('app123', 'org456', 'secret789', appConfig);
+</script>
+```
+
+### Debug Mode
+
+When authentication fails or isn't provided, the library operates in debug mode:
+
+```javascript
+Abxr_init('app123'); // Missing orgId and authSecret
+
+Abxr.setDebugMode(true); // Enable debug logging
+
+// These will log debug messages but won't send data
+Abxr.Event('test_event');
+Abxr.LogDebug('test message');
+```
+
+### Configuration Methods
+
+- `Abxr.setDebugMode(enabled)` - Enable/disable debug logging
+- `Abxr.getDebugMode()` - Get current debug mode
+- `Abxr.isConfigured()` - Check if library is authenticated
+- `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
+
+### Available Types and Enums
+
+The `Abxr` class exposes commonly used types and enums for easy access:
+
+```javascript
+// Result options for assessments and objectives
+Abxr.ResultOptions.ePassed
+Abxr.ResultOptions.eFailed
+Abxr.ResultOptions.eIncomplete
+
+// Interaction types
+Abxr.InteractionType.eClick
+Abxr.InteractionType.eDrag
+Abxr.InteractionType.eType
+
+// Log levels
+Abxr.LogLevel.eDebug
+Abxr.LogLevel.eInfo
+Abxr.LogLevel.eWarn
+Abxr.LogLevel.eError
+Abxr.LogLevel.eCritical
+
+// Dictionary for metadata
+Abxr.AbxrDictStrings
+```
+
+### Usage Examples
+
+```javascript
+// Initialize
+Abxr_init('app123', 'org456', 'secret789');
+
+// Enable debug mode
+Abxr.setDebugMode(true);
+
+// Assessment with result options
+Abxr.EventAssessmentComplete('math_test', '85', Abxr.ResultOptions.ePassed, { time_spent: '30min' });
+
+// Interaction with interaction type
+Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
+
+// Create metadata dictionary
+const meta = new Abxr.AbxrDictStrings();
+meta.set('custom_field', 'value');
+Abxr.Event('custom_event', meta);
+```
+
+```
+
+```
+
+## API Reference
+
+### Initialization
+
+- `Abxr_init(appId, orgId?, authSecret?, appConfig?)` - Initialize and authenticate the library
+  - `appId` (required): Your application ID
+  - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
+  - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)
+  - `appConfig` (optional): Custom XML configuration string
+
+### Core Methods
+
+- `Abxr.Event(name, meta?)` - Send a custom event
+- `Abxr.LogDebug(message)` - Send a debug log message
+- `Abxr.LogInfo(message)` - Send an info log message
+- `Abxr.LogWarn(message)` - Send a warning log message
+- `Abxr.LogError(message)` - Send an error log message
+- `Abxr.LogCritical(message)` - Send a critical log message
+
+### Specialized Event Methods
+
+#### Assessment Events
+- `Abxr.EventAssessmentStart(assessmentName, meta?)` - Start an assessment
+- `Abxr.EventAssessmentComplete(assessmentName, score, resultOptions, meta?)` - Complete an assessment
+
+#### Objective Events
+- `Abxr.EventObjectiveStart(objectiveName, meta?)` - Start an objective
+- `Abxr.EventObjectiveComplete(objectiveName, score, resultOptions, meta?)` - Complete an objective
+
+#### Interaction Events
+- `Abxr.EventInteractionStart(interactionName, meta?)` - Start an interaction
+- `Abxr.EventInteractionComplete(interactionName, result, resultDetails, interactionType, meta?)` - Complete an interaction
+
+#### Level Events
+- `Abxr.EventLevelStart(levelName, meta?)` - Start a level
+- `Abxr.EventLevelComplete(levelName, score, meta?)` - Complete a level
+
+### Storage Methods
+
+- `Abxr.SetStorageEntry(data, keepLatest?, origin?, sessionData?, name?)` - Store data
+- `Abxr.GetStorageEntry(name?)` - Retrieve stored data
+- `Abxr.RemoveStorageEntry(name?)` - Remove stored data
+
+### Telemetry Methods
+
+- `Abxr.Telemetry(name, data)` - Send telemetry data
+
+### AI Integration Methods
+
+- `Abxr.AIProxy(prompt, pastMessages?, botId?)` - Send AI proxy request
+
+### Configuration Methods
+
+- `Abxr.setDebugMode(enabled)` - Enable/disable debug logging
+- `Abxr.getDebugMode()` - Get current debug mode
+- `Abxr.isConfigured()` - Check if library is authenticated
+- `Abxr.getAuthParams()` - Get authentication parameters (for debugging)

@@ -403,7 +403,7 @@ export class AbxrLibClient
 		}
 		catch (error)
 		{
-			console.log("Error: ", error);
+			console.log("AbxrLib Error: ", error);
 			// ---
 			return AbxrResult.ePostObjectsFailed;
 		}
@@ -484,7 +484,7 @@ export class AbxrLibClient
 		}
 		catch (error)
 		{
-			console.log("Error: ", error);
+			console.log("AbxrLib Error: ", error);
 			//WriteLine($"Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
 			// ---
 			//return AbxrResult.ePostObjectsFailed;
@@ -541,7 +541,7 @@ export class AbxrLibClient
 		}
 		catch (error)
 		{
-			console.log("Error: ", error);
+			console.log("AbxrLib Error: ", error);
 			//WriteLine($"Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
 			// ---
 			return AbxrResult.eDeleteObjectsFailed;
@@ -567,7 +567,7 @@ export class AbxrLibClient
 			await AbxrLibAnalytics.SetHeadersFromCurrentState(objRequest, mbBodyContent, true, false);
 
 			// Debug logging
-			//console.log("Authentication Request:", {
+			//console.log("AbxrLib: Authentication Request:", {
 			//	url: AbxrLibAnalytics.FinalUrl("auth/token"),
 			//	requestBody: JSON.parse(szJSON)
 			//});
@@ -575,7 +575,7 @@ export class AbxrLibClient
 			eCurlRet = await objRequest.Post(AbxrLibAnalytics.FinalUrl("auth/token"), [], mbBodyContent, rpResponse);
 			
 			// Response logging
-			//console.log("Authentication Response:", {
+			//console.log("AbxrLib: Authentication Response:", {
 			//	success: eCurlRet,
 			//	response: rpResponse.szResponse,
 			//	responseObject: JSON.parse(rpResponse.szResponse)
@@ -587,7 +587,7 @@ export class AbxrLibClient
 		}
 		catch (error)
 		{
-			console.log("Authentication Error:", error);
+			console.log("AbxrLib Authentication Error:", error);
 			//WriteLine($"Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
 			return AbxrResult.eAuthenticateFailed;
 		}
@@ -666,7 +666,7 @@ export class AbxrLibClient
 		 szLine = EnsureSingleEndingCharacter(szLine, '\n');
 		// if (Platform.IsWindows())
 		// {
-		 	console.log(szLine);
+		 	console.log("AbxrLib: " + szLine);
 		// }
 		// else
 		// {

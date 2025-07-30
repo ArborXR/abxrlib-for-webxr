@@ -20,18 +20,18 @@ import { AbxrResult } from "./network/utils/DotNetishTypes";
 //	objWorker.postMessage('Hello from the main thread!');
 //	objWorker.onmessage = (event) =>
 //	{
-//		console.log('Received message from worker:', event.data);
+//		console.log('AbxrLib: Received message from worker:', event.data);
 //	};
 //}
 //else
 //{
-//	console.log('Web Workers are not supported in this environment.');
+//	console.log('AbxrLib: Web Workers are not supported in this environment.');
 //}
 
 //// worker.ts Worker thread for Web Worker.
 //self.onmessage = (event) =>
 //{
-//	console.log('Received message from main thread:', event.data);
+//	console.log('AbxrLib: Received message from main thread:', event.data);
 //	self.postMessage('Hello from the worker thread!');
 //};
 
@@ -42,7 +42,7 @@ import { AbxrResult } from "./network/utils/DotNetishTypes";
 
 //worker.on('message', (message) =>
 //{
-//console.log('Received message from worker:', message);
+//console.log('AbxrLib: Received message from worker:', message);
 //});
 
 //worker.postMessage('Hello from the main thread!');
@@ -50,7 +50,7 @@ import { AbxrResult } from "./network/utils/DotNetishTypes";
 //// worker.ts Worker thread for Node.js.
 //parentPort.on('message', (message) =>
 //{
-//	console.log('Received message from main thread:', message);
+//	console.log('AbxrLib: Received message from main thread:', message);
 //	parentPort.postMessage('Hello from the worker thread!');
 //});
 
