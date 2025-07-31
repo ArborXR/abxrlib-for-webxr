@@ -57,17 +57,62 @@ You can provide custom app configuration:
 
 ### Two-Step Authentication (authMechanism)
 
-When your backend requires additional authentication (like PIN or email), use a callback:
+**NEW:** Zero-code XR-optimized authentication dialogs! Perfect for VR/AR developers:
 
 ```html
 <script src="node_modules/abxrlib-for-webxr/index.js"></script>
 <script>
-    // Define callback to handle authentication requirements
+    // Simple initialization - beautiful XR dialog appears automatically!
+    Abxr_init('app123', 'org456', 'secret789');
+    
+    // That's it! The library handles everything:
+    // - Auto-detects XR environments vs regular browsers
+    // - Shows beautiful XR-optimized dialogs in VR/AR
+    // - Includes virtual keyboards for XR environments
+    // - Falls back to HTML dialogs for regular browsers
+</script>
+```
+
+**Advanced XR Dialog Customization:**
+
+```html
+<script>
+    // Custom XR dialog styling
+    const dialogOptions = {
+        enabled: true,
+        type: 'xr',           // 'html', 'xr', or 'auto' (default)
+        xrFallback: true,     // Fallback to HTML if XR fails
+        xrStyle: {
+            colors: {
+                primary: '#00ffff',     // Cyan accent
+                success: '#00ff88',     // Green submit button
+                background: 'linear-gradient(135deg, #0a0a0a, #1a1a2e)',
+                keyBg: 'rgba(0, 255, 255, 0.1)',  // Virtual keyboard keys
+                keyText: '#ffffff',
+                keyActive: '#00ffff'
+            },
+            dialog: {
+                borderRadius: '20px',
+                border: '3px solid #00ffff',
+                boxShadow: '0 0 50px rgba(0, 255, 255, 0.5)'
+            }
+        }
+    };
+    
+    Abxr_init('app123', 'org456', 'secret789', undefined, undefined, dialogOptions);
+</script>
+```
+
+**Custom Callback (for developers who want their own UI):**
+
+```html
+<script>
+    // Define custom callback to handle authentication requirements
     function handleAuthMechanism(authData) {
         console.log('Auth required:', authData.type);   // e.g., 'email', 'assessmentPin'
         console.log('Prompt:', authData.prompt);        // e.g., 'Enter your Email'
         
-        // Show UI to collect user input
+        // Show custom UI to collect user input
         const userInput = prompt(authData.prompt);
         
         // Format and submit authentication data
@@ -82,7 +127,7 @@ When your backend requires additional authentication (like PIN or email), use a 
         });
     }
     
-    // Initialize with callback
+    // Initialize with custom callback
     Abxr_init('app123', 'org456', 'secret789', undefined, handleAuthMechanism);
 </script>
 ```
@@ -296,12 +341,13 @@ Abxr.AIProxy(
 
 ### Initialization
 
-- `Abxr_init(appId, orgId?, authSecret?, appConfig?, authMechanismCallback?)` - Initialize and authenticate the library
+- `Abxr_init(appId, orgId?, authSecret?, appConfig?, authMechanismCallback?, dialogOptions?)` - Initialize and authenticate the library
   - `appId` (required): Your application ID
   - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
   - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)
   - `appConfig` (optional): Custom XML configuration string
   - `authMechanismCallback` (optional): Callback function to handle two-step authentication requirements
+  - `dialogOptions` (optional): Configuration for built-in XR/HTML dialog system (see examples above)
 
 ### Core Methods
 

@@ -126,11 +126,66 @@ The SDK automatically handles device ID generation and persistence:
 
 #### Two-Step Authentication (authMechanism)
 
-The SDK supports two-step authentication when the backend requires additional credentials (like a PIN or email). There are two approaches to handle this:
+The SDK supports two-step authentication when the backend requires additional credentials (like a PIN or email). There are multiple approaches to handle this:
 
-##### Option 1: Callback-Based Approach (Recommended)
+##### Option 1: Built-in Dialog System (Recommended)
 
-Use a callback function to automatically handle authMechanism requirements:
+**NEW:** Zero-code authentication with beautiful, XR-optimized dialogs! Perfect for VR/AR developers:
+
+```typescript
+import { Abxr_init } from 'abxrlib-for-webxr';
+
+// Simple initialization - XR dialog appears automatically when needed
+Abxr_init('app123', 'org456', 'secret789');
+
+// That's it! The library handles everything:
+// - Auto-detects XR environments vs regular browsers
+// - Shows beautiful XR-optimized dialogs in VR/AR
+// - Includes virtual keyboards for XR environments
+// - Falls back to HTML dialogs for regular browsers
+// - Handles all auth types (email, PIN, etc.) automatically
+```
+
+**Advanced XR Dialog Customization:**
+
+```typescript
+const dialogOptions = {
+    enabled: true,
+    type: 'xr',           // 'html', 'xr', or 'auto' (default)
+    xrFallback: true,     // Fallback to HTML if XR fails
+    xrStyle: {
+        colors: {
+            primary: '#00ffff',     // Cyan accent
+            success: '#00ff88',     // Green submit button
+            background: 'linear-gradient(135deg, #0a0a0a, #1a1a2e)',
+            keyBg: 'rgba(0, 255, 255, 0.1)',  // Virtual keyboard keys
+            keyText: '#ffffff',
+            keyActive: '#00ffff'
+        },
+        dialog: {
+            borderRadius: '20px',
+            border: '3px solid #00ffff',
+            boxShadow: '0 0 50px rgba(0, 255, 255, 0.5)'
+        },
+        overlay: {
+            background: 'radial-gradient(circle, rgba(0, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.9) 100%)'
+        }
+    }
+};
+
+Abxr_init('app123', 'org456', 'secret789', undefined, undefined, dialogOptions);
+```
+
+**What makes XR dialogs special:**
+- 🥽 **VR/AR Optimized**: Beautiful in both desktop browsers and XR headsets
+- ⌨️ **Virtual Keyboard**: Built-in keyboard for XR environments (PIN pad for PINs)
+- 🎨 **Fully Customizable**: Colors, styling, and behavior - match your brand
+- 🔄 **Auto-Detection**: Automatically chooses XR vs HTML dialog based on environment
+- 📱 **Universal**: Works everywhere - desktop, mobile, and XR devices
+
+##### Option 2: Custom Callback Approach
+
+For developers who want to provide their own authentication UI:
 
 ```typescript
 import { Abxr_init, Abxr, AuthMechanismData } from 'abxrlib-for-webxr';
@@ -160,9 +215,9 @@ function handleAuthMechanism(authData: AuthMechanismData) {
 Abxr_init('app123', 'org456', 'secret789', undefined, handleAuthMechanism);
 ```
 
-##### Option 2: Manual Check Approach
+##### Option 3: Manual Check Approach
 
-Check for additional authentication requirements manually:
+Check for additional authentication requirements manually (for advanced use cases):
 
 ```typescript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
@@ -606,12 +661,13 @@ Abxr.Event('custom_event', meta);
 
 ### Initialization
 
-- `Abxr_init(appId, orgId?, authSecret?, appConfig?, authMechanismCallback?)` - Initialize and authenticate the library
+- `Abxr_init(appId, orgId?, authSecret?, appConfig?, authMechanismCallback?, dialogOptions?)` - Initialize and authenticate the library
   - `appId` (required): Your application ID
   - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
   - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)
   - `appConfig` (optional): Custom XML configuration string
   - `authMechanismCallback` (optional): Callback function to handle two-step authentication requirements
+  - `dialogOptions` (optional): Configuration for built-in dialog system (see XR Dialog examples above)
 
 ### Core Methods
 
