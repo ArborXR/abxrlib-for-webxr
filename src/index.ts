@@ -9,7 +9,7 @@ import { AbxrBase, AbxrEvent, AbxrLog, AbxrStorage, AbxrTelemetry, AbxrAIProxy, 
 import { Partner } from "./AbxrLibClient";
 // Import dialog templates
 import { getHTMLDialogTemplate, AuthDialogData as HTMLAuthDialogData } from './templates/HTMLAuthDialog';
-import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig } from './templates/XRAuthDialog';
+import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig, XRVirtualKeyboard } from './templates/XRAuthDialog';
 
 
 // Initialize all static members
@@ -695,10 +695,32 @@ export class Abxr {
         // Future: When React Three Fiber is properly integrated, this would dynamically
         // import and render the full 3D XR component from src/components/XRAuthDialog.tsx
         
-        const handleSubmit = (value: string) => {
-            const formattedData = this.formatAuthDataForSubmission(value, authData.type, authData.domain);
-            this.completeFinalAuth(formattedData);
-            this.hideXRDialog();
+        const handleSubmit = async (value: string) => {
+            try {
+                const formattedData = this.formatAuthDataForSubmission(value, authData.type, authData.domain);
+                console.log('AbxrLib: Submitting XR dialog authentication:', formattedData);
+                
+                const success = await this.completeFinalAuth(formattedData);
+                
+                if (success) {
+                    this.hideXRDialog();
+                    console.log('AbxrLib: XR dialog authentication successful - library ready to use');
+                } else {
+                    const authTypeLabel = authData.type === 'email' ? 'email' : 
+                                        authData.type === 'assessmentPin' ? 'PIN' : 'credentials';
+                    this.showXRError(`Authentication failed. Please check your ${authTypeLabel} and try again.`);
+                    
+                    // Focus and select input for retry
+                    const input = document.querySelector('#abxrlib-xr-input') as HTMLInputElement;
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                }
+            } catch (error: any) {
+                console.error('AbxrLib: XR dialog authentication error:', error);
+                this.showXRError('Authentication error: ' + error.message);
+            }
         };
         
         const handleCancel = () => {
@@ -724,8 +746,8 @@ export class Abxr {
         style.textContent = getXRDialogStyles();
         document.head.appendChild(style);
         
-        // Generate XR dialog HTML from template
-        const dialogHTML = getXRDialogTemplate(authData);
+        // Generate XR dialog HTML from template (with virtual keyboard for XR environments)
+        const dialogHTML = getXRDialogTemplate(authData, { showVirtualKeyboard: true });
         
         // Insert dialog into DOM
         document.body.insertAdjacentHTML('beforeend', dialogHTML);
@@ -741,6 +763,13 @@ export class Abxr {
             return;
         }
         
+        // Clear any existing error messages
+        this.hideXRError();
+        
+        // Initialize virtual keyboard for XR environments
+        const virtualKeyboard = new XRVirtualKeyboard(authData.type);
+        virtualKeyboard.initialize(input);
+        
         // Focus input
         input.focus();
         
@@ -751,6 +780,11 @@ export class Abxr {
         
         input.addEventListener('blur', () => {
             Object.assign(input.style, XRDialogConfig.blurStyle);
+        });
+        
+        // Clear error on input
+        input.addEventListener('input', () => {
+            this.hideXRError();
         });
         
         // Handle form submission
@@ -778,6 +812,7 @@ export class Abxr {
         // Store references for cleanup
         (this as any).xrDialogOverlay = overlay;
         (this as any).xrDialogStyle = style;
+        (this as any).xrVirtualKeyboard = virtualKeyboard;
     }
     
     // Show error in XR dialog
@@ -792,11 +827,20 @@ export class Abxr {
         }
     }
     
+    // Hide error in XR dialog
+    private static hideXRError(): void {
+        const errorDiv = document.getElementById('abxrlib-xr-error');
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+    }
+    
     // Hide XR dialog
     private static hideXRDialog(): void {
         const overlay = document.getElementById('abxrlib-xr-dialog-overlay') || (this as any).xrDialogOverlay;
         const container = document.getElementById('abxrlib-xr-dialog-container');
         const style = (this as any).xrDialogStyle;
+        const virtualKeyboard = (this as any).xrVirtualKeyboard;
         
         if (overlay) {
             overlay.remove();
@@ -810,6 +854,11 @@ export class Abxr {
         if (style) {
             style.remove();
             (this as any).xrDialogStyle = null;
+        }
+        
+        if (virtualKeyboard) {
+            virtualKeyboard.destroy();
+            (this as any).xrVirtualKeyboard = null;
         }
         
         // Clean up global handlers

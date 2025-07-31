@@ -1,11 +1,17 @@
 // XR Authentication Dialog Template
 // Futuristic, XR-optimized HTML/CSS templates with purple/green brand colors
 
+import { getXRVirtualKeyboardTemplate, XRVirtualKeyboard, defaultKeyboardConfig } from './XRVirtualKeyboard';
+
 export interface AuthDialogData {
     type: string;
     prompt?: string;
     domain?: string;
     [key: string]: any;
+}
+
+export interface XRDialogOptions {
+    showVirtualKeyboard?: boolean;  // Default: true for XR environments
 }
 
 /**
@@ -23,7 +29,7 @@ export function getXRDialogStyles(): string {
 /**
  * Generate HTML template for the XR authentication dialog
  */
-export function getXRDialogTemplate(authData: AuthDialogData): string {
+export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogOptions = { showVirtualKeyboard: true }): string {
     const getTitle = () => {
         if (authData.prompt) return authData.prompt;
         if (authData.type === 'email') return 'XR Email Authentication';
@@ -53,12 +59,16 @@ export function getXRDialogTemplate(authData: AuthDialogData): string {
             height: 100%;
             background: rgba(0, 0, 0, 0.9);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 10000;
             font-family: 'Arial', sans-serif;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
         ">
-            <div style="
+            <div id="xr-dialog-content" style="
                 background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
                 color: #ffffff;
                 padding: 30px;
@@ -66,9 +76,10 @@ export function getXRDialogTemplate(authData: AuthDialogData): string {
                 border: 2px solid #5A58EB;
                 box-shadow: 0 0 30px rgba(90, 88, 235, 0.3);
                 max-width: 400px;
-                width: 90%;
+                width: 100%;
                 text-align: center;
                 animation: xrGlow 2s ease-in-out infinite alternate;
+                margin-bottom: ${options.showVirtualKeyboard ? '0' : '0'};
             ">
                 <h2 style="margin: 0 0 20px 0; color: #5A58EB; text-shadow: 0 0 10px rgba(90, 88, 235, 0.5);">
                     ${getTitle()}
@@ -150,6 +161,8 @@ export function getXRDialogTemplate(authData: AuthDialogData): string {
                     XR-Optimized Authentication Dialog
                 </p>
             </div>
+            
+            ${options.showVirtualKeyboard ? getXRVirtualKeyboardTemplate(authData.type, defaultKeyboardConfig) : ''}
         </div>
     `;
 }
@@ -178,3 +191,6 @@ export const XRDialogConfig = {
         inputBg: 'rgba(51, 51, 51, 0.8)'
     }
 };
+
+// Export virtual keyboard class for use in main library
+export { XRVirtualKeyboard };
