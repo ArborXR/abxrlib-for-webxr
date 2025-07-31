@@ -3,7 +3,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Test abxrlib-for-webxr.js</title>
+  <title>Built-in Authentication Dialog Demo - abxrlib-for-webxr.js</title>
   <!-- Include your bundled JS file -->
   <script src="dist/abxrlib-for-webxr.js"></script>
   <script>
@@ -18,264 +18,15 @@
 
     const rest_url = 'https://lib-backend.xrdm.app/v1/';
     
-    /*
-     * NEW AUTHENGMECHANISM API DEMONSTRATION
-     * ====================================
-     * 
-     * This example shows how to use the new callback-based authMechanism system.
-     * The authentication logic has been moved from the HTML client to the library (index.ts).
-     * 
-     * Key changes:
-     * 1. Abxr_init() now accepts an optional authMechanismCallback parameter
-     * 2. The callback receives structured AuthMechanismData instead of raw authMechanism
-     * 3. Helper methods are available: Abxr.formatAuthDataForSubmission()
-     * 4. The client only needs to handle UI display - all logic is in the library
-     * 
-     * Benefits:
-     * - Cleaner separation of concerns (logic in library, UI in client)
-     * - Works in both browser and non-browser environments
-     * - Structured data format is easier to work with
-     * - Consistent behavior across different clients
-     */
-    
-    // Track current authentication type and domain
-    let currentAuthType = '';
-    let currentDomain = '';
-    
-    // Simple authentication dialog functions - now works with structured authData from the library
-    function showAuthDialog(authData) {
-        console.log('showAuthDialog called with structured authData:', authData);
-        
-        const dialog = document.getElementById('authDialog');
-        const title = document.getElementById('authTitle');
-        const prompt = document.getElementById('authPrompt');
-        const input = document.getElementById('authInput');
-        
-        if (!dialog) {
-            console.error('Auth dialog not found!');
-            return;
-        }
-        
-        // Extract information from structured authData (no need to iterate through entries)
-        let promptText = authData.prompt || 'Please enter the required authentication information:';
-        let inputType = 'text';
-        let placeholder = 'Enter value...';
-        let domain = authData.domain || '';
-        let authType = authData.type || '';
-        
-        // Configure UI based on auth type
-        if (authType === 'assessmentPin') {
-            inputType = 'password';
-            placeholder = 'Enter PIN...';
-            title.textContent = 'PIN Required';
-        } else if (authType === 'email') {
-            inputType = 'email';
-            placeholder = 'Enter email username';
-            title.textContent = 'Email Authentication Required';
-        } else {
-            title.textContent = 'Authentication Required';
-        }
-        
-        // Store current auth type and domain globally
-        currentAuthType = authType;
-        currentDomain = domain;
-        
-        prompt.textContent = promptText;
-        input.type = inputType;
-        input.placeholder = placeholder;
-        input.value = '';
-        hideAuthError(); // Clear any previous error
-        
-        // Handle email domain display
-        const domainSpan = document.getElementById('authDomain');
-        const inputContainer = document.getElementById('authInputContainer');
-        
-        if (authType === 'email' && domain) {
-            // Show domain suffix for email type
-            domainSpan.textContent = '@' + domain;
-            domainSpan.style.display = 'inline';
-            input.style.width = 'auto';
-            input.style.flex = '1';
-            inputContainer.style.width = '100%';
-        } else {
-            // Hide domain for other types
-            domainSpan.style.display = 'none';
-            input.style.width = '100%';
-            input.style.flex = 'none';
-            inputContainer.style.width = '100%';
-        }
-        
-        dialog.style.display = 'block';
-        input.focus();
-        console.log('Auth dialog displayed for type:', authType);
-    }
-    
-    function hideAuthDialog() {
-        const dialog = document.getElementById('authDialog');
-        if (dialog) {
-            dialog.style.display = 'none';
-        }
-    }
-    
-    function showAuthError(message) {
-        const errorDiv = document.getElementById('authError');
-        if (errorDiv) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-    }
-    
-    function hideAuthError() {
-        const errorDiv = document.getElementById('authError');
-        if (errorDiv) {
-            errorDiv.style.display = 'none';
-        }
-    }
-    
-    async function submitAuth() {
-        const input = document.getElementById('authInput');
-        const value = input.value.trim();
-        
-        if (!value) {
-            showAuthError('Please enter a value');
-            return;
-        }
-        
-        try {
-            // Use the library's helper method to format auth data properly
-            const authData = Abxr.formatAuthDataForSubmission(value, currentAuthType, currentDomain);
-            
-            console.log('Submitting final authentication with data:', authData);
-            
-            // Submit final authentication
-            const success = await Abxr.completeFinalAuth(authData);
-            
-            if (success) {
-                hideAuthDialog();
-                document.getElementById('simpleInit_result').textContent = 'Authentication complete! Library is ready to use.';
-                document.getElementById('simpleInit_result').style.color = 'green';
-                
-                // Enable buttons
-                document.getElementById('eventBtn').disabled = false;
-                document.getElementById('logDebugBtn').disabled = false;
-                
-                console.log('Final authentication successful');
-            } else {
-                const authTypeLabel = currentAuthType === 'email' ? 'email' : 
-                                    currentAuthType === 'assessmentPin' ? 'PIN' : 'credentials';
-                showAuthError(`Authentication failed. Please check your ${authTypeLabel} and try again.`);
-                input.focus();
-                input.select();
-            }
-        } catch (error) {
-            console.error('Authentication error:', error);
-            showAuthError('Authentication error: ' + error.message);
-        }
-    }
-    
-    // Removed global fetch debugging wrapper - it was interfering with library's internal HTTP requests
-    // The library (AbxrLib) should handle all network requests internally without external interference
 
-    // Set up dialog event listeners and initialize form values
+    // Built-in dialog system - no custom dialog functions needed!
+    // The library handles everything automatically.
+    
+    // Initialize form values
     document.addEventListener('DOMContentLoaded', function() {
-        
-        // Add CORS debugging information
-        console.log('🔍 CORS DEBUG INFO:', {
-            currentOrigin: window.location.origin,
-            currentHost: window.location.host,
-            currentProtocol: window.location.protocol,
-            userAgent: navigator.userAgent.substr(0, 100) + '...'
-        });
-        
         // Set initial REST URL value
         document.getElementById('rest_url_input').value = rest_url;
-        
-        // Set up authentication dialog event listeners
-        const submitBtn = document.getElementById('authSubmit');
-        const cancelBtn = document.getElementById('authCancel');
-        const input = document.getElementById('authInput');
-        
-        if (submitBtn) submitBtn.addEventListener('click', submitAuth);
-        if (cancelBtn) cancelBtn.addEventListener('click', hideAuthDialog);
-        
-        if (input) {
-            // Handle Enter key in input
-            input.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    submitAuth();
-                }
-            });
-            
-            // Clear error when user starts typing
-            input.addEventListener('input', function() {
-                hideAuthError();
-            });
-        }
     });
-
-    // Simple One-Step Setup using the new callback-based authMechanism system
-    async function simpleInit() {
-        console.log("Executing Simple One-Step Setup");
-        try {
-            const restUrl = document.getElementById('rest_url_input').value;
-            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
-            
-            // Define the authMechanism callback that will be triggered if additional auth is needed
-            function handleAuthMechanism(authData) {
-                console.log('AuthMechanism callback triggered with data:', authData);
-                
-                // Update UI to show auth is required
-                document.getElementById('simpleInit_result').textContent = 'Initial authentication successful, but user authentication required.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl + '\n\nPlease complete the additional authentication when prompted.';
-                document.getElementById('simpleInit_result').style.color = 'orange';
-                
-                // Show the authentication dialog using the extracted data
-                showAuthDialog(authData);
-            }
-            
-            // Use the new callback-based API
-            console.log('About to call Abxr_init with authMechanism callback...');
-            Abxr_init(app_id, org_id, auth_secret, appConfig, handleAuthMechanism);
-            console.log('Abxr_init completed with callback, setting debug mode...');
-            
-            // Enable debug mode - use the global Abxr object
-            if (typeof Abxr !== 'undefined') {
-                Abxr.setDebugMode(true);
-                console.log('Debug mode enabled');
-            }
-            
-            // Wait a moment for authentication to complete, then check status
-            setTimeout(async () => {
-                console.log('Checking authentication status...');
-                try {
-                    if (typeof Abxr !== 'undefined' && Abxr.isConfigured()) {
-                        // Authentication completed successfully without requiring additional auth
-                        document.getElementById('simpleInit_result').textContent = 'Authentication successful! Library is ready to use.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl;
-                        document.getElementById('simpleInit_result').style.color = 'green';
-                        
-                        // Enable the shared event and log buttons
-                        document.getElementById('eventBtn').disabled = false;
-                        document.getElementById('logDebugBtn').disabled = false;
-                    } else if (typeof Abxr !== 'undefined' && !Abxr.getRequiresFinalAuth()) {
-                        // Library is initialized but authentication may still be in progress
-                        document.getElementById('simpleInit_result').textContent = 'Library initialized but authentication may still be in progress. Try the Event/Log buttons below.';
-                        document.getElementById('simpleInit_result').style.color = 'orange';
-                        
-                        // Enable buttons anyway since the library is initialized
-                        document.getElementById('eventBtn').disabled = false;
-                        document.getElementById('logDebugBtn').disabled = false;
-                    }
-                    // If requiresFinalAuth is true, the callback will have already handled the UI
-                } catch (error) {
-                    document.getElementById('simpleInit_result').textContent = 'Error checking authentication status: ' + error.message;
-                    document.getElementById('simpleInit_result').style.color = 'red';
-                }
-            }, 1000);
-            
-        } catch (error) {
-            document.getElementById('simpleInit_result').textContent = 'Error: ' + error.message;
-            document.getElementById('simpleInit_result').style.color = 'red';
-        }
-    }
 
 
 
@@ -357,6 +108,142 @@
         } catch (error) {
             document.getElementById('logDebug_result').textContent = 'Error: ' + error.message;
         }
+    }
+
+    // Built-in Dialog Demo Functions
+    async function initBuiltinDefault() {
+        console.log("Testing built-in dialog (default)");
+        updateBuiltinResult('Initializing with built-in dialog (default behavior)...', 'info');
+        
+        try {
+            const restUrl = document.getElementById('rest_url_input').value;
+            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // No callback or dialog options - uses built-in dialog automatically
+            Abxr_init(app_id, org_id, auth_secret, appConfig);
+            Abxr.setDebugMode(true);
+            
+            // Check authentication status
+            setTimeout(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully with built-in dialog!', 'success');
+                    enableSharedButtons();
+                } else if (Abxr.getRequiresFinalAuth()) {
+                    updateBuiltinResult('Initial authentication successful. Built-in dialog should appear automatically for additional authentication.', 'warning');
+                } else {
+                    updateBuiltinResult('Authentication in progress...', 'info');
+                }
+            }, 1000);
+            
+            // Set up periodic check for completion
+            const checkAuth = setInterval(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully with built-in dialog!', 'success');
+                    enableSharedButtons();
+                    clearInterval(checkAuth);
+                }
+            }, 500);
+        } catch (error) {
+            updateBuiltinResult('Error: ' + error.message, 'error');
+        }
+    }
+
+    async function initBuiltinCustom() {
+        console.log("Testing built-in dialog with custom styling");
+        updateBuiltinResult('Initializing with custom-styled built-in dialog...', 'info');
+        
+        try {
+            const restUrl = document.getElementById('rest_url_input').value;
+            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // Custom styling for the built-in dialog
+            const dialogOptions = {
+                enabled: true,
+                dialogStyle: {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    borderRadius: '20px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                },
+                overlayStyle: {
+                    background: 'rgba(102, 126, 234, 0.8)'
+                }
+            };
+            
+            Abxr_init(app_id, org_id, auth_secret, appConfig, undefined, dialogOptions);
+            Abxr.setDebugMode(true);
+            
+            setTimeout(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully!', 'success');
+                    enableSharedButtons();
+                } else if (Abxr.getRequiresFinalAuth()) {
+                    updateBuiltinResult('Initial authentication successful. Custom-styled built-in dialog should appear!', 'warning');
+                } else {
+                    updateBuiltinResult('Authentication in progress...', 'info');
+                }
+            }, 1000);
+            
+            const checkAuth = setInterval(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed with custom-styled built-in dialog!', 'success');
+                    enableSharedButtons();
+                    clearInterval(checkAuth);
+                }
+            }, 500);
+        } catch (error) {
+            updateBuiltinResult('Error: ' + error.message, 'error');
+        }
+    }
+
+    async function initBuiltinDisabled() {
+        console.log("Testing with built-in dialog disabled");
+        updateBuiltinResult('Initializing with built-in dialog disabled...', 'info');
+        
+        try {
+            const restUrl = document.getElementById('rest_url_input').value;
+            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // Disable built-in dialog
+            const dialogOptions = { enabled: false };
+            
+            Abxr_init(app_id, org_id, auth_secret, appConfig, undefined, dialogOptions);
+            Abxr.setDebugMode(true);
+            
+            setTimeout(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully!', 'success');
+                    enableSharedButtons();
+                } else if (Abxr.getRequiresFinalAuth()) {
+                    updateBuiltinResult('Additional authentication required, but built-in dialog is disabled. You would need to implement custom handling or call Abxr.extractAuthMechanismData() to get the auth requirements.', 'warning');
+                } else {
+                    updateBuiltinResult('Authentication in progress...', 'info');
+                }
+            }, 1000);
+        } catch (error) {
+            updateBuiltinResult('Error: ' + error.message, 'error');
+        }
+    }
+
+    function updateBuiltinResult(message, type = 'info') {
+        const resultDiv = document.getElementById('builtin_result');
+        if (resultDiv) {
+            resultDiv.textContent = message;
+            // Add some basic styling based on type
+            const colors = {
+                'info': '#17a2b8',
+                'success': '#28a745', 
+                'warning': '#ffc107',
+                'error': '#dc3545'
+            };
+            resultDiv.style.color = colors[type] || colors.info;
+            resultDiv.style.fontWeight = type === 'success' ? 'bold' : 'normal';
+        }
+    }
+
+    function enableSharedButtons() {
+        document.getElementById('eventBtn').disabled = false;
+        document.getElementById('logDebugBtn').disabled = false;
     }
 
 
@@ -444,68 +331,73 @@
   </style>
 </head>
 <body>
-  <!-- Authentication Dialog -->
-  <div id="authDialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-    <div style="background: white; margin: 15% auto; padding: 30px; border-radius: 10px; width: 400px; max-width: 90%; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-      <h2 id="authTitle">Additional Authentication Required</h2>
-      <p id="authPrompt">Please enter the required authentication information:</p>
-      <div id="authError" style="display: none; color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 10px; margin: 10px 0; font-size: 14px;"></div>
-      <div id="authInputContainer" style="display: flex; align-items: center; justify-content: center; margin: 15px 0;">
-        <input type="text" id="authInput" style="padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box; flex: 1;" placeholder="Enter value..." />
-        <span id="authDomain" style="margin-left: 5px; font-size: 16px; color: #666; display: none;"></span>
-      </div>
-      <div style="margin-top: 20px;">
-        <button id="authSubmit" style="padding: 12px 25px; margin: 0 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white;">Submit</button>
-        <button id="authCancel" style="padding: 12px 25px; margin: 0 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background-color: #6c757d; color: white;">Cancel</button>
-      </div>
-    </div>
-  </div>
+  <!-- No custom dialog HTML needed! The library creates its own dialog automatically -->
 
   <div class="container">
     <h1>Testing abxrlib-for-webxr.js</h1>
     
-    <!-- Simple Setup -->
-      <div class="section simple-section">
-        <h2>Simple One-Step Setup</h2>
-        <p>Most users will want to use this approach - initialize and authenticate in one call:</p>
-        
-        <div style="margin-bottom: 15px;">
-          <label for="rest_url_input" style="display: block; margin-bottom: 5px; font-weight: bold;">REST Server URL:</label>
-          <input type="text" id="rest_url_input" style="width: 500px;" placeholder="Enter REST server URL">
-
-          <small style="color: #666; display: block; margin-top: 2px;">Make sure your server is running and has proper CORS headers</small>
-        </div>
-        
-        <button onclick="simpleInit()" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
-          Initialize & Authenticate
+    <!-- Built-in Dialog Setup -->
+    <div class="section" style="background: #e7f3ff; border: 1px solid #bee5eb;">
+      <h2>Zero-Code Authentication</h2>
+      <p><strong>NEW:</strong> No custom dialog HTML/CSS/JavaScript needed! The library handles everything automatically.</p>
+      
+      <div style="margin-bottom: 15px;">
+        <label for="rest_url_input" style="display: block; margin-bottom: 5px; font-weight: bold;">REST Server URL:</label>
+        <input type="text" id="rest_url_input" style="width: 500px;" placeholder="Enter REST server URL">
+        <small style="color: #666; display: block; margin-top: 2px;">Make sure your server is running and has proper CORS headers</small>
+      </div>
+      
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin: 15px 0;">
+        <button onclick="initBuiltinDefault()" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+          Built-in Dialog (Default)
         </button>
         
-        <div id="simpleInit_result" class="result">
-          Click the button above to initialize and authenticate in one step
-        </div>
+        <button onclick="initBuiltinCustom()" style="background: #6f42c1; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+          Custom Styled Dialog
+        </button>
         
-        <div style="margin-top: 15px; color: #666; font-size: 14px;">
-          <p>💡 After successful initialization, use the Event and Log buttons below to send data.</p>
-          <p>🔧 The library will automatically handle authentication in the background.</p>
+        <button onclick="initBuiltinDisabled()" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+          Dialog Disabled
+        </button>
+      </div>
+      
+      <div id="builtin_result" class="result">
+        Click a button above to test the built-in authentication dialog system
+      </div>
+      
+      <div style="margin-top: 15px; padding: 15px; background: #d1ecf1; border-radius: 4px; font-size: 14px;">
+        <strong>What makes this special:</strong>
+        <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.6;">
+          <li><strong>Zero Config:</strong> Just call <code>Abxr_init()</code> - dialog appears automatically</li>
+          <li><strong>Smart UI:</strong> Handles email domains, PIN masking, error messages automatically</li>
+          <li><strong>Browser Only:</strong> Automatically detects environment - safe for server use</li>
+          <li><strong>Customizable:</strong> Override styling, disable, or use custom callbacks</li>
+          <li><strong>No HTML needed:</strong> Compare this page's HTML - no dialog code!</li>
+        </ul>
+        <div style="margin-top: 10px; padding: 10px; background: #b8daff; border-radius: 4px; border-left: 4px solid #007bff;">
+          <strong>Developer Impact:</strong> This replaces ~100+ lines of custom dialog HTML/CSS/JavaScript with zero lines. Same functionality, zero effort!
         </div>
       </div>
+    </div>
+
+
 
     <!-- Shared Event and Log Section -->
     <div class="section shared-section">
-      <h2>📤 Send Events and Logs</h2>
+      <h2>Send Events and Logs</h2>
       <p>Use these buttons to test sending events and debug logs after initialization:</p>
       
       <div style="display: flex; gap: 20px; margin-bottom: 20px;">
         <div style="flex: 1;">
           <label for="event_input" style="display: block; margin-bottom: 5px; font-weight: bold;">Event Name:</label>
           <input type="text" id="event_input" value="Event Testing 123" placeholder="Enter event name">
-          <button id="eventBtn" class="action-button" onclick="try_Event()" disabled style="margin-top: 10px;">📤 Send Event</button>
+          <button id="eventBtn" class="action-button" onclick="try_Event()" disabled style="margin-top: 10px;">Send Event</button>
         </div>
         
         <div style="flex: 1;">
           <label for="log_input" style="display: block; margin-bottom: 5px; font-weight: bold;">Debug Message:</label>
           <input type="text" id="log_input" value="Log Testing 123" placeholder="Enter debug message">
-          <button id="logDebugBtn" class="action-button" onclick="try_logDebug()" disabled style="margin-top: 10px;">📝 Send Log Debug</button>
+          <button id="logDebugBtn" class="action-button" onclick="try_logDebug()" disabled style="margin-top: 10px;">Send Log Debug</button>
         </div>
       </div>
       

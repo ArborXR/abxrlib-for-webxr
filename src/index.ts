@@ -119,6 +119,14 @@ export interface AuthMechanismData {
 
 export type AuthMechanismCallback = (data: AuthMechanismData) => void;
 
+// Configuration options for built-in browser dialog
+export interface AuthMechanismDialogOptions {
+    enabled?: boolean;           // Enable built-in dialog (default: true for browser environments)
+    customCallback?: AuthMechanismCallback;  // Custom callback to use instead
+    dialogStyle?: Partial<CSSStyleDeclaration>; // Custom dialog styling
+    overlayStyle?: Partial<CSSStyleDeclaration>; // Custom overlay styling
+}
+
 // Global Abxr class that gets configured by Abxr_init()
 export class Abxr {
     private static enableDebug: boolean = false;
@@ -131,6 +139,8 @@ export class Abxr {
         authSecret?: string;
     } = {};
     private static authMechanismCallback: AuthMechanismCallback | null = null;
+    private static dialogOptions: AuthMechanismDialogOptions = { enabled: true };
+    private static currentAuthData: AuthMechanismData | null = null;
     
     // Expose commonly used types and enums for easy access
     static readonly ResultOptions = ResultOptions;
@@ -406,6 +416,238 @@ export class Abxr {
         return this.authMechanismCallback;
     }
     
+    // Configure built-in dialog options
+    static setDialogOptions(options: AuthMechanismDialogOptions): void {
+        this.dialogOptions = { ...this.dialogOptions, ...options };
+    }
+    
+    static getDialogOptions(): AuthMechanismDialogOptions {
+        return { ...this.dialogOptions };
+    }
+    
+    // Create built-in authentication dialog (browser-only)
+    private static createAuthDialog(): void {
+        if (typeof window === 'undefined' || typeof document === 'undefined') {
+            return; // Not in browser environment
+        }
+        
+        // Check if dialog already exists
+        if (document.getElementById('abxr-auth-dialog')) {
+            return;
+        }
+        
+        // Create dialog HTML
+        const dialogHTML = `
+            <div id="abxr-auth-dialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000;">
+                <div id="abxr-auth-dialog-content" style="background: white; margin: 15% auto; padding: 30px; border-radius: 10px; width: 400px; max-width: 90%; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">
+                    <h2 id="abxr-auth-title" style="color: #333; margin-top: 0;">Additional Authentication Required</h2>
+                    <p id="abxr-auth-prompt" style="color: #666; margin: 15px 0;">Please enter the required authentication information:</p>
+                    <div id="abxr-auth-error" style="display: none; color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 10px; margin: 10px 0; font-size: 14px;"></div>
+                    <div id="abxr-auth-input-container" style="display: flex; align-items: center; justify-content: center; margin: 15px 0;">
+                        <input type="text" id="abxr-auth-input" style="padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box; flex: 1;" placeholder="Enter value..." />
+                        <span id="abxr-auth-domain" style="margin-left: 5px; font-size: 16px; color: #666; display: none;"></span>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button id="abxr-auth-submit" style="padding: 12px 25px; margin: 0 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white;">Submit</button>
+                        <button id="abxr-auth-cancel" style="padding: 12px 25px; margin: 0 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background-color: #6c757d; color: white;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Insert dialog into DOM
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+        
+        // Apply custom styling if provided
+        const dialog = document.getElementById('abxr-auth-dialog');
+        const content = document.getElementById('abxr-auth-dialog-content');
+        
+        if (this.dialogOptions.overlayStyle && dialog) {
+            Object.assign(dialog.style, this.dialogOptions.overlayStyle);
+        }
+        
+        if (this.dialogOptions.dialogStyle && content) {
+            Object.assign(content.style, this.dialogOptions.dialogStyle);
+        }
+        
+        // Add event listeners
+        this.setupDialogEventListeners();
+    }
+    
+    // Setup event listeners for dialog
+    private static setupDialogEventListeners(): void {
+        if (typeof document === 'undefined') return;
+        
+        const submitBtn = document.getElementById('abxr-auth-submit');
+        const cancelBtn = document.getElementById('abxr-auth-cancel');
+        const input = document.getElementById('abxr-auth-input') as HTMLInputElement;
+        
+        if (submitBtn) {
+            submitBtn.addEventListener('click', () => this.handleDialogSubmit());
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.hideAuthDialog());
+        }
+        
+        if (input) {
+            // Handle Enter key
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.handleDialogSubmit();
+                }
+            });
+            
+            // Clear error on input
+            input.addEventListener('input', () => this.hideAuthError());
+        }
+    }
+    
+    // Show authentication dialog with data
+    private static showAuthDialog(authData: AuthMechanismData): void {
+        if (typeof document === 'undefined') return;
+        
+        this.currentAuthData = authData;
+        
+        // Create dialog if it doesn't exist
+        this.createAuthDialog();
+        
+        const dialog = document.getElementById('abxr-auth-dialog');
+        const title = document.getElementById('abxr-auth-title');
+        const prompt = document.getElementById('abxr-auth-prompt');
+        const input = document.getElementById('abxr-auth-input') as HTMLInputElement;
+        const domainSpan = document.getElementById('abxr-auth-domain');
+        const inputContainer = document.getElementById('abxr-auth-input-container');
+        
+        if (!dialog || !title || !prompt || !input) {
+            console.error('AbxrLib: Auth dialog elements not found');
+            return;
+        }
+        
+        // Configure dialog based on auth type
+        let promptText = authData.prompt || 'Please enter the required authentication information:';
+        let inputType = 'text';
+        let placeholder = 'Enter value...';
+        
+        if (authData.type === 'assessmentPin') {
+            inputType = 'password';
+            placeholder = 'Enter PIN...';
+            title.textContent = 'PIN Required';
+        } else if (authData.type === 'email') {
+            inputType = 'email';
+            placeholder = 'Enter email username';
+            title.textContent = 'Email Authentication Required';
+        } else {
+            title.textContent = 'Authentication Required';
+        }
+        
+        // Set dialog content
+        prompt.textContent = promptText;
+        input.type = inputType;
+        input.placeholder = placeholder;
+        input.value = '';
+        this.hideAuthError();
+        
+        // Handle email domain display
+        if (authData.type === 'email' && authData.domain && domainSpan && inputContainer) {
+            domainSpan.textContent = '@' + authData.domain;
+            domainSpan.style.display = 'inline';
+            input.style.width = 'auto';
+            input.style.flex = '1';
+            inputContainer.style.width = '100%';
+        } else if (domainSpan && inputContainer) {
+            domainSpan.style.display = 'none';
+            input.style.width = '100%';
+            input.style.flex = 'none';
+            inputContainer.style.width = '100%';
+        }
+        
+        // Show dialog and focus input
+        dialog.style.display = 'block';
+        input.focus();
+    }
+    
+    // Hide authentication dialog
+    private static hideAuthDialog(): void {
+        if (typeof document === 'undefined') return;
+        
+        const dialog = document.getElementById('abxr-auth-dialog');
+        if (dialog) {
+            dialog.style.display = 'none';
+        }
+        
+        this.currentAuthData = null;
+    }
+    
+    // Show error in dialog
+    private static showAuthError(message: string): void {
+        if (typeof document === 'undefined') return;
+        
+        const errorDiv = document.getElementById('abxr-auth-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    }
+    
+    // Hide error in dialog
+    private static hideAuthError(): void {
+        if (typeof document === 'undefined') return;
+        
+        const errorDiv = document.getElementById('abxr-auth-error');
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+    }
+    
+    // Handle dialog form submission
+    private static async handleDialogSubmit(): Promise<void> {
+        if (typeof document === 'undefined' || !this.currentAuthData) return;
+        
+        const input = document.getElementById('abxr-auth-input') as HTMLInputElement;
+        if (!input) return;
+        
+        const value = input.value.trim();
+        if (!value) {
+            this.showAuthError('Please enter a value');
+            return;
+        }
+        
+        try {
+            // Format and submit authentication data
+            const authData = this.formatAuthDataForSubmission(value, this.currentAuthData.type, this.currentAuthData.domain);
+            
+            console.log('AbxrLib: Submitting built-in dialog authentication:', authData);
+            
+            const success = await this.completeFinalAuth(authData);
+            
+            if (success) {
+                this.hideAuthDialog();
+                console.log('AbxrLib: Built-in dialog authentication successful - library ready to use');
+            } else {
+                const authTypeLabel = this.currentAuthData.type === 'email' ? 'email' : 
+                                    this.currentAuthData.type === 'assessmentPin' ? 'PIN' : 'credentials';
+                this.showAuthError(`Authentication failed. Please check your ${authTypeLabel} and try again.`);
+                input.focus();
+                input.select();
+            }
+        } catch (error: any) {
+            console.error('AbxrLib: Built-in dialog authentication error:', error);
+            this.showAuthError('Authentication error: ' + error.message);
+        }
+    }
+    
+    // Built-in authentication handler (browser-only)
+    static builtInAuthMechanismHandler(authData: AuthMechanismData): void {
+        if (typeof window === 'undefined') {
+            console.warn('AbxrLib: Built-in dialog not available in non-browser environment');
+            return;
+        }
+        
+        console.log('AbxrLib: Using built-in authentication dialog for:', authData.type);
+        this.showAuthDialog(authData);
+    }
+    
     // Extract authMechanism data into a structured format
     static extractAuthMechanismData(): AuthMechanismData | null {
         try {
@@ -553,7 +795,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Global function for easy access
-export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string, authMechanismCallback?: AuthMechanismCallback): void {
+export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string, authMechanismCallback?: AuthMechanismCallback, dialogOptions?: AuthMechanismDialogOptions): void {
     
     // Validate required appId
     if (!appId) {
@@ -561,9 +803,27 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
         return;
     }
     
-    // Set the authMechanism callback if provided
+    // Configure dialog options if provided
+    if (dialogOptions) {
+        Abxr.setDialogOptions(dialogOptions);
+    }
+    
+    // Set up authMechanism handling
     if (authMechanismCallback) {
+        // Use custom callback
         Abxr.setAuthMechanismCallback(authMechanismCallback);
+    } else {
+        // Determine if we should use built-in dialog
+        const currentOptions = Abxr.getDialogOptions();
+        const isBrowser = typeof window !== 'undefined';
+        const shouldUseBuiltIn = currentOptions.enabled !== false && isBrowser;
+        
+        if (shouldUseBuiltIn) {
+            console.log('AbxrLib: Built-in authentication dialog enabled for browser environment');
+            Abxr.setAuthMechanismCallback((authData) => Abxr.builtInAuthMechanismHandler(authData));
+        } else if (!isBrowser) {
+            console.log('AbxrLib: Non-browser environment detected - built-in dialog disabled');
+        }
     }
     
     // Try to get orgId and authSecret from URL parameters first, then fall back to function parameters
@@ -608,7 +868,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                         
                         if (hasAuthMechanism) {
                             console.log('AbxrLib: Additional authentication required (authMechanism detected)');
-                            console.log('AbxrLib: AuthMechanism data:', authMechanism);
+                            //console.log('AbxrLib: AuthMechanism data:', authMechanism);
                             
                             // Set the library to require final authentication
                             Abxr.setRequiresFinalAuth(true);
@@ -616,7 +876,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                             // Extract structured authMechanism data
                             const authData = Abxr.extractAuthMechanismData();
                             if (authData) {
-                                console.log('AbxrLib: Extracted auth data:', authData);
+                                console.log('AbxrLib: AuthMechanism required:', authData);
                                 
                                 // Notify the client via callback if one is set
                                 const callback = Abxr.getAuthMechanismCallback();
@@ -630,9 +890,6 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                                     console.log('AbxrLib: No authMechanism callback set - client should check getRequiresFinalAuth() and call extractAuthMechanismData()');
                                 }
                             }
-                            
-                            // Log the authMechanism requirement
-                            Abxr.LogInfo('Additional authentication required - please provide required credentials');
                         } else {
                             console.log('AbxrLib: Authentication complete - no additional auth required');
                             Abxr.setAuthenticated(true);
