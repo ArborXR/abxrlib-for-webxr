@@ -7,6 +7,10 @@ import { AbxrLibAnalytics } from "./AbxrLibAnalytics";
 import { ConfigurationManager, DateTime, AbxrResult, AbxrDictStrings, StringList, TimeSpan, InteractionType, ResultOptions } from './network/utils/DotNetishTypes';
 import { AbxrBase, AbxrEvent, AbxrLog, AbxrStorage, AbxrTelemetry, AbxrAIProxy, LogLevel } from "./AbxrLibCoreModel";
 import { Partner } from "./AbxrLibClient";
+// Import dialog templates
+import { getHTMLDialogTemplate, AuthDialogData as HTMLAuthDialogData } from './templates/HTMLAuthDialog';
+import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig } from './templates/XRAuthDialog';
+
 
 // Initialize all static members
 AbxrLibInit.InitStatics();
@@ -431,8 +435,8 @@ export class Abxr {
         return { ...this.dialogOptions };
     }
     
-    // Create built-in authentication dialog (browser-only)
-    private static createAuthDialog(): void {
+    // Create built-in authentication dialog using template
+    private static createAuthDialog(authData: AuthMechanismData): void {
         if (typeof window === 'undefined' || typeof document === 'undefined') {
             return; // Not in browser environment
         }
@@ -442,24 +446,8 @@ export class Abxr {
             return;
         }
         
-        // Create dialog HTML
-        const dialogHTML = `
-            <div id="abxr-auth-dialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000;">
-                <div id="abxr-auth-dialog-content" style="background: white; margin: 15% auto; padding: 30px; border-radius: 10px; width: 400px; max-width: 90%; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">
-                    <h2 id="abxr-auth-title" style="color: #333; margin-top: 0;">Additional Authentication Required</h2>
-                    <p id="abxr-auth-prompt" style="color: #666; margin: 15px 0;">Please enter the required authentication information:</p>
-                    <div id="abxr-auth-error" style="display: none; color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 10px; margin: 10px 0; font-size: 14px;"></div>
-                    <div id="abxr-auth-input-container" style="display: flex; align-items: center; justify-content: center; margin: 15px 0;">
-                        <input type="text" id="abxr-auth-input" style="padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box; flex: 1;" placeholder="Enter value..." />
-                        <span id="abxr-auth-domain" style="margin-left: 5px; font-size: 16px; color: #666; display: none;"></span>
-                    </div>
-                    <div style="margin-top: 20px;">
-                        <button id="abxr-auth-submit" style="padding: 12px 25px; margin: 0 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white;">Submit</button>
-                        <button id="abxr-auth-cancel" style="padding: 12px 25px; margin: 0 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background-color: #6c757d; color: white;">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        `;
+        // Generate dialog HTML from template
+        const dialogHTML = getHTMLDialogTemplate(authData);
         
         // Insert dialog into DOM
         document.body.insertAdjacentHTML('beforeend', dialogHTML);
@@ -515,57 +503,25 @@ export class Abxr {
         
         this.currentAuthData = authData;
         
-        // Create dialog if it doesn't exist
-        this.createAuthDialog();
+        // Create dialog with authData (template handles all configuration)
+        this.createAuthDialog(authData);
         
         const dialog = document.getElementById('abxr-auth-dialog');
-        const title = document.getElementById('abxr-auth-title');
-        const prompt = document.getElementById('abxr-auth-prompt');
         const input = document.getElementById('abxr-auth-input') as HTMLInputElement;
         const domainSpan = document.getElementById('abxr-auth-domain');
-        const inputContainer = document.getElementById('abxr-auth-input-container');
         
-        if (!dialog || !title || !prompt || !input) {
+        if (!dialog || !input) {
             console.error('AbxrLib: Auth dialog elements not found');
             return;
         }
         
-        // Configure dialog based on auth type
-        let promptText = authData.prompt || 'Please enter the required authentication information:';
-        let inputType = 'text';
-        let placeholder = 'Enter value...';
-        
-        if (authData.type === 'assessmentPin') {
-            inputType = 'password';
-            placeholder = 'Enter PIN...';
-            title.textContent = 'PIN Required';
-        } else if (authData.type === 'email') {
-            inputType = 'email';
-            placeholder = 'Enter email username';
-            title.textContent = 'Email Authentication Required';
-        } else {
-            title.textContent = 'Authentication Required';
-        }
-        
-        // Set dialog content
-        prompt.textContent = promptText;
-        input.type = inputType;
-        input.placeholder = placeholder;
+        // Clear any previous values and errors
         input.value = '';
         this.hideAuthError();
         
-        // Handle email domain display
-        if (authData.type === 'email' && authData.domain && domainSpan && inputContainer) {
-            domainSpan.textContent = '@' + authData.domain;
+        // Handle email domain display (template creates the structure, we just show it)
+        if (authData.type === 'email' && authData.domain && domainSpan) {
             domainSpan.style.display = 'inline';
-            input.style.width = 'auto';
-            input.style.flex = '1';
-            inputContainer.style.width = '100%';
-        } else if (domainSpan && inputContainer) {
-            domainSpan.style.display = 'none';
-            input.style.width = '100%';
-            input.style.flex = 'none';
-            inputContainer.style.width = '100%';
         }
         
         // Show dialog and focus input
@@ -735,209 +691,69 @@ export class Abxr {
         // For now, we'll create a simple WebXR-aware interface
         // In a full implementation, this would render the React Three Fiber component
         
-        // Try to import and use the XR dialog
-        try {
-            // Dynamically import the XR dialog to avoid bundling issues when not needed
-            const xrModule = await import('./XRAuthDialog');
-            const { XRAuthDialogFallback } = xrModule;
-            
-            // Create a container for the XR dialog
-            const container = document.createElement('div');
-            container.id = 'abxrlib-xr-dialog-container';
-            document.body.appendChild(container);
-            
-            // For now, use the fallback component
-            // In a full implementation, this would check for Three.js and use the full XR component
-            const handleSubmit = (value: string) => {
-                const formattedData = this.formatAuthDataForSubmission(value, authData.type, authData.domain);
-                this.completeFinalAuth(formattedData);
-                this.hideXRDialog();
-            };
-            
-            const handleCancel = () => {
-                this.hideXRDialog();
-                console.log('AbxrLib: XR authentication cancelled by user');
-            };
-            
-            // Store current auth data and handlers for XR dialog
-            this.currentAuthData = authData;
-            (window as any).abxrXRHandlers = { handleSubmit, handleCancel };
-            
-            // Use fallback for now - in production this would render the React component
-            this.showXRDialogFallback(authData, handleSubmit, handleCancel);
-            
-        } catch (importError) {
-            console.warn('AbxrLib: Could not load XR dialog module:', importError);
-            throw importError;
-        }
+        // For now, use the XR-styled DOM fallback
+        // Future: When React Three Fiber is properly integrated, this would dynamically
+        // import and render the full 3D XR component from src/components/XRAuthDialog.tsx
+        
+        const handleSubmit = (value: string) => {
+            const formattedData = this.formatAuthDataForSubmission(value, authData.type, authData.domain);
+            this.completeFinalAuth(formattedData);
+            this.hideXRDialog();
+        };
+        
+        const handleCancel = () => {
+            this.hideXRDialog();
+            console.log('AbxrLib: XR authentication cancelled by user');
+        };
+        
+        // Store current auth data for XR dialog
+        this.currentAuthData = authData;
+        
+        // Use XR-styled DOM fallback (looks great, works everywhere)
+        this.showXRDialogFallback(authData, handleSubmit, handleCancel);
     }
     
-    // Show XR dialog fallback (styled for XR but using DOM)
+    // Show XR dialog using template
     private static showXRDialogFallback(
         authData: AuthMechanismData, 
         onSubmit: (value: string) => void, 
         onCancel: () => void
     ): void {
-        // Create XR-styled fallback dialog
-        const overlay = document.createElement('div');
-        overlay.id = 'abxrlib-xr-dialog-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            font-family: 'Arial', sans-serif;
-        `;
-        
-        const dialog = document.createElement('div');
-        dialog.style.cssText = `
-            background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
-            color: #ffffff;
-            padding: 30px;
-            border-radius: 15px;
-            border: 2px solid #5A58EB;
-            box-shadow: 0 0 30px rgba(90, 88, 235, 0.3);
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            animation: xrGlow 2s ease-in-out infinite alternate;
-        `;
-        
-        // Add XR-style glow animation
+        // Add XR-style glow animation CSS
         const style = document.createElement('style');
-        style.textContent = `
-            @keyframes xrGlow {
-                from { box-shadow: 0 0 30px rgba(90, 88, 235, 0.3); }
-                to { box-shadow: 0 0 40px rgba(90, 88, 235, 0.6); }
-            }
-        `;
+        style.textContent = getXRDialogStyles();
         document.head.appendChild(style);
         
-        const getTitle = () => {
-            if (authData.prompt) return authData.prompt;
-            if (authData.type === 'email') return 'XR Email Authentication';
-            if (authData.type === 'assessmentPin') return 'XR PIN Authentication';
-            return 'XR Authentication Required';
-        };
+        // Generate XR dialog HTML from template
+        const dialogHTML = getXRDialogTemplate(authData);
         
-        const getPlaceholder = () => {
-            if (authData.type === 'email') {
-                return authData.domain ? 'Enter username' : 'Email address';
-            } else if (authData.type === 'assessmentPin') {
-                return 'Enter PIN';
-            }
-            return 'Enter value';
-        };
+        // Insert dialog into DOM
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
         
-        dialog.innerHTML = `
-            <h2 style="margin: 0 0 20px 0; color: #5A58EB; text-shadow: 0 0 10px rgba(90, 88, 235, 0.5);">
-                ${getTitle()}
-            </h2>
-            <div id="abxrlib-xr-error" style="
-                background: rgba(255, 68, 68, 0.2);
-                border: 1px solid #ff4444;
-                color: #ff6666;
-                padding: 10px;
-                border-radius: 8px;
-                margin-bottom: 15px;
-                display: none;
-                font-size: 12px;
-            "></div>
-            <div id="abxrlib-xr-input-container" style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 15px 0 20px 0;
-                ${authData.type === 'email' && authData.domain ? 'gap: 5px;' : ''}
-            ">
-                <input 
-                    type="${authData.type === 'assessmentPin' ? 'password' : 'text'}"
-                    id="abxrlib-xr-input"
-                    placeholder="${getPlaceholder()}"
-                    style="
-                        ${authData.type === 'email' && authData.domain ? 'flex: 1;' : 'width: 100%;'}
-                        padding: 15px;
-                        border: 2px solid #333;
-                        border-radius: 8px;
-                        background: rgba(51, 51, 51, 0.8);
-                        color: #ffffff;
-                        font-size: 16px;
-                        box-sizing: border-box;
-                        outline: none;
-                        transition: border-color 0.3s ease;
-                    "
-                    autocomplete="off"
-                />
-                ${authData.type === 'email' && authData.domain ? 
-                    `<span id="abxrlib-xr-domain" style="
-                        margin-left: 5px;
-                        font-size: 16px;
-                        color: #ccc;
-                        white-space: nowrap;
-                    ">@${authData.domain}</span>` : 
-                    ''
-                }
-            </div>
-            <div style="display: flex; gap: 15px; justify-content: center;">
-                <button id="abxrlib-xr-cancel" style="
-                    background: rgba(102, 102, 102, 0.8);
-                    color: white;
-                    border: 2px solid #666;
-                    padding: 12px 24px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: all 0.3s ease;
-                ">Cancel</button>
-                <button id="abxrlib-xr-submit" style="
-                    background: linear-gradient(145deg, #05DA98, #04C185);
-                    color: white;
-                    border: 2px solid #5A58EB;
-                    padding: 12px 24px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 0 15px rgba(90, 88, 235, 0.3);
-                ">Submit</button>
-            </div>
-            <p style="
-                margin: 20px 0 0 0;
-                color: #888;
-                font-size: 10px;
-                font-style: italic;
-            ">
-                XR-Optimized Authentication Dialog
-            </p>
-        `;
+        // Get dialog elements
+        const overlay = document.getElementById('abxrlib-xr-dialog-overlay');
+        const input = document.querySelector('#abxrlib-xr-input') as HTMLInputElement;
+        const submitBtn = document.querySelector('#abxrlib-xr-submit') as HTMLButtonElement;
+        const cancelBtn = document.querySelector('#abxrlib-xr-cancel') as HTMLButtonElement;
         
-        overlay.appendChild(dialog);
-        document.body.appendChild(overlay);
+        if (!overlay || !input || !submitBtn || !cancelBtn) {
+            console.error('AbxrLib: XR dialog elements not found');
+            return;
+        }
         
-        // Focus input and add event listeners
-        const input = dialog.querySelector('#abxrlib-xr-input') as HTMLInputElement;
-        const submitBtn = dialog.querySelector('#abxrlib-xr-submit') as HTMLButtonElement;
-        const cancelBtn = dialog.querySelector('#abxrlib-xr-cancel') as HTMLButtonElement;
-        
+        // Focus input
         input.focus();
         
-        // Add hover effects
+        // Add hover effects using config from template
         input.addEventListener('focus', () => {
-            input.style.borderColor = '#5A58EB';
-            input.style.boxShadow = '0 0 15px rgba(90, 88, 235, 0.3)';
+            Object.assign(input.style, XRDialogConfig.focusStyle);
         });
         
         input.addEventListener('blur', () => {
-            input.style.borderColor = '#333';
-            input.style.boxShadow = 'none';
+            Object.assign(input.style, XRDialogConfig.blurStyle);
         });
         
+        // Handle form submission
         const handleSubmitClick = () => {
             const value = input.value.trim();
             if (value) {
@@ -959,7 +775,7 @@ export class Abxr {
             }
         });
         
-        // Store references for hiding
+        // Store references for cleanup
         (this as any).xrDialogOverlay = overlay;
         (this as any).xrDialogStyle = style;
     }

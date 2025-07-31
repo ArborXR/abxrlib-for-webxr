@@ -9,7 +9,7 @@ import {
   Row,
   Column
 } from '@react-three/uikit';
-import { AuthMechanismData } from './index';
+import { AuthMechanismData } from '../index';
 
 interface XRAuthDialogProps {
   authData: AuthMechanismData;
