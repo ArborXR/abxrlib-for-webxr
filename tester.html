@@ -196,6 +196,47 @@
         }
     }
 
+    async function initXRDialog() {
+        console.log("Testing XR Dialog (WebXR optimized)");
+        updateBuiltinResult('Initializing with XR Dialog (WebXR optimized)...', 'info');
+        
+        try {
+            const restUrl = document.getElementById('rest_url_input').value;
+            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // Force XR dialog type
+            const dialogOptions = {
+                enabled: true,
+                type: 'xr',
+                xrFallback: true
+            };
+            
+            Abxr_init(app_id, org_id, auth_secret, appConfig, undefined, dialogOptions);
+            Abxr.setDebugMode(true);
+            
+            setTimeout(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
+                    enableSharedButtons();
+                } else if (Abxr.getRequiresFinalAuth()) {
+                    updateBuiltinResult('Initial authentication successful. XR dialog should appear for additional authentication with cyan glow and VR-optimized styling!', 'warning');
+                } else {
+                    updateBuiltinResult('Authentication in progress...', 'info');
+                }
+            }, 1000);
+            
+            const checkAuth = setInterval(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
+                    enableSharedButtons();
+                    clearInterval(checkAuth);
+                }
+            }, 500);
+        } catch (error) {
+            updateBuiltinResult('Error: ' + error.message, 'error');
+        }
+    }
+
     async function initBuiltinDisabled() {
         console.log("Testing with built-in dialog disabled");
         updateBuiltinResult('Initializing with built-in dialog disabled...', 'info');
@@ -340,6 +381,7 @@
     <div class="section" style="background: #e7f3ff; border: 1px solid #bee5eb;">
       <h2>Zero-Code Authentication</h2>
       <p><strong>NEW:</strong> No custom dialog HTML/CSS/JavaScript needed! The library handles everything automatically.</p>
+      <p><strong>XR SUPPORT:</strong> Includes WebXR-optimized dialogs for VR/AR developers!</p>
       
       <div style="margin-bottom: 15px;">
         <label for="rest_url_input" style="display: block; margin-bottom: 5px; font-weight: bold;">REST Server URL:</label>
@@ -354,6 +396,10 @@
         
         <button onclick="initBuiltinCustom()" style="background: #6f42c1; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
           Custom Styled Dialog
+        </button>
+        
+        <button onclick="initXRDialog()" style="background: #00ffff; color: black; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);">
+          XR Dialog (WebXR)
         </button>
         
         <button onclick="initBuiltinDisabled()" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">

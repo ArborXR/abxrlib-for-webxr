@@ -122,9 +122,11 @@ export type AuthMechanismCallback = (data: AuthMechanismData) => void;
 // Configuration options for built-in browser dialog
 export interface AuthMechanismDialogOptions {
     enabled?: boolean;           // Enable built-in dialog (default: true for browser environments)
+    type?: 'html' | 'xr' | 'auto'; // Dialog type: 'html' for DOM, 'xr' for WebXR, 'auto' for auto-detect
     customCallback?: AuthMechanismCallback;  // Custom callback to use instead
-    dialogStyle?: Partial<CSSStyleDeclaration>; // Custom dialog styling
-    overlayStyle?: Partial<CSSStyleDeclaration>; // Custom overlay styling
+    dialogStyle?: Partial<CSSStyleDeclaration>; // Custom dialog styling (HTML dialog only)
+    overlayStyle?: Partial<CSSStyleDeclaration>; // Custom overlay styling (HTML dialog only)
+    xrFallback?: boolean;        // Use HTML fallback if XR dialog fails (default: true)
 }
 
 // Global Abxr class that gets configured by Abxr_init()
@@ -139,7 +141,11 @@ export class Abxr {
         authSecret?: string;
     } = {};
     private static authMechanismCallback: AuthMechanismCallback | null = null;
-    private static dialogOptions: AuthMechanismDialogOptions = { enabled: true };
+    private static dialogOptions: AuthMechanismDialogOptions = { 
+        enabled: true, 
+        type: 'auto',
+        xrFallback: true 
+    };
     private static currentAuthData: AuthMechanismData | null = null;
     
     // Expose commonly used types and enums for easy access
@@ -644,8 +650,356 @@ export class Abxr {
             return;
         }
         
-        console.log('AbxrLib: Using built-in authentication dialog for:', authData.type);
-        this.showAuthDialog(authData);
+        const options = this.getDialogOptions();
+        const dialogType = this.determineDialogType(options);
+        
+        console.log(`AbxrLib: Using built-in authentication dialog (${dialogType}) for:`, authData.type);
+        
+        if (dialogType === 'xr') {
+            this.showXRDialog(authData);
+        } else {
+            this.showAuthDialog(authData);
+        }
+    }
+    
+    // Determine which dialog type to use based on environment and options
+    private static determineDialogType(options: AuthMechanismDialogOptions): 'html' | 'xr' {
+        if (options.type === 'html') return 'html';
+        if (options.type === 'xr') return 'xr';
+        
+        // Auto-detect: use XR if WebXR is available and active, otherwise HTML
+        if (options.type === 'auto' || !options.type) {
+            return this.isXREnvironment() ? 'xr' : 'html';
+        }
+        
+        return 'html';
+    }
+    
+    // Detect if we're in an ACTIVE XR environment (not just XR-capable)
+    private static isXREnvironment(): boolean {
+        if (typeof window === 'undefined' || !('navigator' in window)) {
+            return false;
+        }
+        
+        try {
+            // Only return true if we're actually IN an XR session, not just XR-capable
+            
+            // Check for active WebXR session
+            if ('xr' in navigator && (navigator as any).xr) {
+                // Note: This would need to be async in real implementation to check for active session
+                // For now, we'll be conservative and return false unless explicitly XR
+                
+                // Check if we have clear indicators of being in XR
+                const isInVR = !!(document as any).mozFullScreenElement || 
+                              !!(document as any).webkitFullscreenElement ||
+                              !!document.fullscreenElement;
+                              
+                const hasVRDisplay = !!(navigator as any).getVRDisplays;
+                const hasActiveVRDisplay = hasVRDisplay && (window as any).VRDisplay;
+                
+                // Only return true if we have strong evidence of active XR
+                return hasActiveVRDisplay && isInVR;
+            }
+            
+            // For now, default to false to prefer HTML dialog
+            // This ensures built-in dialog works as expected for regular web usage
+            return false;
+            
+        } catch (error) {
+            console.warn('AbxrLib: Error detecting XR environment:', error);
+            return false;
+        }
+    }
+    
+    // Show XR authentication dialog
+    private static showXRDialog(authData: AuthMechanismData): void {
+        try {
+            // Try to load and show XR dialog
+            this.loadXRDialog(authData);
+        } catch (error) {
+            console.warn('AbxrLib: Failed to show XR dialog, falling back to HTML dialog:', error);
+            const options = this.getDialogOptions();
+            if (options.xrFallback !== false) {
+                this.showAuthDialog(authData);
+            } else {
+                console.error('AbxrLib: XR dialog failed and fallback is disabled');
+            }
+        }
+    }
+    
+    // Load and display XR dialog component
+    private static async loadXRDialog(authData: AuthMechanismData): Promise<void> {
+        // This will be implemented to dynamically load and render the XR dialog
+        console.log('AbxrLib: Loading XR dialog for:', authData.type);
+        
+        // For now, we'll create a simple WebXR-aware interface
+        // In a full implementation, this would render the React Three Fiber component
+        
+        // Try to import and use the XR dialog
+        try {
+            // Dynamically import the XR dialog to avoid bundling issues when not needed
+            const xrModule = await import('./XRAuthDialog');
+            const { XRAuthDialogFallback } = xrModule;
+            
+            // Create a container for the XR dialog
+            const container = document.createElement('div');
+            container.id = 'abxrlib-xr-dialog-container';
+            document.body.appendChild(container);
+            
+            // For now, use the fallback component
+            // In a full implementation, this would check for Three.js and use the full XR component
+            const handleSubmit = (value: string) => {
+                const formattedData = this.formatAuthDataForSubmission(value, authData.type, authData.domain);
+                this.completeFinalAuth(formattedData);
+                this.hideXRDialog();
+            };
+            
+            const handleCancel = () => {
+                this.hideXRDialog();
+                console.log('AbxrLib: XR authentication cancelled by user');
+            };
+            
+            // Store current auth data and handlers for XR dialog
+            this.currentAuthData = authData;
+            (window as any).abxrXRHandlers = { handleSubmit, handleCancel };
+            
+            // Use fallback for now - in production this would render the React component
+            this.showXRDialogFallback(authData, handleSubmit, handleCancel);
+            
+        } catch (importError) {
+            console.warn('AbxrLib: Could not load XR dialog module:', importError);
+            throw importError;
+        }
+    }
+    
+    // Show XR dialog fallback (styled for XR but using DOM)
+    private static showXRDialogFallback(
+        authData: AuthMechanismData, 
+        onSubmit: (value: string) => void, 
+        onCancel: () => void
+    ): void {
+        // Create XR-styled fallback dialog
+        const overlay = document.createElement('div');
+        overlay.id = 'abxrlib-xr-dialog-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            font-family: 'Arial', sans-serif;
+        `;
+        
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+            background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+            color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #5A58EB;
+            box-shadow: 0 0 30px rgba(90, 88, 235, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: xrGlow 2s ease-in-out infinite alternate;
+        `;
+        
+        // Add XR-style glow animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes xrGlow {
+                from { box-shadow: 0 0 30px rgba(90, 88, 235, 0.3); }
+                to { box-shadow: 0 0 40px rgba(90, 88, 235, 0.6); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        const getTitle = () => {
+            if (authData.prompt) return authData.prompt;
+            if (authData.type === 'email') return 'XR Email Authentication';
+            if (authData.type === 'assessmentPin') return 'XR PIN Authentication';
+            return 'XR Authentication Required';
+        };
+        
+        const getPlaceholder = () => {
+            if (authData.type === 'email') {
+                return authData.domain ? 'Enter username' : 'Email address';
+            } else if (authData.type === 'assessmentPin') {
+                return 'Enter PIN';
+            }
+            return 'Enter value';
+        };
+        
+        dialog.innerHTML = `
+            <h2 style="margin: 0 0 20px 0; color: #5A58EB; text-shadow: 0 0 10px rgba(90, 88, 235, 0.5);">
+                ${getTitle()}
+            </h2>
+            <div id="abxrlib-xr-error" style="
+                background: rgba(255, 68, 68, 0.2);
+                border: 1px solid #ff4444;
+                color: #ff6666;
+                padding: 10px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                display: none;
+                font-size: 12px;
+            "></div>
+            <div id="abxrlib-xr-input-container" style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 15px 0 20px 0;
+                ${authData.type === 'email' && authData.domain ? 'gap: 5px;' : ''}
+            ">
+                <input 
+                    type="${authData.type === 'assessmentPin' ? 'password' : 'text'}"
+                    id="abxrlib-xr-input"
+                    placeholder="${getPlaceholder()}"
+                    style="
+                        ${authData.type === 'email' && authData.domain ? 'flex: 1;' : 'width: 100%;'}
+                        padding: 15px;
+                        border: 2px solid #333;
+                        border-radius: 8px;
+                        background: rgba(51, 51, 51, 0.8);
+                        color: #ffffff;
+                        font-size: 16px;
+                        box-sizing: border-box;
+                        outline: none;
+                        transition: border-color 0.3s ease;
+                    "
+                    autocomplete="off"
+                />
+                ${authData.type === 'email' && authData.domain ? 
+                    `<span id="abxrlib-xr-domain" style="
+                        margin-left: 5px;
+                        font-size: 16px;
+                        color: #ccc;
+                        white-space: nowrap;
+                    ">@${authData.domain}</span>` : 
+                    ''
+                }
+            </div>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="abxrlib-xr-cancel" style="
+                    background: rgba(102, 102, 102, 0.8);
+                    color: white;
+                    border: 2px solid #666;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                ">Cancel</button>
+                <button id="abxrlib-xr-submit" style="
+                    background: linear-gradient(145deg, #05DA98, #04C185);
+                    color: white;
+                    border: 2px solid #5A58EB;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 0 15px rgba(90, 88, 235, 0.3);
+                ">Submit</button>
+            </div>
+            <p style="
+                margin: 20px 0 0 0;
+                color: #888;
+                font-size: 10px;
+                font-style: italic;
+            ">
+                XR-Optimized Authentication Dialog
+            </p>
+        `;
+        
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+        
+        // Focus input and add event listeners
+        const input = dialog.querySelector('#abxrlib-xr-input') as HTMLInputElement;
+        const submitBtn = dialog.querySelector('#abxrlib-xr-submit') as HTMLButtonElement;
+        const cancelBtn = dialog.querySelector('#abxrlib-xr-cancel') as HTMLButtonElement;
+        
+        input.focus();
+        
+        // Add hover effects
+        input.addEventListener('focus', () => {
+            input.style.borderColor = '#5A58EB';
+            input.style.boxShadow = '0 0 15px rgba(90, 88, 235, 0.3)';
+        });
+        
+        input.addEventListener('blur', () => {
+            input.style.borderColor = '#333';
+            input.style.boxShadow = 'none';
+        });
+        
+        const handleSubmitClick = () => {
+            const value = input.value.trim();
+            if (value) {
+                onSubmit(value);
+            } else {
+                this.showXRError('Please enter a value');
+            }
+        };
+        
+        submitBtn.addEventListener('click', handleSubmitClick);
+        cancelBtn.addEventListener('click', onCancel);
+        
+        // Handle Enter key
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleSubmitClick();
+            } else if (e.key === 'Escape') {
+                onCancel();
+            }
+        });
+        
+        // Store references for hiding
+        (this as any).xrDialogOverlay = overlay;
+        (this as any).xrDialogStyle = style;
+    }
+    
+    // Show error in XR dialog
+    private static showXRError(message: string): void {
+        const errorDiv = document.getElementById('abxrlib-xr-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                if (errorDiv) errorDiv.style.display = 'none';
+            }, 3000);
+        }
+    }
+    
+    // Hide XR dialog
+    private static hideXRDialog(): void {
+        const overlay = document.getElementById('abxrlib-xr-dialog-overlay') || (this as any).xrDialogOverlay;
+        const container = document.getElementById('abxrlib-xr-dialog-container');
+        const style = (this as any).xrDialogStyle;
+        
+        if (overlay) {
+            overlay.remove();
+            (this as any).xrDialogOverlay = null;
+        }
+        
+        if (container) {
+            container.remove();
+        }
+        
+        if (style) {
+            style.remove();
+            (this as any).xrDialogStyle = null;
+        }
+        
+        // Clean up global handlers
+        if ((window as any).abxrXRHandlers) {
+            delete (window as any).abxrXRHandlers;
+        }
     }
     
     // Extract authMechanism data into a structured format
