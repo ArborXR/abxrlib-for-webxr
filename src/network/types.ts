@@ -228,6 +228,23 @@ export class CurlHttp
 				const objResponse:	Response = await fetch(this.m_objRequest);
 
 				rpResponse.szResponse = await objResponse.text();
+				
+				// Check HTTP status code
+				if (!objResponse.ok) {
+					// Try to extract error message from response body
+					try {
+						const errorData = JSON.parse(rpResponse.szResponse);
+						if (errorData.message) {
+							this.m_szLastError = `HTTP ${objResponse.status}: ${errorData.message}`;
+						} else {
+							this.m_szLastError = `HTTP ${objResponse.status}: ${objResponse.statusText}`;
+						}
+					} catch (parseError) {
+						this.m_szLastError = `HTTP ${objResponse.status}: ${objResponse.statusText}`;
+					}
+					return false;
+				}
+				
 				// ---
 				return true;
 			}

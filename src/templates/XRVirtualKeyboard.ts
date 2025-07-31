@@ -35,7 +35,7 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
     let keyboardRows: string[][];
     let specialKeys: Array<{key: string, display: string, width: string}>;
     
-    if (layoutType === 'assessmentPin') {
+    if (layoutType === 'assessmentPin' || layoutType === 'pin') {
         // PIN pad layout: 3x3 number grid
         keyboardRows = [
             ['1', '2', '3'],
@@ -144,7 +144,7 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
             user-select: none;
             box-sizing: border-box;
             position: relative;
-            ${layoutType === 'assessmentPin' 
+            ${layoutType === 'assessmentPin' || layoutType === 'pin'
                 ? 'max-width: 300px; width: 100%; min-width: 250px;'
                 : 'max-width: 550px; width: 100%; min-width: 450px;'}
         ">

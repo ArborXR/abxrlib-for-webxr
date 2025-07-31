@@ -304,6 +304,21 @@ export class ApiTokenJWT extends DataObjectBase
 /// </summary>
 export class AbxrLibClient
 {
+	// Static property to store the last authentication error message
+	private static lastAuthError: string = '';
+	
+	public static getLastAuthError(): string {
+		return this.lastAuthError;
+	}
+	
+	public static clearLastAuthError(): void {
+		this.lastAuthError = '';
+	}
+	
+	private static setLastAuthError(error: string): void {
+		this.lastAuthError = error;
+	}
+	
 	/// <summary>
 	/// Core template-function for POSTing list of T to backend.
 	/// </summary>
@@ -582,12 +597,14 @@ export class AbxrLibClient
 			//});
 
 			if (!eCurlRet) {
+				this.setLastAuthError(objRequest.m_szLastError);
 				return AbxrResult.eAuthenticateFailedNetworkError;
 			}
 		}
 		catch (error)
 		{
-			console.log("AbxrLib Authentication Error:", error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.setLastAuthError(`Authentication exception: ${errorMessage}`);
 			//WriteLine($"Error: {ex.Message}\nStackTrace: {ex.StackTrace}");
 			return AbxrResult.eAuthenticateFailed;
 		}

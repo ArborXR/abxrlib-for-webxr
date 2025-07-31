@@ -5,12 +5,20 @@
   <title>Simple AbxrLib Test</title>
   <script src="dist/abxrlib-for-webxr.js"></script>
   <script>
-    Abxr_init(
-        '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0',  // App ID (required)
-        '5304ef74-423f-4bd4-87d9-cba4f19c3bdb',  // Org ID (optional)
-        'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj', // Auth Secret (optional)
-        '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="http://localhost:8080/v1/"/></appSettings></configuration>' // App Config (optional)
-    );
+    // Authentication configuration variables
+    const app_id = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
+    const org_id = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
+    const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
+    const rest_url = 'http://localhost:8080/v1/';
+    const app_config_template = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="{{REST_URL}}"/></appSettings></configuration>';
+    
+    // Helper function to create appConfig with specific REST URL
+    function createAppConfig(restUrl) {
+        return app_config_template.replace('{{REST_URL}}', restUrl);
+    }
+    
+    // Initialize AbxrLib with variables
+    Abxr_init(app_id, org_id, auth_secret, createAppConfig(rest_url));
     
     // Enable debug mode
     Abxr.setDebugMode(true);

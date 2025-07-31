@@ -12,9 +12,13 @@
     const app_id = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
     const org_id = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
     const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
-
-    const rest_url = 'https://lib-backend.xrdm.app/v1/';
+    const rest_url = 'http://localhost:8080/v1/';
+    const app_config_template = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="{{REST_URL}}"/></appSettings></configuration>';
     
+    // Helper function to create appConfig with specific REST URL
+    function createAppConfig(restUrl) {
+        return app_config_template.replace('{{REST_URL}}', restUrl);
+    }
 
     // XR dialog system - no custom dialog functions needed!
     // The library handles everything automatically with beautiful XR-optimized dialogs.
@@ -101,10 +105,8 @@
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
-            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
-            
             // No callback or dialog options - uses XR dialog automatically
-            Abxr_init(app_id, org_id, auth_secret, appConfig);
+            Abxr_init(app_id, org_id, auth_secret, createAppConfig(restUrl));
             Abxr.setDebugMode(true);
             
             // Check authentication status
@@ -112,6 +114,8 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
                     enableSharedButtons();
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                 } else if (Abxr.getRequiresFinalAuth()) {
                     updateBuiltinResult('Initial authentication successful. XR dialog should appear automatically for additional authentication with purple theme and virtual keyboard.', 'warning');
                 } else {
@@ -124,6 +128,9 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
                     enableSharedButtons();
+                    clearInterval(checkAuth);
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                     clearInterval(checkAuth);
                 }
             }, 500);
@@ -138,7 +145,7 @@
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
-            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            const appConfig = createAppConfig(restUrl);
             
             // Custom styling for the XR dialog
             const dialogOptions = {
@@ -169,6 +176,8 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                 } else if (Abxr.getRequiresFinalAuth()) {
                     updateBuiltinResult('Initial authentication successful. Custom-styled XR dialog should appear with blue/purple theme!', 'warning');
                 } else {
@@ -180,6 +189,9 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed with custom-styled XR dialog!', 'success');
                     enableSharedButtons();
+                    clearInterval(checkAuth);
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                     clearInterval(checkAuth);
                 }
             }, 500);
@@ -194,7 +206,7 @@
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
-            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            const appConfig = createAppConfig(restUrl);
             
             // Advanced XR dialog customization
             const dialogOptions = {
@@ -228,6 +240,8 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully with advanced XR styling!', 'success');
                     enableSharedButtons();
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                 } else if (Abxr.getRequiresFinalAuth()) {
                     updateBuiltinResult('Initial authentication successful. Advanced XR dialog should appear with cyan glow, neon effects, enhanced VR-optimized styling, and virtual keyboard!', 'warning');
                 } else {
@@ -239,6 +253,9 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully with advanced XR dialog!', 'success');
                     enableSharedButtons();
+                    clearInterval(checkAuth);
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                     clearInterval(checkAuth);
                 }
             }, 500);
@@ -253,7 +270,7 @@
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
-            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            const appConfig = createAppConfig(restUrl);
             
             // XR dialog without virtual keyboard (perfect for desktop with physical keyboard)
             const dialogOptions = {
@@ -268,6 +285,8 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                 } else if (Abxr.getRequiresFinalAuth()) {
                     updateBuiltinResult('Initial authentication successful. XR dialog should appear WITHOUT virtual keyboard using default theme - perfect for desktop use with physical keyboard!', 'warning');
                 } else {
@@ -279,6 +298,9 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully with default-themed XR dialog (no virtual keyboard)!', 'success');
                     enableSharedButtons();
+                    clearInterval(checkAuth);
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                     clearInterval(checkAuth);
                 }
             }, 500);
@@ -293,7 +315,7 @@
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
-            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            const appConfig = createAppConfig(restUrl);
             
             // Disable XR dialog
             const dialogOptions = { enabled: false };
@@ -305,6 +327,8 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                 } else if (Abxr.getRequiresFinalAuth()) {
                     updateBuiltinResult('Additional authentication required, but XR dialog is disabled. You would need to implement custom handling or call Abxr.extractAuthMechanismData() to get the auth requirements.', 'warning');
                 } else {
@@ -322,7 +346,7 @@
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
-            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            const appConfig = createAppConfig(restUrl);
             
             // Custom callback function - developer implements their own dialog
             const customAuthCallback = (authData) => {
@@ -378,8 +402,12 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully with custom callback!', 'success');
                     enableSharedButtons();
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                 } else if (Abxr.getRequiresFinalAuth()) {
                     updateBuiltinResult('Initial authentication successful. Custom callback will be triggered for additional authentication.', 'warning');
+                } else {
+                    updateBuiltinResult('Authentication in progress...', 'info');
                 }
             }, 1000);
         } catch (error) {
@@ -393,7 +421,7 @@
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
-            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            const appConfig = createAppConfig(restUrl);
             
             // Method 2: Pass custom callback via dialogOptions
             const dialogOptions = {
@@ -430,8 +458,12 @@
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
+                } else if (Abxr.hasAuthenticationFailed()) {
+                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
                 } else if (Abxr.getRequiresFinalAuth()) {
                     updateBuiltinResult('Initial authentication successful. Custom callback (via options) will be triggered.', 'warning');
+                } else {
+                    updateBuiltinResult('Authentication in progress...', 'info');
                 }
             }, 1000);
         } catch (error) {

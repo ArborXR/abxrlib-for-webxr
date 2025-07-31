@@ -178,6 +178,8 @@ export class Abxr {
     private static enableDebug: boolean = false;
     private static isAuthenticated: boolean = false;
     private static requiresFinalAuth: boolean = false;
+    private static authenticationFailed: boolean = false;
+    private static authenticationError: string = '';
     private static appConfig: string = '';
     private static authParams: {
         appId?: string;
@@ -455,6 +457,24 @@ export class Abxr {
         return this.requiresFinalAuth;
     }
     
+    static hasAuthenticationFailed(): boolean {
+        return this.authenticationFailed;
+    }
+    
+    static getAuthenticationError(): string {
+        return this.authenticationError;
+    }
+    
+    static setAuthenticationFailed(failed: boolean, error: string = ''): void {
+        this.authenticationFailed = failed;
+        this.authenticationError = error;
+        if (failed) {
+            // Clear other states when authentication fails
+            this.isAuthenticated = false;
+            this.requiresFinalAuth = false;
+        }
+    }
+    
     // AuthMechanism callback methods
     static setAuthMechanismCallback(callback: AuthMechanismCallback | null): void {
         this.authMechanismCallback = callback;
@@ -522,7 +542,7 @@ export class Abxr {
                     console.log('AbxrLib: XR dialog authentication successful - library ready to use');
                 } else {
                     const authTypeLabel = authData.type === 'email' ? 'email' : 
-                                        authData.type === 'assessmentPin' ? 'PIN' : 'credentials';
+                                        (authData.type === 'assessmentPin' || authData.type === 'pin') ? 'PIN' : 'credentials';
                     this.showXRError(`Authentication failed. Please check your ${authTypeLabel} and try again.`);
                     
                     // Focus and select input for retry
@@ -756,7 +776,7 @@ export class Abxr {
             // For email type, combine input with domain if provided
             const fullEmail = domain ? `${inputValue}@${domain}` : inputValue;
             authData.email = fullEmail;
-        } else if (authType === 'assessmentPin') {
+        } else if (authType === 'assessmentPin' || authType === 'pin') {
             // For PIN type, use pin field
             authData.pin = inputValue;
         } else {
@@ -869,6 +889,10 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
         return;
     }
     
+    // Reset authentication state for new initialization attempt
+    Abxr.setAuthenticationFailed(false);
+    AbxrLibClient.clearLastAuthError();
+    
     // Configure dialog options if provided
     if (dialogOptions) {
         Abxr.setDialogOptions(dialogOptions);
@@ -920,6 +944,9 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
             AbxrLibInit.InitStatics();
             AbxrLibInit.Start();
             
+            // Clear any previous auth errors before attempting authentication
+            AbxrLibClient.clearLastAuthError();
+            
             // Attempt initial authentication
             AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR)
                 .then(async (result: number) => {
@@ -964,14 +991,20 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                             Abxr.setAuthenticated(true);
                         }
                     } else {
-                        console.warn(`AbxrLib: Authentication failed with code ${result}`);
+                        // Try to get detailed error message from AbxrLibClient
+                        const detailedError = AbxrLibClient.getLastAuthError();
+                        const errorMessage = detailedError || `Authentication failed with code ${result}`;
+                        console.warn(`AbxrLib: Authentication failed - ${errorMessage}`);
+                        Abxr.setAuthenticationFailed(true, errorMessage);
                     }
                 })
                 .catch((error: any) => {
                     console.error('AbxrLib: Authentication error:', error);
+                    Abxr.setAuthenticationFailed(true, `Authentication error: ${error.message}`);
                 });
         } catch (error: any) {
             console.error('AbxrLib: Configuration error:', error);
+            Abxr.setAuthenticationFailed(true, `Configuration error: ${error.message}`);
         }
     } else {
         console.warn('AbxrLib: Missing authentication parameters. Library will operate in debug mode.');

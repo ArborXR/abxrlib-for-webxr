@@ -86,18 +86,18 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
     const getTitle = () => {
         if (authData.prompt) return authData.prompt;
         if (authData.type === 'email') return 'XR Email Authentication';
-        if (authData.type === 'assessmentPin') return 'XR PIN Authentication';
+        if (authData.type === 'assessmentPin' || authData.type === 'pin') return 'XR PIN Authentication';
         return 'XR Authentication Required';
     };
 
     const getInputType = () => {
-        return authData.type === 'assessmentPin' ? 'password' : 'text';
+        return (authData.type === 'assessmentPin' || authData.type === 'pin') ? 'password' : 'text';
     };
 
     const getPlaceholder = () => {
         if (authData.type === 'email') {
             return authData.domain ? 'Enter username' : 'Email address';
-        } else if (authData.type === 'assessmentPin') {
+        } else if (authData.type === 'assessmentPin' || authData.type === 'pin') {
             return 'Enter PIN';
         }
         return 'Enter value';

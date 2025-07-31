@@ -39,7 +39,7 @@ export function XRAuthDialog({
   const getPlaceholder = () => {
     if (authData.type === 'email') {
       return authData.domain ? `Enter username (will use @${authData.domain})` : 'Enter email address';
-    } else if (authData.type === 'assessmentPin') {
+    } else if (authData.type === 'assessmentPin' || authData.type === 'pin') {
       return 'Enter PIN';
     }
     return 'Enter value';
@@ -52,7 +52,7 @@ export function XRAuthDialog({
     
     if (authData.type === 'email') {
       return 'Email Authentication Required';
-    } else if (authData.type === 'assessmentPin') {
+    } else if (authData.type === 'assessmentPin' || authData.type === 'pin') {
       return 'PIN Authentication Required';
     }
     
@@ -207,7 +207,7 @@ export function XRAuthDialogFallback({
   const getPlaceholder = () => {
     if (authData.type === 'email') {
       return authData.domain ? `Enter username (will use @${authData.domain})` : 'Enter email address';
-    } else if (authData.type === 'assessmentPin') {
+    } else if (authData.type === 'assessmentPin' || authData.type === 'pin') {
       return 'Enter PIN';
     }
     return 'Enter value';
@@ -220,7 +220,7 @@ export function XRAuthDialogFallback({
     
     if (authData.type === 'email') {
       return 'Email Authentication Required';
-    } else if (authData.type === 'assessmentPin') {
+    } else if (authData.type === 'assessmentPin' || authData.type === 'pin') {
       return 'PIN Authentication Required';
     }
     
@@ -281,7 +281,7 @@ export function XRAuthDialogFallback({
 
         <form onSubmit={handleSubmit}>
           <input
-            type={authData.type === 'assessmentPin' ? 'password' : 'text'}
+            type={authData.type === 'assessmentPin' || authData.type === 'pin' ? 'password' : 'text'}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={getPlaceholder()}
