@@ -9,119 +9,215 @@
   <script>
     
     // Authentication configuration
-    const app_id = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
-    const org_id = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
-    const device_id = 'AbxrLibForWebXR_js';
-    const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
-    const partner_id = 1; // Partner.eArborXR
+    const app_id = 'cf639ac9-7e64-4b02-84bc-ba289aac9525';
+    const org_id = '787277ea-f448-4ee7-a84e-637816e83c49';
+    const auth_secret = 'ayTBSNwoin2j8eBYzCudzgcj7_XXobUy4weuU3RakgHJTWZX_pzkvJrzglOoJq72';
+    //const app_id = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
+    //const org_id = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
+    //const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
+
+    const rest_url = 'https://lib-backend.xrdm.app/v1/';
     
-    let Abxr = null; // Global Abxr object
+    // Track current authentication type and domain
+    let currentAuthType = '';
+    let currentDomain = '';
     
-    // Wait for the library to load before initializing
-    function initializeLibrary() {
-        try {
-            // Check for Abxr_init in different possible locations
-            let abxrInitFunction = null;
-            
-            if (typeof Abxr_init === 'function') {
-                abxrInitFunction = Abxr_init;
-                console.log('Found Abxr_init in global scope');
-            } else if (typeof AbxrLib !== 'undefined' && typeof AbxrLib.Abxr_init === 'function') {
-                abxrInitFunction = AbxrLib.Abxr_init;
-                console.log('Found Abxr_init in AbxrLib.Abxr_init');
-            } else if (typeof AbxrLib !== 'undefined' && typeof AbxrLib.Abxr !== 'undefined' && typeof AbxrLib.Abxr.init === 'function') {
-                abxrInitFunction = AbxrLib.Abxr.init;
-                console.log('Found Abxr.init in AbxrLib.Abxr.init');
+    // Simple authentication dialog functions
+    function showAuthDialog(authMechanism) {
+        console.log('showAuthDialog called with:', authMechanism);
+        
+        const dialog = document.getElementById('authDialog');
+        const title = document.getElementById('authTitle');
+        const prompt = document.getElementById('authPrompt');
+        const input = document.getElementById('authInput');
+        
+        //console.log('Dialog elements found:', { dialog: !!dialog, title: !!title, prompt: !!prompt, input: !!input });
+        
+        if (!dialog) {
+            console.error('Auth dialog not found!');
+            return;
+        }
+        
+        // Extract information from authMechanism
+        let promptText = 'Please enter the required authentication information:';
+        let inputType = 'text';
+        let placeholder = 'Enter value...';
+        let domain = '';
+        let authType = '';
+        
+        if (authMechanism && typeof authMechanism.entries === 'function') {
+            // Handle AbxrDictStrings
+            for (const [key, value] of authMechanism.entries()) {
+                if (key === 'prompt') {
+                    promptText = value;
+                } else if (key === 'type') {
+                    authType = value;
+                    if (value === 'assessmentPin') {
+                        inputType = 'password';
+                        placeholder = 'Enter PIN...';
+                        title.textContent = 'PIN Required';
+                    } else if (value === 'email') {
+                        inputType = 'email';
+                        placeholder = 'Enter email username';
+                        title.textContent = 'Email Authentication Required';
+                    }
+                } else if (key === 'domain') {
+                    domain = value;
+                }
             }
-            
-            if (abxrInitFunction) {
-                console.log('Library loaded successfully');
-                console.log('Library initialized successfully');
-                
-                // Debug: Check what's available in global scope
-                console.log('Global scope check:');
-                console.log('Abxr_init:', typeof Abxr_init);
-                console.log('AbxrLib:', typeof AbxrLib);
-                if (typeof AbxrLib !== 'undefined') {
-                    console.log('AbxrLib.Abxr_init:', typeof AbxrLib.Abxr_init);
-                    console.log('AbxrLib.Abxr:', typeof AbxrLib.Abxr);
-                    console.log('AbxrLib keys:', Object.keys(AbxrLib));
-                }
-                console.log('Abxr:', typeof Abxr);
-                
-                if (typeof Abxr === 'undefined') {
-                    console.error('Abxr is not defined in global scope!');
-                    console.log('Available globals:', Object.keys(window).filter(key => key.includes('Abxr')));
-                } else {
-                    console.log('Abxr is properly defined');
-                }
-            } else {
-                console.error('Abxr_init function not found. Library may not be loaded properly.');
-                console.log('Available globals:', Object.keys(window).filter(key => key.includes('Abxr')));
-                if (typeof AbxrLib !== 'undefined') {
-                    console.log('AbxrLib contents:', AbxrLib);
-                }
-                // Retry after a short delay
-                setTimeout(initializeLibrary, 100);
-            }
-        } catch (error) {
-            console.error('Error initializing library:', error);
+        }
+        
+        // Store current auth type and domain globally
+        currentAuthType = authType;
+        currentDomain = domain;
+        
+        prompt.textContent = promptText;
+        input.type = inputType;
+        input.placeholder = placeholder;
+        input.value = '';
+        hideAuthError(); // Clear any previous error
+        
+        // Handle email domain display
+        const domainSpan = document.getElementById('authDomain');
+        const inputContainer = document.getElementById('authInputContainer');
+        
+        if (authType === 'email' && domain) {
+            // Show domain suffix for email type
+            domainSpan.textContent = '@' + domain;
+            domainSpan.style.display = 'inline';
+            input.style.width = 'auto';
+            input.style.flex = '1';
+            inputContainer.style.width = '100%';
+        } else {
+            // Hide domain for other types
+            domainSpan.style.display = 'none';
+            input.style.width = '100%';
+            input.style.flex = 'none';
+            inputContainer.style.width = '100%';
+        }
+        
+        dialog.style.display = 'block';
+        input.focus();
+        //console.log('Dialog should now be visible');
+    }
+    
+    function hideAuthDialog() {
+        const dialog = document.getElementById('authDialog');
+        if (dialog) {
+            dialog.style.display = 'none';
         }
     }
     
-    // Initialize when the page loads
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeLibrary);
-    } else {
-        initializeLibrary();
+    function showAuthError(message) {
+        const errorDiv = document.getElementById('authError');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
     }
     
-    // Helper function to convert AbxrResult codes to strings
-    function AbxrResultToString(result) {
-      const resultNames = {
-        0: "eOk",
-        1: "eNotInitialized", 
-        2: "eAnalyticsDisabled",
-        3: "eTooManyItems",
-        4: "eSizeLimitReached",
-        5: "eTooManyRequests",
-        6: "eInvalidData",
-        7: "eUnsupportedPlatform",
-        8: "eEnableEventFailed",
-        9: "eEventNotEnabled",
-        10: "eEventCached",
-        11: "eSendEventFailed",
-        12: "ePostObjectsFailed",
-        13: "ePostObjectsFailedNetworkError",
-        14: "ePostObjectsBadJsonResponse",
-        15: "eDeleteObjectsFailed",
-        16: "eDeleteObjectsFailedNetworkError",
-        17: "eDeleteObjectsFailedDatabase",
-        18: "eDeleteObjectsBadJsonResponse",
-        19: "eAuthenticateFailed",
-        20: "eAuthenticateFailedNetworkError",
-        21: "eCouldNotObtainAuthSecret",
-        22: "eCorruptJson",
-        23: "eSetEnvironmentDataFailed",
-        24: "eObjectNotFound"
-      };
-      return resultNames[result] || "Unknown";
+    function hideAuthError() {
+        const errorDiv = document.getElementById('authError');
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
     }
+    
+    async function submitAuth() {
+        const input = document.getElementById('authInput');
+        const value = input.value.trim();
+        
+        if (!value) {
+            showAuthError('Please enter a value');
+            return;
+        }
+        
+        try {
+            // Construct authentication data based on type
+            let authData = {};
+            let logValue = value;
+            
+            if (currentAuthType === 'email') {
+                // For email type, combine input with domain
+                const fullEmail = currentDomain ? `${value}@${currentDomain}` : value;
+                authData = { email: fullEmail };
+                logValue = fullEmail;
+                console.log('Submitting final authentication with email:', logValue);
+            } else if (currentAuthType === 'assessmentPin') {
+                // For PIN type, use pin field
+                authData = { pin: value };
+                console.log('Submitting final authentication with pin:', value);
+            } else {
+                // Default fallback - use the type as the field name
+                authData[currentAuthType || 'value'] = value;
+                console.log(`Submitting final authentication with ${currentAuthType || 'value'}:`, value);
+            }
+            
+            // Submit final authentication
+            const success = await Abxr.completeFinalAuth(authData);
+            
+            if (success) {
+                hideAuthDialog();
+                document.getElementById('simpleInit_result').textContent = 'Authentication complete! Library is ready to use.';
+                document.getElementById('simpleInit_result').style.color = 'green';
+                
+                // Enable buttons
+                document.getElementById('eventBtn').disabled = false;
+                document.getElementById('logDebugBtn').disabled = false;
+                
+                console.log('Final authentication successful');
+            } else {
+                const authTypeLabel = currentAuthType === 'email' ? 'email' : 
+                                    currentAuthType === 'assessmentPin' ? 'PIN' : 'credentials';
+                showAuthError(`Authentication failed. Please check your ${authTypeLabel} and try again.`);
+                input.focus();
+                input.select();
+            }
+        } catch (error) {
+            console.error('Authentication error:', error);
+            showAuthError('Authentication error: ' + error.message);
+        }
+    }
+    
+    // Removed global fetch debugging wrapper - it was interfering with library's internal HTTP requests
+    // The library (AbxrLib) should handle all network requests internally without external interference
 
-    // Tab switching function
-    function switchTab(tabName) {
-        // Hide all tab contents
-        const tabContents = document.querySelectorAll('.tab-content');
-        tabContents.forEach(content => content.style.display = 'none');
+    // Set up dialog event listeners and initialize form values
+    document.addEventListener('DOMContentLoaded', function() {
         
-        // Remove active class from all tabs
-        const tabs = document.querySelectorAll('.tab-button');
-        tabs.forEach(tab => tab.classList.remove('active'));
+        // Add CORS debugging information
+        console.log('🔍 CORS DEBUG INFO:', {
+            currentOrigin: window.location.origin,
+            currentHost: window.location.host,
+            currentProtocol: window.location.protocol,
+            userAgent: navigator.userAgent.substr(0, 100) + '...'
+        });
         
-        // Show selected tab content and mark tab as active
-        document.getElementById(tabName + '-content').style.display = 'block';
-        document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
-    }
+        // Set initial REST URL value
+        document.getElementById('rest_url_input').value = rest_url;
+        
+        // Set up authentication dialog event listeners
+        const submitBtn = document.getElementById('authSubmit');
+        const cancelBtn = document.getElementById('authCancel');
+        const input = document.getElementById('authInput');
+        
+        if (submitBtn) submitBtn.addEventListener('click', submitAuth);
+        if (cancelBtn) cancelBtn.addEventListener('click', hideAuthDialog);
+        
+        if (input) {
+            // Handle Enter key in input
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitAuth();
+                }
+            });
+            
+            // Clear error when user starts typing
+            input.addEventListener('input', function() {
+                hideAuthError();
+            });
+        }
+    });
 
     // Simple One-Step Setup
     async function simpleInit() {
@@ -131,157 +227,94 @@
             const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
             
             // Use the new simplified API
+            console.log('About to call Abxr_init...');
             Abxr_init(app_id, org_id, auth_secret, appConfig);
+            console.log('Abxr_init completed, setting debug mode...');
             
             // Enable debug mode - use the global Abxr object
-            if (typeof window.Abxr !== 'undefined') {
-                window.Abxr.setDebugMode(true);
+            if (typeof Abxr !== 'undefined') {
+                Abxr.setDebugMode(true);
+                console.log('Debug mode enabled, setting up setTimeout...');
             }
             
             // Wait a moment for authentication to complete, then check status
+            console.log('Setting up setTimeout callback...');
             setTimeout(async () => {
+                console.log('setTimeout callback executing...');
                 try {
-                    // Check if authentication was successful
-                    if (typeof window.Abxr !== 'undefined' && window.Abxr.isConfigured()) {
-                        document.getElementById('simpleInit_result').textContent = '✅ Authentication successful! Library is ready to use.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl;
-                        document.getElementById('simpleInit_result').style.color = 'green';
-                        
-                        // Enable the shared event and log buttons
-                        document.getElementById('eventBtn').disabled = false;
-                        document.getElementById('logDebugBtn').disabled = false;
-                    } else {
-                        document.getElementById('simpleInit_result').textContent = '⚠️ Library initialized but authentication may still be in progress. Try the Event/Log buttons below.';
-                        document.getElementById('simpleInit_result').style.color = 'orange';
-                        
-                        // Enable buttons anyway since the library is initialized
-                        document.getElementById('eventBtn').disabled = false;
-                        document.getElementById('logDebugBtn').disabled = false;
-                    }
+                    console.log('Checking authentication status...');
+                    console.log('Abxr.isConfigured():', typeof Abxr !== 'undefined' ? Abxr.isConfigured() : 'Abxr not available');
+                    console.log('Abxr.getRequiresFinalAuth():', typeof Abxr !== 'undefined' ? Abxr.getRequiresFinalAuth() : 'Abxr not available');
+                    
+                    // Check if additional authentication is required first
+                    console.log('Checking requiresFinalAuth condition...');
+                        if (typeof Abxr !== 'undefined' && Abxr.getRequiresFinalAuth()) {
+                            //console.log('RequiresFinalAuth condition met - showing modal');
+                            //console.log('Setting result text...');
+                            document.getElementById('simpleInit_result').textContent = 'Initial authentication successful, but user authentication required.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl + '\n\nPlease complete the additional authentication when prompted.';
+                            document.getElementById('simpleInit_result').style.color = 'orange';
+                            //console.log('Result text set, getting authMechanism...');
+                            
+                            // Show the authentication dialog
+                            try {
+                                //console.log('Getting authMechanism...');
+                                const authMechanism = AbxrLib.AbxrLibInit.get_AuthMechanism();
+                                console.log('Showing auth dialog for mechanism:', authMechanism);
+                                
+                                // First, let's test if the dialog exists
+                                //console.log('Looking for dialog element...');
+                                const testDialog = document.getElementById('authDialog');
+                                //console.log('Dialog element exists:', !!testDialog);
+                                if (testDialog) {
+                                    //console.log('Making dialog visible directly...');
+                                    testDialog.style.display = 'block';
+                                    //console.log('Dialog display style set to:', testDialog.style.display);
+                                } else {
+                                    console.error('Dialog element not found!');
+                                }
+                                
+                                setTimeout(() => {
+                                    //console.log('Calling showAuthDialog...');
+                                    //console.log('showAuthDialog function exists:', typeof showAuthDialog);
+                                    if (typeof showAuthDialog === 'function') {
+                                        showAuthDialog(authMechanism);
+                                    } else {
+                                        //console.error('showAuthDialog function not found!');
+                                    }
+                                }, 100);
+                            } catch (error) {
+                                //console.error('Error showing auth dialog:', error);
+                            }
+                            
+                            // Don't enable buttons yet - wait for final auth
+                        } else if (typeof Abxr !== 'undefined' && Abxr.isConfigured()) {
+                            document.getElementById('simpleInit_result').textContent = 'Authentication successful! Library is ready to use.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl;
+                            document.getElementById('simpleInit_result').style.color = 'green';
+                            
+                            // Enable the shared event and log buttons
+                            document.getElementById('eventBtn').disabled = false;
+                            document.getElementById('logDebugBtn').disabled = false;
+                        } else {
+                            document.getElementById('simpleInit_result').textContent = 'Library initialized but authentication may still be in progress. Try the Event/Log buttons below.';
+                            document.getElementById('simpleInit_result').style.color = 'orange';
+                            
+                            // Enable buttons anyway since the library is initialized
+                            document.getElementById('eventBtn').disabled = false;
+                            document.getElementById('logDebugBtn').disabled = false;
+                        }
                 } catch (error) {
-                    document.getElementById('simpleInit_result').textContent = '❌ Error checking authentication status: ' + error.message;
+                    document.getElementById('simpleInit_result').textContent = 'Error checking authentication status: ' + error.message;
                     document.getElementById('simpleInit_result').style.color = 'red';
                 }
             }, 1000);
             
         } catch (error) {
-            document.getElementById('simpleInit_result').textContent = '❌ Error: ' + error.message;
+            document.getElementById('simpleInit_result').textContent = 'Error: ' + error.message;
             document.getElementById('simpleInit_result').style.color = 'red';
         }
     }
 
-    // Step-by-step functions (for testing individual components)
-    function setAppConfig() {
-        console.log("Executing AbxrLibBaseSetup.SetAppConfig()");
-        
-        try {
-            const restUrl = document.getElementById('rest_url_input_debug').value;
-            const customConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
-            
-            // Use the correct static method
-            AbxrLib.AbxrLibBaseSetup.SetAppConfig(customConfig);
-            document.getElementById('setAppConfig_result').textContent = '✅ Complete - App config set successfully';
-        } catch (error) {
-            document.getElementById('setAppConfig_result').textContent = 'Error: ' + error.message;
-        }
-    }
 
-    function initStatics() {
-        console.log("Executing AbxrLibInit.InitStatics()");
-        try {
-            AbxrLib.AbxrLibInit.InitStatics();
-            document.getElementById('initStatics_result').textContent = '✅ Complete - Statics initialized successfully';
-        } catch (error) {
-            document.getElementById('initStatics_result').textContent = 'Error: ' + error.message;
-        }
-    }
-
-    function startLib() {
-        console.log("Executing AbxrLibInit.Start()");
-        try {
-            AbxrLib.AbxrLibInit.Start();
-            document.getElementById('startLib_result').textContent = '✅ Complete - Library started successfully';
-        } catch (error) {
-            document.getElementById('startLib_result').textContent = 'Error: ' + error.message;
-        }
-    }
-
-    async function authenticate() {
-        console.log("Executing AbxrLibInit.Authenticate()");
-        console.log("Auth parameters:", { app_id, org_id, device_id, auth_secret, partner_id });
-        
-        try {
-            // Store the original fetch implementation
-            const originalFetch = window.fetch;
-            let requestData;
-            let responseData;
-            
-            // Temporarily override fetch to capture both request and response
-            window.fetch = async (...args) => {
-                const [url, options] = args;
-                if (options && options.body) {
-                    try {
-                        requestData = JSON.parse(options.body);
-                        console.log("Authentication request body:", requestData);
-                    } catch (e) {
-                        console.log("Could not parse request body:", options.body);
-                    }
-                }
-                
-                // Log headers for debugging
-                if (options && options.headers) {
-                    console.log("Request headers:", options.headers);
-                }
-                
-                const response = await originalFetch(...args);
-                
-                // Capture response data
-                const clone = response.clone();
-                try {
-                    responseData = await clone.json();
-                    console.log("Authentication response:", responseData);
-                } catch (e) {
-                    console.log("Could not parse response as JSON");
-                }
-                
-                return response;
-            };
-            
-            const result = await AbxrLib.AbxrLibInit.Authenticate(
-                app_id,
-                org_id,
-                'AbxrLibForWebXR_js', // Use a default device ID for testing
-                auth_secret,
-                partner_id
-            );
-            
-            // Restore original fetch
-            window.fetch = originalFetch;
-            
-            // Set the authentication flag if authentication was successful
-            if (result === 0 && typeof window.Abxr !== 'undefined' && typeof window.Abxr.setAuthenticated === 'function') {
-                window.Abxr.setAuthenticated(true);
-                console.log('AbxrLib: Authentication flag set to true');
-            }
-            
-            // Create formatted display string
-            let displayText;
-            if (result === 0) {
-                displayText = `✅ Complete - Authentication successful\n\nAuth Details:\n- App ID: ${app_id}\n- Org ID: ${org_id}\n- Partner ID: ${partner_id}\n\nResponse: ${JSON.stringify(responseData, null, 2)}`;
-            } else {
-                displayText = `❌ Error: Unexpected result code ${result} (${AbxrResultToString ? AbxrResultToString(result) : 'Unknown'})\n\nResponse: ${JSON.stringify(responseData, null, 2)}`;
-            }
-
-            document.getElementById('authenticate_result').style.whiteSpace = 'pre-line';
-            document.getElementById('authenticate_result').textContent = displayText;
-
-            // Enable the shared event and log buttons after successful authentication
-            document.getElementById('eventBtn').disabled = false;
-            document.getElementById('logDebugBtn').disabled = false;
-
-        } catch (error) {
-            document.getElementById('authenticate_result').textContent = 'Error: ' + error.message;
-        }
-    }
 
     async function try_Event() {
         console.log("Executing Abxr.Event()");
@@ -292,12 +325,9 @@
             // Store the original fetch implementation
             const originalFetch = window.fetch;
             let responseData = undefined;
-            let requestCount = 0;
             
             // Temporarily override fetch to capture the response
             window.fetch = async (...args) => {
-                const [url, options] = args;
-                requestCount++;               
                 const response = await originalFetch(...args);
                 
                 // Clone the response so we can read it multiple times
@@ -305,24 +335,15 @@
                 try {
                     const data = await clone.json();
                     responseData = data;
-                    //console.log(`Event: Response #${requestCount}:`, data);
                 } catch (e) {
-                    //console.log(`Event: Could not parse response #${requestCount} as JSON:`, e);
                     responseData = { error: "Could not parse response as JSON" };
                 }
                 
                 return response;
             };
             
-            // Use the simplified API if available, otherwise fall back to static method
-            let result;
-            if (typeof window.Abxr !== 'undefined' && typeof window.Abxr.Event === 'function') {
-                result = await window.Abxr.Event(eventValue, dictMeta);
-            } else {
-                // Fall back to static method
-                const abxr = getAbxr();
-                result = await abxr.Event(eventValue, dictMeta);
-            }
+            // Use the simplified API
+            let result = await Abxr.Event(eventValue, dictMeta);
             
             // Restore original fetch
             window.fetch = originalFetch;
@@ -344,12 +365,9 @@
             // Store the original fetch implementation
             const originalFetch = window.fetch;
             let responseData = undefined;
-            let requestCount = 0;
             
             // Temporarily override fetch to capture the response
             window.fetch = async (...args) => {
-                const [url, options] = args;
-                requestCount++;                
                 const response = await originalFetch(...args);
                 
                 // Clone the response so we can read it multiple times
@@ -357,25 +375,15 @@
                 try {
                     const data = await clone.json();
                     responseData = data;
-                    //console.log(`LogDebug: Response #${requestCount}:`, data);
                 } catch (e) {
-                    //console.log(`LogDebug: Could not parse response #${requestCount} as JSON:`, e);
                     responseData = { error: "Could not parse response as JSON" };
                 }
                 
                 return response;
             };
             
-            // Use the simplified API if available, otherwise fall back to static method
-            let result;
-            if (typeof window.Abxr !== 'undefined' && typeof window.Abxr.LogDebug === 'function') {
-                result = await window.Abxr.LogDebug(debugValue);
-            } else {
-                // Fall back to static method
-                const abxr = getAbxr();
-                result = await abxr.LogDebug(debugValue);
-            }
-            
+            // Use the simplified API
+            let result = await Abxr.LogDebug(debugValue);
             // Restore original fetch
             window.fetch = originalFetch;
             
@@ -388,20 +396,7 @@
         }
     }
 
-    // Helper function to get Abxr object (either direct or from AbxrLib)
-    function getAbxr() {
-        if (typeof window.Abxr !== 'undefined') {
-            return window.Abxr;
-        } else if (typeof AbxrLib !== 'undefined' && AbxrLib.Abxr) {
-            return AbxrLib.Abxr;
-        } else {
-            console.error('Abxr not found. Available globals:', Object.keys(window).filter(key => key.includes('Abxr')));
-            if (typeof AbxrLib !== 'undefined') {
-                console.log('AbxrLib contents:', AbxrLib);
-            }
-            throw new Error('Abxr is not available. Library may not be properly initialized.');
-        }
-    }
+
   </script>
   <style>
     body {
@@ -419,48 +414,6 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     
-    .tab-container {
-      margin-bottom: 30px;
-    }
-    
-    .tab-buttons {
-      display: flex;
-      border-bottom: 2px solid #ddd;
-      margin-bottom: 20px;
-    }
-    
-    .tab-button {
-      background: #f8f9fa;
-      border: none;
-      padding: 15px 30px;
-      cursor: pointer;
-      font-size: 16px;
-      border-radius: 8px 8px 0 0;
-      margin-right: 5px;
-      transition: all 0.3s ease;
-    }
-    
-    .tab-button:hover {
-      background: #e9ecef;
-    }
-    
-    .tab-button.active {
-      background: #007bff;
-      color: white;
-    }
-    
-    .tab-content {
-      display: none;
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-radius: 0 8px 8px 8px;
-      background: white;
-    }
-    
-    .tab-content.active {
-      display: block;
-    }
-    
     .section {
       margin-bottom: 20px;
       padding: 20px;
@@ -472,22 +425,11 @@
       border: 1px solid #b3d9ff;
     }
     
-    .debug-section {
-      background: #fff3cd;
-      border: 1px solid #ffeaa7;
-    }
-    
     .shared-section {
       background: #d4edda;
       border: 1px solid #c3e6cb;
       margin-top: 30px;
-    }
-    
-    table {
-      border-collapse: separate;
-      border-spacing: 20px 10px;
-      width: 100%;
-    }
+      }
     
     .action-button {
       width: 150px;
@@ -507,16 +449,6 @@
     .action-button:disabled {
       background: #6c757d;
       cursor: not-allowed;
-    }
-
-    .result-cell {
-      min-height: 100px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      white-space: pre-line;
-      overflow-wrap: break-word;
-      width: 400px;
-      vertical-align: middle;
     }
     
     input[type="text"] {
@@ -549,31 +481,40 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🚀 Testing abxrlib-for-webxr.js</h1>
-    
-    <!-- Tab Navigation -->
-    <div class="tab-container">
-      <div class="tab-buttons">
-        <button class="tab-button active" onclick="switchTab('simple')">🚀 Simple Setup</button>
-        <button class="tab-button" onclick="switchTab('debug')">🔧 Step-by-Step Debug</button>
+  <!-- Authentication Dialog -->
+  <div id="authDialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="background: white; margin: 15% auto; padding: 30px; border-radius: 10px; width: 400px; max-width: 90%; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <h2 id="authTitle">Additional Authentication Required</h2>
+      <p id="authPrompt">Please enter the required authentication information:</p>
+      <div id="authError" style="display: none; color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 10px; margin: 10px 0; font-size: 14px;"></div>
+      <div id="authInputContainer" style="display: flex; align-items: center; justify-content: center; margin: 15px 0;">
+        <input type="text" id="authInput" style="padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box; flex: 1;" placeholder="Enter value..." />
+        <span id="authDomain" style="margin-left: 5px; font-size: 16px; color: #666; display: none;"></span>
+      </div>
+      <div style="margin-top: 20px;">
+        <button id="authSubmit" style="padding: 12px 25px; margin: 0 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white;">Submit</button>
+        <button id="authCancel" style="padding: 12px 25px; margin: 0 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; background-color: #6c757d; color: white;">Cancel</button>
       </div>
     </div>
+  </div>
+
+  <div class="container">
+    <h1>Testing abxrlib-for-webxr.js</h1>
     
-    <!-- Simple Setup Tab -->
-    <div id="simple-content" class="tab-content" style="display: block;">
+    <!-- Simple Setup -->
       <div class="section simple-section">
-        <h2>🚀 Simple One-Step Setup (Recommended)</h2>
+        <h2>Simple One-Step Setup</h2>
         <p>Most users will want to use this approach - initialize and authenticate in one call:</p>
         
         <div style="margin-bottom: 15px;">
           <label for="rest_url_input" style="display: block; margin-bottom: 5px; font-weight: bold;">REST Server URL:</label>
-          <input type="text" id="rest_url_input" value="http://localhost:8080/v1/" style="width: 500px;" placeholder="Enter REST server URL">
+          <input type="text" id="rest_url_input" style="width: 500px;" placeholder="Enter REST server URL">
+
           <small style="color: #666; display: block; margin-top: 2px;">Make sure your server is running and has proper CORS headers</small>
         </div>
         
         <button onclick="simpleInit()" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
-          🚀 Initialize & Authenticate
+          Initialize & Authenticate
         </button>
         
         <div id="simpleInit_result" class="result">
@@ -585,40 +526,7 @@
           <p>🔧 The library will automatically handle authentication in the background.</p>
         </div>
       </div>
-    </div>
-    
-    <!-- Step-by-Step Debug Tab -->
-    <div id="debug-content" class="tab-content">
-      <div class="section debug-section">
-        <h2>🔧 Step-by-Step Testing (Debug Mode)</h2>
-        <p>Use these buttons to test each step individually:</p>
-      </div>
-      
-      <table>
-        <tr>
-          <td>
-            <button class="action-button" onclick="setAppConfig()">1. Set App Config</button>
-            <br><br>
-            <input type="text" id="rest_url_input_debug" value="http://localhost:8080/v1/" style="width: 300px;" placeholder="Enter REST URL">
-            <br><small style="color: #666;">Note: Server must have proper CORS headers configured</small>
-          </td>
-          <td class="result-cell" id="setAppConfig_result">Not executed</td>
-        </tr>
-        <tr>
-          <td><button class="action-button" onclick="initStatics()">2. Init Statics</button></td>
-          <td class="result-cell" id="initStatics_result">Not executed</td>
-        </tr>
-        <tr>
-          <td><button class="action-button" onclick="startLib()">3. Start Library</button></td>
-          <td class="result-cell" id="startLib_result">Not executed</td>
-        </tr>
-        <tr>
-          <td><button class="action-button" onclick="authenticate()">4. Authenticate</button></td>
-          <td class="result-cell" id="authenticate_result">Not executed</td>
-        </tr>
-      </table>
-    </div>
-    
+
     <!-- Shared Event and Log Section -->
     <div class="section shared-section">
       <h2>📤 Send Events and Logs</h2>

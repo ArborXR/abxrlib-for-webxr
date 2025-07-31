@@ -199,7 +199,6 @@ if $do_serve; then
 	nginx -g "daemon off;" &
 
 	# Keep container running
-	echo "Container is running. Access tester.html at http://localhost:8000"
-	echo "Press Ctrl+C to stop..."
-	wait
+	echo "Container is running. Access tester.html at http://localhost:8000/tester.html"
+	sleep infinity
 fi

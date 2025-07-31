@@ -39,7 +39,13 @@ export class AbxrLibStorage
 		{
 			if (bLookForAuthMechanism)
 			{
-				AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism = Object.assign({}, AbxrLibStorage.m_abxrLibConfiguration.m_dictAuthMechanism);
+				// Properly copy AbxrDictStrings object by copying all entries
+				const newAuthMechanism = new AbxrDictStrings();
+				for (const [key, value] of AbxrLibStorage.m_abxrLibConfiguration.m_dictAuthMechanism.entries()) {
+					newAuthMechanism.Add(key, value);
+				}
+				AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism = newAuthMechanism;
+				//AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism = Object.assign({}, AbxrLibStorage.m_abxrLibConfiguration.m_dictAuthMechanism);				
 			}
 			else
 			{

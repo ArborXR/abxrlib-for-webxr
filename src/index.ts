@@ -113,6 +113,7 @@ export {
 export class Abxr {
     private static enableDebug: boolean = false;
     private static isAuthenticated: boolean = false;
+    private static requiresFinalAuth: boolean = false;
     private static appConfig: string = '';
     private static authParams: {
         appId?: string;
@@ -376,6 +377,78 @@ export class Abxr {
     static setAppConfig(config: string): void {
         this.appConfig = config;
     }
+    
+    static setRequiresFinalAuth(requires: boolean): void {
+        this.requiresFinalAuth = requires;
+    }
+    
+    static getRequiresFinalAuth(): boolean {
+        return this.requiresFinalAuth;
+    }
+    
+    // Method to complete final authentication when authMechanism is required
+    static async completeFinalAuth(authData: any): Promise<boolean> {
+        if (!this.requiresFinalAuth) {
+            console.warn('AbxrLib: No final authentication required');
+            return false;
+        }
+        
+        try {
+            // Get the device ID that was used during initial authentication
+            const deviceId = getOrCreateDeviceId();
+            
+            // Get the sessionId and app_id from the stored authentication object
+            const sessionId = AbxrLibInit.m_abxrLibAuthentication.m_szSessionId;
+            const appId = AbxrLibInit.m_abxrLibAuthentication.m_szAppID;
+            
+            // Get the existing authMechanism to preserve the type field
+            const authMechanism = AbxrLibInit.get_AuthMechanism();
+            
+            // Preserve original authMechanism metadata (type, domain, etc.)
+            const originalType = authMechanism.get('type');
+            const originalDomain = authMechanism.get('domain');
+            
+            // Clear existing data and rebuild with metadata preserved
+            authMechanism.clear();
+            
+            // Re-add the type field first (required by server)  
+            if (originalType) {
+                authMechanism.Add('type', originalType);
+            }
+            
+            // Add user-provided auth data in the "prompt" field as per API spec
+            // The API expects user input in "prompt" regardless of auth type
+            for (const [key, value] of Object.entries(authData)) {
+                authMechanism.Add('prompt', String(value));
+                break; // Only take the first (and should be only) value
+            }
+            
+            // Re-add any additional metadata (like domain for email)
+            if (originalDomain) {
+                authMechanism.Add('domain', originalDomain);
+            }
+            
+            // Note: device_id, sessionId, app_id are already at the top level of the request
+            // They should NOT be duplicated inside authMechanism per API specification
+            
+            AbxrLibInit.set_AuthMechanism(authMechanism);
+            
+            // Perform final authentication
+            const result = await AbxrLibInit.FinalAuthenticate();
+            if (result === 0) {
+                console.log('AbxrLib: Final authentication successful');
+                this.setAuthenticated(true);
+                this.setRequiresFinalAuth(false);
+                return true;
+            } else {
+                console.warn(`AbxrLib: Final authentication failed with code ${result}`);
+                return false;
+            }
+        } catch (error: any) {
+            console.error('AbxrLib: Final authentication error:', error);
+            return false;
+        }
+    }
 }
 
 // Global scope setup - happens immediately when library loads
@@ -440,12 +513,34 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
             AbxrLibInit.InitStatics();
             AbxrLibInit.Start();
             
-            // Attempt authentication
+            // Attempt initial authentication
             AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR)
-                .then((result: number) => {
+                .then(async (result: number) => {
                     if (result === 0) {
-                        console.log('AbxrLib: Authentication successful');
-                        Abxr.setAuthenticated(true);
+                        console.log('AbxrLib: Initial authentication successful');
+                        
+                        // Check if authMechanism is required
+                        const authMechanism = AbxrLibInit.get_AuthMechanism();
+                        
+                        // Check if authMechanism has content (either as AbxrDictStrings or plain object)
+                        const hasAuthMechanism = authMechanism && (
+                            (typeof authMechanism.Count === 'function' && authMechanism.Count() > 0) ||
+                            (typeof authMechanism === 'object' && Object.keys(authMechanism).length > 0)
+                        );
+                        
+                        if (hasAuthMechanism) {
+                            console.log('AbxrLib: Additional authentication required (authMechanism detected)');
+                            console.log('AbxrLib: AuthMechanism data:', authMechanism);
+                            
+                            // Set the library to require final authentication
+                            Abxr.setRequiresFinalAuth(true);
+                            
+                            // Log the authMechanism requirement
+                            Abxr.LogInfo('Additional authentication required - please provide required credentials');
+                        } else {
+                            console.log('AbxrLib: Authentication complete - no additional auth required');
+                            Abxr.setAuthenticated(true);
+                        }
                     } else {
                         console.warn(`AbxrLib: Authentication failed with code ${result}`);
                     }

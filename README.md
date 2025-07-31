@@ -124,6 +124,51 @@ The SDK automatically handles device ID generation and persistence:
 - **Browser environments**: Device ID is stored in localStorage and persists across sessions
 - **Non-browser environments**: A new GUID is generated for each initialization
 
+#### Two-Step Authentication (authMechanism)
+
+The SDK supports two-step authentication when the backend requires additional credentials (like a PIN):
+
+```typescript
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
+
+// Step 1: Initial authentication
+Abxr_init('app123', 'org456', 'secret789');
+
+// Check if additional authentication is required
+if (Abxr.getRequiresFinalAuth()) {
+    console.log('Additional authentication required');
+    
+    // Step 2: Complete final authentication with required data
+    const authData = { pin: '123456' }; // or whatever the backend requires
+    const success = await Abxr.completeFinalAuth(authData);
+    
+    if (success) {
+        console.log('Authentication complete');
+    } else {
+        console.log('Final authentication failed');
+    }
+}
+```
+
+**Browser Usage:**
+```javascript
+// Initialize
+Abxr_init('app123', 'org456', 'secret789');
+
+// Check for additional auth requirements
+if (Abxr.getRequiresFinalAuth()) {
+    // Get user input (e.g., PIN)
+    const pin = prompt('Enter PIN:');
+    
+    // Complete authentication
+    Abxr.completeFinalAuth({ pin: pin }).then(success => {
+        if (success) {
+            console.log('Authentication complete');
+        }
+    });
+}
+```
+
 #### Import Options
 
 You have several options for importing the library:
@@ -461,6 +506,8 @@ Abxr.LogDebug('test message');
 - `Abxr.getDebugMode()` - Get current debug mode
 - `Abxr.isConfigured()` - Check if library is authenticated
 - `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
+- `Abxr.getRequiresFinalAuth()` - Check if additional authentication is required
+- `Abxr.completeFinalAuth(authData)` - Complete final authentication with required credentials
 
 ### Available Types and Enums
 
