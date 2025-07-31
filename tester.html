@@ -27,37 +27,45 @@
 
 
 
+    // Utility function to capture API responses
+    async function executeWithResponseCapture(apiCall) {
+        const originalFetch = window.fetch;
+        let responseData = undefined;
+        
+        // Temporarily override fetch to capture the response
+        window.fetch = async (...args) => {
+            const response = await originalFetch(...args);
+            
+            // Clone the response so we can read it multiple times
+            const clone = response.clone();
+            try {
+                const data = await clone.json();
+                responseData = data;
+            } catch (e) {
+                responseData = { error: "Could not parse response as JSON" };
+            }
+            
+            return response;
+        };
+        
+        try {
+            const result = await apiCall();
+            return { result, responseData };
+        } finally {
+            // Always restore original fetch
+            window.fetch = originalFetch;
+        }
+    }
+
     async function try_Event() {
         console.log("Executing Abxr.Event()");
         try {
             const eventValue = document.getElementById('event_input').value;
             const dictMeta = { verb: "started", assessment_name: eventValue };
             
-            // Store the original fetch implementation
-            const originalFetch = window.fetch;
-            let responseData = undefined;
-            
-            // Temporarily override fetch to capture the response
-            window.fetch = async (...args) => {
-                const response = await originalFetch(...args);
-                
-                // Clone the response so we can read it multiple times
-                const clone = response.clone();
-                try {
-                    const data = await clone.json();
-                    responseData = data;
-                } catch (e) {
-                    responseData = { error: "Could not parse response as JSON" };
-                }
-                
-                return response;
-            };
-            
-            // Use the simplified API
-            let result = await Abxr.Event(eventValue, dictMeta);
-            
-            // Restore original fetch
-            window.fetch = originalFetch;
+            const { result, responseData } = await executeWithResponseCapture(
+                () => Abxr.Event(eventValue, dictMeta)
+            );
                         
             document.getElementById('event_result').textContent = 
                 `Status Code: ${result}\n` +
@@ -73,30 +81,9 @@
         try {
             const debugValue = document.getElementById('log_input').value;
             
-            // Store the original fetch implementation
-            const originalFetch = window.fetch;
-            let responseData = undefined;
-            
-            // Temporarily override fetch to capture the response
-            window.fetch = async (...args) => {
-                const response = await originalFetch(...args);
-                
-                // Clone the response so we can read it multiple times
-                const clone = response.clone();
-                try {
-                    const data = await clone.json();
-                    responseData = data;
-                } catch (e) {
-                    responseData = { error: "Could not parse response as JSON" };
-                }
-                
-                return response;
-            };
-            
-            // Use the simplified API
-            let result = await Abxr.LogDebug(debugValue);
-            // Restore original fetch
-            window.fetch = originalFetch;
+            const { result, responseData } = await executeWithResponseCapture(
+                () => Abxr.LogDebug(debugValue)
+            );
             
             document.getElementById('logDebug_result').textContent = 
                 `Status Code: ${result}\n` +
