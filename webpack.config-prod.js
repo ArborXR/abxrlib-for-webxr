@@ -5,11 +5,14 @@ module.exports = {
 	mode: "production",
 	devtool: "source-map",
 	entry: {
-		main: "./src/test.ts"
+		main: "./src/index.ts"
 	},
 	output: {
 		path: path.resolve(__dirname, './dist'),
-		filename: "abxrlib-for-webxr.js" // <--- Will be compiled to this single file
+		filename: "abxrlib-for-webxr.js",
+		library: 'AbxrLib',
+		libraryTarget: 'umd',
+		globalObject: 'this'
 	},
 	resolve: {
 		extensions: [".ts", ".tsx", ".js"],
