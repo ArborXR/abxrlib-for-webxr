@@ -199,6 +199,7 @@
             // Advanced XR dialog customization
             const dialogOptions = {
                 enabled: true,
+                showVirtualKeyboard: true,  // Force virtual keyboard on (useful for testing on desktop)
                 xrStyle: {
                     colors: {
                         primary: '#00ffff',        // Cyan accent (classic XR color)
@@ -228,7 +229,7 @@
                     updateBuiltinResult('Authentication completed successfully with advanced XR styling!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. Advanced XR dialog should appear with cyan glow, neon effects, and enhanced VR-optimized styling!', 'warning');
+                    updateBuiltinResult('Initial authentication successful. Advanced XR dialog should appear with cyan glow, neon effects, enhanced VR-optimized styling, and virtual keyboard!', 'warning');
                 } else {
                     updateBuiltinResult('Authentication in progress...', 'info');
                 }
@@ -237,6 +238,46 @@
             const checkAuth = setInterval(() => {
                 if (Abxr.isConfigured()) {
                     updateBuiltinResult('Authentication completed successfully with advanced XR dialog!', 'success');
+                    enableSharedButtons();
+                    clearInterval(checkAuth);
+                }
+            }, 500);
+        } catch (error) {
+            updateBuiltinResult('Error: ' + error.message, 'error');
+        }
+    }
+
+    async function initDesktopNoKeyboard() {
+        console.log("Testing XR dialog without virtual keyboard (desktop mode)");
+        updateBuiltinResult('Initializing XR dialog optimized for desktop (no virtual keyboard)...', 'info');
+        
+        try {
+            const restUrl = document.getElementById('rest_url_input').value;
+            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // XR dialog without virtual keyboard (perfect for desktop with physical keyboard)
+            const dialogOptions = {
+                enabled: true,
+                showVirtualKeyboard: false  // Disable virtual keyboard for desktop - uses default theme
+            };
+            
+            Abxr_init(app_id, org_id, auth_secret, appConfig, undefined, dialogOptions);
+            Abxr.setDebugMode(true);
+            
+            setTimeout(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully!', 'success');
+                    enableSharedButtons();
+                } else if (Abxr.getRequiresFinalAuth()) {
+                    updateBuiltinResult('Initial authentication successful. XR dialog should appear WITHOUT virtual keyboard using default theme - perfect for desktop use with physical keyboard!', 'warning');
+                } else {
+                    updateBuiltinResult('Authentication in progress...', 'info');
+                }
+            }, 1000);
+            
+            const checkAuth = setInterval(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully with default-themed XR dialog (no virtual keyboard)!', 'success');
                     enableSharedButtons();
                     clearInterval(checkAuth);
                 }
@@ -534,6 +575,10 @@
           Advanced Neon XR
         </button>
         
+        <button onclick="initDesktopNoKeyboard()" style="background: #6f42c1; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+          Desktop (No Virtual Keyboard)
+        </button>
+        
         <button onclick="initBuiltinDisabled()" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
           Dialog Disabled
         </button>
@@ -562,7 +607,8 @@
         <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.6;">
           <li><strong>Zero Config:</strong> Just call <code>Abxr_init()</code> - XR dialog appears automatically</li>
           <li><strong>VR/AR Optimized:</strong> Beautiful in both desktop browsers and XR headsets</li>
-          <li><strong>Virtual Keyboard:</strong> Built-in keyboard for XR environments (PIN pad for PINs)</li>
+          <li><strong>Smart Virtual Keyboard:</strong> Auto-detects device capabilities - shows keyboard for mobile/XR, hides for desktop</li>
+          <li><strong>Keyboard Control:</strong> <code>showVirtualKeyboard: true/false</code> to override auto-detection</li>
           <li><strong>Smart UI:</strong> Handles email domains, PIN masking, error messages automatically</li>
           <li><strong>Fully Customizable:</strong> Colors, styling, and behavior - match your brand</li>
           <li><strong>Custom Callbacks:</strong> Developers can provide their own authentication UI</li>

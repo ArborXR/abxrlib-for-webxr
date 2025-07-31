@@ -46,7 +46,8 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
         specialKeys = [
             { key: 'Backspace', display: '⌫', width: '80px' },
             { key: '0', display: '0', width: '80px' },
-            { key: 'Enter', display: 'Submit', width: '80px' }
+            { key: 'Enter', display: 'Submit', width: '80px' },
+            { key: 'Cancel', display: 'Cancel', width: '80px' }
         ];
     } else {
         // Full QWERTY keyboard layout
@@ -62,19 +63,22 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
             { key: 'Backspace', display: '⌫', width: '80px' },
             { key: ' ', display: 'Space', width: '120px' },
             { key: 'Enter', display: 'Submit', width: '80px' },
+            { key: 'Cancel', display: 'Cancel', width: '80px' }
         ];
     }
     
     // Generate keyboard rows HTML
     const rowsHTML = keyboardRows.map(row => `
-        <div class="xr-keyboard-row" style="
+        <div class="abxr-keyboard-row" style="
             display: flex;
             justify-content: center;
             gap: 8px;
             margin: 6px 0;
+            box-sizing: border-box;
+            padding: 0;
         ">
             ${row.map(key => `
-                <button class="xr-key" data-key="${key}" style="
+                <button class="abxr-key" data-key="${key}" style="
                     min-width: 40px;
                     height: 45px;
                     border: 2px solid #333;
@@ -87,6 +91,9 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
                     transition: all 0.2s ease;
                     text-transform: uppercase;
                     user-select: none;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    box-sizing: border-box;
                 ">${key.toUpperCase()}</button>
             `).join('')}
         </div>
@@ -94,41 +101,49 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
     
     // Generate special keys HTML
     const specialKeysHTML = `
-        <div class="xr-keyboard-row" style="
+        <div class="abxr-keyboard-row" style="
             display: flex;
             justify-content: center;
             gap: 8px;
             margin: 10px 0;
             flex-wrap: wrap;
+            box-sizing: border-box;
+            padding: 0;
         ">
             ${specialKeys.map(({ key, display, width }) => `
-                <button class="xr-key xr-special-key" data-key="${key}" style="
+                <button class="abxr-key abxr-special-key" data-key="${key}" style="
                     width: ${width};
                     height: 45px;
                     border: 2px solid #333;
                     border-radius: 8px;
-                    background: ${key === 'Enter' ? colors.success : colors.keyBg};
+                    background: ${key === 'Enter' ? colors.success : 
+                                key === 'Cancel' ? 'rgba(102, 102, 102, 0.8)' : colors.keyBg};
                     color: ${colors.keyText};
                     font-size: 14px;
                     font-weight: bold;
                     cursor: pointer;
                     transition: all 0.2s ease;
                     user-select: none;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    box-sizing: border-box;
                 ">${display}</button>
             `).join('')}
         </div>
     `;
     
     return `
-        <div id="xr-virtual-keyboard" style="
+        <div id="abxr-virtual-keyboard" style="
             background: ${colors.background};
             border: 2px solid ${colors.primary};
             border-radius: 15px;
             padding: 20px;
             margin-top: 20px;
             box-shadow: 0 0 30px rgba(90, 88, 235, 0.3);
-            animation: xrGlow 2s ease-in-out infinite alternate;
+            animation: abxrGlow 2s ease-in-out infinite alternate;
             user-select: none;
+            box-sizing: border-box;
+            position: relative;
             ${layoutType === 'assessmentPin' 
                 ? 'max-width: 300px; width: 100%; min-width: 250px;'
                 : 'max-width: 550px; width: 100%; min-width: 450px;'}
@@ -157,6 +172,7 @@ export class XRVirtualKeyboard {
     private capsLock: boolean = false;
     private config: VirtualKeyboardConfig;
     private layoutType: string;
+    private onCancel: (() => void) | null = null;
     
     constructor(layoutType: string = 'full', config: VirtualKeyboardConfig = defaultKeyboardConfig) {
         this.layoutType = layoutType;
@@ -166,8 +182,9 @@ export class XRVirtualKeyboard {
     /**
      * Initialize the virtual keyboard and connect it to an input field
      */
-    initialize(inputElement: HTMLInputElement): void {
+    initialize(inputElement: HTMLInputElement, onCancel?: () => void): void {
         this.targetInput = inputElement;
+        this.onCancel = onCancel || null;
         this.setupEventListeners();
         this.updateCapsLockState();
     }
@@ -177,19 +194,19 @@ export class XRVirtualKeyboard {
      */
     private setupEventListeners(): void {
         // Regular keys and special keys
-        document.querySelectorAll('.xr-key').forEach(button => {
+        document.querySelectorAll('.abxr-key').forEach(button => {
             const keyButton = button as HTMLButtonElement;
             
             // Hover effects
             keyButton.addEventListener('mouseenter', () => {
-                if (!keyButton.classList.contains('xr-special-key') || keyButton.dataset.key !== 'Enter') {
+                if (!keyButton.classList.contains('abxr-special-key') || keyButton.dataset.key !== 'Enter') {
                     keyButton.style.background = this.config.colors.keyHover;
                     keyButton.style.borderColor = this.config.colors.primary;
                 }
             });
             
             keyButton.addEventListener('mouseleave', () => {
-                if (!keyButton.classList.contains('xr-special-key') || keyButton.dataset.key !== 'Enter') {
+                if (!keyButton.classList.contains('abxr-special-key') || keyButton.dataset.key !== 'Enter') {
                     keyButton.style.background = this.config.colors.keyBg;
                     keyButton.style.borderColor = '#333';
                 }
@@ -218,7 +235,7 @@ export class XRVirtualKeyboard {
         });
         
         // Handle special keys that need custom behavior
-        const specialKeyButtons = document.querySelectorAll('.xr-special-key');
+        const specialKeyButtons = document.querySelectorAll('.abxr-special-key');
         specialKeyButtons.forEach(button => {
             const key = button.getAttribute('data-key');
             if (key === 'CapsLock') {
@@ -239,6 +256,9 @@ export class XRVirtualKeyboard {
                 break;
             case 'Enter':
                 this.handleEnter();
+                break;
+            case 'Cancel':
+                this.handleCancel();
                 break;
             case ' ':
                 this.insertText(' ');
@@ -306,6 +326,15 @@ export class XRVirtualKeyboard {
     }
     
     /**
+     * Handle cancel key (cancel dialog)
+     */
+    private handleCancel(): void {
+        if (this.onCancel) {
+            this.onCancel();
+        }
+    }
+    
+    /**
      * Toggle caps lock state
      */
     private toggleCapsLock(): void {
@@ -318,7 +347,7 @@ export class XRVirtualKeyboard {
      */
     private updateCapsLockState(): void {
         // Find caps lock button in special keys row
-        const capsButton = document.querySelector('.xr-special-key[data-key="CapsLock"]') as HTMLElement;
+        const capsButton = document.querySelector('.abxr-special-key[data-key="CapsLock"]') as HTMLElement;
         if (capsButton) {
             if (this.capsLock) {
                 capsButton.style.background = this.config.colors.primary;
@@ -330,7 +359,7 @@ export class XRVirtualKeyboard {
         }
         
         // Update letter key labels
-        document.querySelectorAll('.xr-key:not(.xr-special-key)').forEach(button => {
+        document.querySelectorAll('.abxr-key:not(.abxr-special-key)').forEach(button => {
             const keyButton = button as HTMLButtonElement;
             const key = keyButton.dataset.key;
             if (key && /^[a-z]$/.test(key)) {
@@ -343,7 +372,7 @@ export class XRVirtualKeyboard {
      * Remove the virtual keyboard from DOM
      */
     destroy(): void {
-        const keyboard = document.getElementById('xr-virtual-keyboard');
+        const keyboard = document.getElementById('abxr-virtual-keyboard');
         if (keyboard) {
             keyboard.remove();
         }

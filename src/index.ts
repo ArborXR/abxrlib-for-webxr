@@ -53,6 +53,37 @@ function getOrCreateDeviceId(): string {
     return deviceId;
 }
 
+// Utility function to detect if virtual keyboard should be shown by default
+function shouldShowVirtualKeyboardByDefault(): boolean {
+    if (typeof window === 'undefined') {
+        return false; // Non-browser environment
+    }
+    
+    // Check for XR/VR environment
+    if ('xr' in navigator && (navigator as any).xr) {
+        return true; // XR environments typically need virtual keyboards
+    }
+    
+    // Check for touch devices (mobile/tablet)
+    const isTouchDevice = ('ontouchstart' in window) || 
+                         (navigator.maxTouchPoints > 0) || 
+                         ((navigator as any).msMaxTouchPoints > 0);
+    
+    // Check user agent for mobile indicators
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    
+    // Check screen size (small screens likely need virtual keyboard)
+    const isSmallScreen = window.screen.width <= 768 || window.screen.height <= 768;
+    
+    // Show virtual keyboard for:
+    // - XR/VR environments
+    // - Touch devices without physical keyboards
+    // - Mobile devices
+    // - Small screen devices (likely mobile)
+    return isTouchDevice || isMobile || isSmallScreen;
+}
+
 class AbxrLibBaseSetup {
     public static SetAppConfig(customConfig?: string): void
     {
@@ -126,6 +157,7 @@ export type AuthMechanismCallback = (data: AuthMechanismData) => void;
 export interface AuthMechanismDialogOptions {
     enabled?: boolean;           // Enable built-in dialog (default: true for browser environments)
     customCallback?: AuthMechanismCallback;  // Custom callback to use instead
+    showVirtualKeyboard?: boolean; // Show virtual keyboard (default: auto-detect based on device)
     xrStyle?: {                  // Custom XR dialog styling options
         colors?: {
             background?: string;     // Dialog background color
@@ -529,10 +561,16 @@ export class Abxr {
         style.textContent = getXRDialogStyles();
         document.head.appendChild(style);
         
-        // Generate XR dialog HTML from template (with virtual keyboard for XR environments)
+        // Determine if virtual keyboard should be shown
         const options = this.getDialogOptions();
+        const showVirtualKeyboard = options.showVirtualKeyboard !== undefined 
+            ? options.showVirtualKeyboard 
+            : shouldShowVirtualKeyboardByDefault();
+        
+        // Generate XR dialog HTML from template
         const dialogHTML = getXRDialogTemplate(authData, { 
-            showVirtualKeyboard: true,
+            showVirtualKeyboard,
+            hideDialogButtons: showVirtualKeyboard, // Hide dialog buttons when virtual keyboard is shown
             customStyle: options.xrStyle
         });
         
@@ -545,10 +583,12 @@ export class Abxr {
         const submitBtn = document.querySelector('#abxrlib-xr-submit') as HTMLButtonElement;
         const cancelBtn = document.querySelector('#abxrlib-xr-cancel') as HTMLButtonElement;
         
-        if (!overlay || !input || !submitBtn || !cancelBtn) {
-            console.error('AbxrLib: XR dialog elements not found');
+        if (!overlay || !input) {
+            console.error('AbxrLib: XR dialog essential elements not found');
             return;
         }
+        
+        // Note: submitBtn and cancelBtn may be null if hideDialogButtons is true
         
         // Apply custom styling if provided
         if (options.xrStyle?.overlay && overlay) {
@@ -556,7 +596,7 @@ export class Abxr {
         }
         
         if (options.xrStyle?.dialog) {
-            const dialogContent = document.getElementById('xr-dialog-content');
+            const dialogContent = document.getElementById('abxr-dialog-content');
             if (dialogContent) {
                 Object.assign(dialogContent.style, options.xrStyle.dialog);
             }
@@ -565,9 +605,12 @@ export class Abxr {
         // Clear any existing error messages
         this.hideXRError();
         
-        // Initialize virtual keyboard for XR environments
-        const virtualKeyboard = new XRVirtualKeyboard(authData.type);
-        virtualKeyboard.initialize(input);
+        // Initialize virtual keyboard only if it's being shown
+        let virtualKeyboard: XRVirtualKeyboard | null = null;
+        if (showVirtualKeyboard) {
+            virtualKeyboard = new XRVirtualKeyboard(authData.type);
+            virtualKeyboard.initialize(input, onCancel); // Pass cancel callback to virtual keyboard
+        }
         
         // Focus input
         input.focus();
@@ -596,8 +639,13 @@ export class Abxr {
             }
         };
         
-        submitBtn.addEventListener('click', handleSubmitClick);
-        cancelBtn.addEventListener('click', onCancel);
+        // Add event listeners only if buttons exist (they may be hidden when virtual keyboard is shown)
+        if (submitBtn) {
+            submitBtn.addEventListener('click', handleSubmitClick);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', onCancel);
+        }
         
         // Handle Enter key
         input.addEventListener('keydown', (e) => {
@@ -655,7 +703,7 @@ export class Abxr {
             (this as any).xrDialogStyle = null;
         }
         
-        if (virtualKeyboard) {
+        if (virtualKeyboard && typeof virtualKeyboard.destroy === 'function') {
             virtualKeyboard.destroy();
             (this as any).xrVirtualKeyboard = null;
         }

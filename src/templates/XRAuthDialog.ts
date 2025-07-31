@@ -27,6 +27,7 @@ export interface AuthDialogData {
 
 export interface XRDialogOptions {
     showVirtualKeyboard?: boolean;  // Default: true for XR environments
+    hideDialogButtons?: boolean;    // Hide Cancel/Submit buttons when virtual keyboard is shown
     customStyle?: XRDialogCustomStyle; // Custom styling options
 }
 
@@ -49,7 +50,7 @@ export interface XRDialogCustomStyle {
  */
 export function getXRDialogStyles(): string {
     return `
-        @keyframes xrGlow {
+        @keyframes abxrGlow {
             from { box-shadow: 0 0 30px rgba(90, 88, 235, 0.3); }
             to { box-shadow: 0 0 40px rgba(90, 88, 235, 0.6); }
         }
@@ -120,7 +121,7 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
             box-sizing: border-box;
             overflow-y: auto;
         ">
-            <div id="xr-dialog-content" style="
+            <div id="abxr-dialog-content" style="
                 background: ${colors.background};
                 color: #ffffff;
                 padding: 30px;
@@ -130,7 +131,7 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                 max-width: 400px;
                 width: 100%;
                 text-align: center;
-                animation: xrGlow 2s ease-in-out infinite alternate;
+                animation: abxrGlow 2s ease-in-out infinite alternate;
                 margin-bottom: ${options.showVirtualKeyboard ? '0' : '0'};
             ">
                 <h2 style="margin: 0 0 20px 0; color: ${colors.primary}; text-shadow: 0 0 10px ${colors.primaryRgba};">
@@ -181,6 +182,7 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                         ''
                     }
                 </div>
+                ${!options.hideDialogButtons ? `
                 <div style="display: flex; gap: 15px; justify-content: center;">
                     <button id="abxrlib-xr-cancel" style="
                         background: rgba(102, 102, 102, 0.8);
@@ -203,7 +205,7 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                         transition: all 0.3s ease;
                         box-shadow: 0 0 15px ${colors.primaryRgba};
                     ">Submit</button>
-                </div>
+                </div>` : ''}
                 <p style="
                     margin: 20px 0 0 0;
                     color: #888;
