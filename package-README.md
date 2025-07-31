@@ -55,6 +55,38 @@ You can provide custom app configuration:
 </script>
 ```
 
+### Two-Step Authentication (authMechanism)
+
+When your backend requires additional authentication (like PIN or email), use a callback:
+
+```html
+<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script>
+    // Define callback to handle authentication requirements
+    function handleAuthMechanism(authData) {
+        console.log('Auth required:', authData.type);   // e.g., 'email', 'assessmentPin'
+        console.log('Prompt:', authData.prompt);        // e.g., 'Enter your Email'
+        
+        // Show UI to collect user input
+        const userInput = prompt(authData.prompt);
+        
+        // Format and submit authentication data
+        const formattedAuthData = Abxr.formatAuthDataForSubmission(userInput, authData.type, authData.domain);
+        
+        Abxr.completeFinalAuth(formattedAuthData).then(success => {
+            if (success) {
+                console.log('Authentication complete - library ready to use');
+            } else {
+                console.log('Authentication failed');
+            }
+        });
+    }
+    
+    // Initialize with callback
+    Abxr_init('app123', 'org456', 'secret789', undefined, handleAuthMechanism);
+</script>
+```
+
 ### Debug Mode
 
 When authentication fails or isn't provided, the library operates in debug mode:
@@ -264,11 +296,12 @@ Abxr.AIProxy(
 
 ### Initialization
 
-- `Abxr_init(appId, orgId?, authSecret?, appConfig?)` - Initialize and authenticate the library
+- `Abxr_init(appId, orgId?, authSecret?, appConfig?, authMechanismCallback?)` - Initialize and authenticate the library
   - `appId` (required): Your application ID
   - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
   - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)
   - `appConfig` (optional): Custom XML configuration string
+  - `authMechanismCallback` (optional): Callback function to handle two-step authentication requirements
 
 ### Core Methods
 
@@ -317,6 +350,14 @@ Abxr.AIProxy(
 - `Abxr.getDebugMode()` - Get current debug mode
 - `Abxr.isConfigured()` - Check if library is authenticated
 - `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
+
+### AuthMechanism Methods
+
+- `Abxr.getRequiresFinalAuth()` - Check if additional authentication is required
+- `Abxr.extractAuthMechanismData()` - Get structured authentication requirements
+- `Abxr.formatAuthDataForSubmission(input, type, domain?)` - Format user input for authentication
+- `Abxr.completeFinalAuth(authData)` - Submit final authentication credentials
+- `Abxr.setAuthMechanismCallback(callback)` - Set callback for authentication requirements
 
 ### Available Types and Enums
 

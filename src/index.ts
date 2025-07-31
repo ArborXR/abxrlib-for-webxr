@@ -109,6 +109,16 @@ export {
     ResultOptions
 };
 
+// Types for authMechanism notification
+export interface AuthMechanismData {
+    type: string;
+    prompt?: string;
+    domain?: string;
+    [key: string]: any; // Allow for additional properties
+}
+
+export type AuthMechanismCallback = (data: AuthMechanismData) => void;
+
 // Global Abxr class that gets configured by Abxr_init()
 export class Abxr {
     private static enableDebug: boolean = false;
@@ -120,6 +130,7 @@ export class Abxr {
         orgId?: string;
         authSecret?: string;
     } = {};
+    private static authMechanismCallback: AuthMechanismCallback | null = null;
     
     // Expose commonly used types and enums for easy access
     static readonly ResultOptions = ResultOptions;
@@ -386,6 +397,68 @@ export class Abxr {
         return this.requiresFinalAuth;
     }
     
+    // AuthMechanism callback methods
+    static setAuthMechanismCallback(callback: AuthMechanismCallback | null): void {
+        this.authMechanismCallback = callback;
+    }
+    
+    static getAuthMechanismCallback(): AuthMechanismCallback | null {
+        return this.authMechanismCallback;
+    }
+    
+    // Extract authMechanism data into a structured format
+    static extractAuthMechanismData(): AuthMechanismData | null {
+        try {
+            const authMechanism = AbxrLibInit.get_AuthMechanism();
+            if (!authMechanism) {
+                return null;
+            }
+            
+            const data: AuthMechanismData = { type: '' };
+            
+            // Handle AbxrDictStrings (has entries method)
+            if (typeof authMechanism.entries === 'function') {
+                for (const [key, value] of authMechanism.entries()) {
+                    data[key] = value;
+                }
+            }
+            // Handle plain objects
+            else if (typeof authMechanism === 'object') {
+                Object.assign(data, authMechanism);
+            }
+            
+            // Ensure we have at least a type
+            if (!data.type) {
+                console.warn('AbxrLib: AuthMechanism missing type field');
+                return null;
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('AbxrLib: Error extracting authMechanism data:', error);
+            return null;
+        }
+    }
+    
+    // Helper method to format auth data for completeFinalAuth based on type
+    static formatAuthDataForSubmission(inputValue: string, authType: string, domain?: string): any {
+        const authData: any = {};
+        
+        if (authType === 'email') {
+            // For email type, combine input with domain if provided
+            const fullEmail = domain ? `${inputValue}@${domain}` : inputValue;
+            authData.email = fullEmail;
+        } else if (authType === 'assessmentPin') {
+            // For PIN type, use pin field
+            authData.pin = inputValue;
+        } else {
+            // Default fallback - use the type as the field name
+            authData[authType || 'value'] = inputValue;
+        }
+        
+        return authData;
+    }
+    
     // Method to complete final authentication when authMechanism is required
     static async completeFinalAuth(authData: any): Promise<boolean> {
         if (!this.requiresFinalAuth) {
@@ -480,12 +553,17 @@ if (typeof window !== 'undefined') {
 }
 
 // Global function for easy access
-export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string): void {
+export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string, authMechanismCallback?: AuthMechanismCallback): void {
     
     // Validate required appId
     if (!appId) {
         console.error('AbxrLib: appId is required for initialization');
         return;
+    }
+    
+    // Set the authMechanism callback if provided
+    if (authMechanismCallback) {
+        Abxr.setAuthMechanismCallback(authMechanismCallback);
     }
     
     // Try to get orgId and authSecret from URL parameters first, then fall back to function parameters
@@ -534,6 +612,24 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                             
                             // Set the library to require final authentication
                             Abxr.setRequiresFinalAuth(true);
+                            
+                            // Extract structured authMechanism data
+                            const authData = Abxr.extractAuthMechanismData();
+                            if (authData) {
+                                console.log('AbxrLib: Extracted auth data:', authData);
+                                
+                                // Notify the client via callback if one is set
+                                const callback = Abxr.getAuthMechanismCallback();
+                                if (callback) {
+                                    try {
+                                        callback(authData);
+                                    } catch (error) {
+                                        console.error('AbxrLib: Error in authMechanism callback:', error);
+                                    }
+                                } else {
+                                    console.log('AbxrLib: No authMechanism callback set - client should check getRequiresFinalAuth() and call extractAuthMechanismData()');
+                                }
+                            }
                             
                             // Log the authMechanism requirement
                             Abxr.LogInfo('Additional authentication required - please provide required credentials');

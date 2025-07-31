@@ -18,53 +18,62 @@
 
     const rest_url = 'https://lib-backend.xrdm.app/v1/';
     
+    /*
+     * NEW AUTHENGMECHANISM API DEMONSTRATION
+     * ====================================
+     * 
+     * This example shows how to use the new callback-based authMechanism system.
+     * The authentication logic has been moved from the HTML client to the library (index.ts).
+     * 
+     * Key changes:
+     * 1. Abxr_init() now accepts an optional authMechanismCallback parameter
+     * 2. The callback receives structured AuthMechanismData instead of raw authMechanism
+     * 3. Helper methods are available: Abxr.formatAuthDataForSubmission()
+     * 4. The client only needs to handle UI display - all logic is in the library
+     * 
+     * Benefits:
+     * - Cleaner separation of concerns (logic in library, UI in client)
+     * - Works in both browser and non-browser environments
+     * - Structured data format is easier to work with
+     * - Consistent behavior across different clients
+     */
+    
     // Track current authentication type and domain
     let currentAuthType = '';
     let currentDomain = '';
     
-    // Simple authentication dialog functions
-    function showAuthDialog(authMechanism) {
-        console.log('showAuthDialog called with:', authMechanism);
+    // Simple authentication dialog functions - now works with structured authData from the library
+    function showAuthDialog(authData) {
+        console.log('showAuthDialog called with structured authData:', authData);
         
         const dialog = document.getElementById('authDialog');
         const title = document.getElementById('authTitle');
         const prompt = document.getElementById('authPrompt');
         const input = document.getElementById('authInput');
         
-        //console.log('Dialog elements found:', { dialog: !!dialog, title: !!title, prompt: !!prompt, input: !!input });
-        
         if (!dialog) {
             console.error('Auth dialog not found!');
             return;
         }
         
-        // Extract information from authMechanism
-        let promptText = 'Please enter the required authentication information:';
+        // Extract information from structured authData (no need to iterate through entries)
+        let promptText = authData.prompt || 'Please enter the required authentication information:';
         let inputType = 'text';
         let placeholder = 'Enter value...';
-        let domain = '';
-        let authType = '';
+        let domain = authData.domain || '';
+        let authType = authData.type || '';
         
-        if (authMechanism && typeof authMechanism.entries === 'function') {
-            // Handle AbxrDictStrings
-            for (const [key, value] of authMechanism.entries()) {
-                if (key === 'prompt') {
-                    promptText = value;
-                } else if (key === 'type') {
-                    authType = value;
-                    if (value === 'assessmentPin') {
-                        inputType = 'password';
-                        placeholder = 'Enter PIN...';
-                        title.textContent = 'PIN Required';
-                    } else if (value === 'email') {
-                        inputType = 'email';
-                        placeholder = 'Enter email username';
-                        title.textContent = 'Email Authentication Required';
-                    }
-                } else if (key === 'domain') {
-                    domain = value;
-                }
-            }
+        // Configure UI based on auth type
+        if (authType === 'assessmentPin') {
+            inputType = 'password';
+            placeholder = 'Enter PIN...';
+            title.textContent = 'PIN Required';
+        } else if (authType === 'email') {
+            inputType = 'email';
+            placeholder = 'Enter email username';
+            title.textContent = 'Email Authentication Required';
+        } else {
+            title.textContent = 'Authentication Required';
         }
         
         // Store current auth type and domain globally
@@ -98,7 +107,7 @@
         
         dialog.style.display = 'block';
         input.focus();
-        //console.log('Dialog should now be visible');
+        console.log('Auth dialog displayed for type:', authType);
     }
     
     function hideAuthDialog() {
@@ -133,25 +142,10 @@
         }
         
         try {
-            // Construct authentication data based on type
-            let authData = {};
-            let logValue = value;
+            // Use the library's helper method to format auth data properly
+            const authData = Abxr.formatAuthDataForSubmission(value, currentAuthType, currentDomain);
             
-            if (currentAuthType === 'email') {
-                // For email type, combine input with domain
-                const fullEmail = currentDomain ? `${value}@${currentDomain}` : value;
-                authData = { email: fullEmail };
-                logValue = fullEmail;
-                console.log('Submitting final authentication with email:', logValue);
-            } else if (currentAuthType === 'assessmentPin') {
-                // For PIN type, use pin field
-                authData = { pin: value };
-                console.log('Submitting final authentication with pin:', value);
-            } else {
-                // Default fallback - use the type as the field name
-                authData[currentAuthType || 'value'] = value;
-                console.log(`Submitting final authentication with ${currentAuthType || 'value'}:`, value);
-            }
+            console.log('Submitting final authentication with data:', authData);
             
             // Submit final authentication
             const success = await Abxr.completeFinalAuth(authData);
@@ -219,89 +213,58 @@
         }
     });
 
-    // Simple One-Step Setup
+    // Simple One-Step Setup using the new callback-based authMechanism system
     async function simpleInit() {
         console.log("Executing Simple One-Step Setup");
         try {
             const restUrl = document.getElementById('rest_url_input').value;
             const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
             
-            // Use the new simplified API
-            console.log('About to call Abxr_init...');
-            Abxr_init(app_id, org_id, auth_secret, appConfig);
-            console.log('Abxr_init completed, setting debug mode...');
+            // Define the authMechanism callback that will be triggered if additional auth is needed
+            function handleAuthMechanism(authData) {
+                console.log('AuthMechanism callback triggered with data:', authData);
+                
+                // Update UI to show auth is required
+                document.getElementById('simpleInit_result').textContent = 'Initial authentication successful, but user authentication required.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl + '\n\nPlease complete the additional authentication when prompted.';
+                document.getElementById('simpleInit_result').style.color = 'orange';
+                
+                // Show the authentication dialog using the extracted data
+                showAuthDialog(authData);
+            }
+            
+            // Use the new callback-based API
+            console.log('About to call Abxr_init with authMechanism callback...');
+            Abxr_init(app_id, org_id, auth_secret, appConfig, handleAuthMechanism);
+            console.log('Abxr_init completed with callback, setting debug mode...');
             
             // Enable debug mode - use the global Abxr object
             if (typeof Abxr !== 'undefined') {
                 Abxr.setDebugMode(true);
-                console.log('Debug mode enabled, setting up setTimeout...');
+                console.log('Debug mode enabled');
             }
             
             // Wait a moment for authentication to complete, then check status
-            console.log('Setting up setTimeout callback...');
             setTimeout(async () => {
-                console.log('setTimeout callback executing...');
+                console.log('Checking authentication status...');
                 try {
-                    console.log('Checking authentication status...');
-                    console.log('Abxr.isConfigured():', typeof Abxr !== 'undefined' ? Abxr.isConfigured() : 'Abxr not available');
-                    console.log('Abxr.getRequiresFinalAuth():', typeof Abxr !== 'undefined' ? Abxr.getRequiresFinalAuth() : 'Abxr not available');
-                    
-                    // Check if additional authentication is required first
-                    console.log('Checking requiresFinalAuth condition...');
-                        if (typeof Abxr !== 'undefined' && Abxr.getRequiresFinalAuth()) {
-                            //console.log('RequiresFinalAuth condition met - showing modal');
-                            //console.log('Setting result text...');
-                            document.getElementById('simpleInit_result').textContent = 'Initial authentication successful, but user authentication required.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl + '\n\nPlease complete the additional authentication when prompted.';
-                            document.getElementById('simpleInit_result').style.color = 'orange';
-                            //console.log('Result text set, getting authMechanism...');
-                            
-                            // Show the authentication dialog
-                            try {
-                                //console.log('Getting authMechanism...');
-                                const authMechanism = AbxrLib.AbxrLibInit.get_AuthMechanism();
-                                console.log('Showing auth dialog for mechanism:', authMechanism);
-                                
-                                // First, let's test if the dialog exists
-                                //console.log('Looking for dialog element...');
-                                const testDialog = document.getElementById('authDialog');
-                                //console.log('Dialog element exists:', !!testDialog);
-                                if (testDialog) {
-                                    //console.log('Making dialog visible directly...');
-                                    testDialog.style.display = 'block';
-                                    //console.log('Dialog display style set to:', testDialog.style.display);
-                                } else {
-                                    console.error('Dialog element not found!');
-                                }
-                                
-                                setTimeout(() => {
-                                    //console.log('Calling showAuthDialog...');
-                                    //console.log('showAuthDialog function exists:', typeof showAuthDialog);
-                                    if (typeof showAuthDialog === 'function') {
-                                        showAuthDialog(authMechanism);
-                                    } else {
-                                        //console.error('showAuthDialog function not found!');
-                                    }
-                                }, 100);
-                            } catch (error) {
-                                //console.error('Error showing auth dialog:', error);
-                            }
-                            
-                            // Don't enable buttons yet - wait for final auth
-                        } else if (typeof Abxr !== 'undefined' && Abxr.isConfigured()) {
-                            document.getElementById('simpleInit_result').textContent = 'Authentication successful! Library is ready to use.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl;
-                            document.getElementById('simpleInit_result').style.color = 'green';
-                            
-                            // Enable the shared event and log buttons
-                            document.getElementById('eventBtn').disabled = false;
-                            document.getElementById('logDebugBtn').disabled = false;
-                        } else {
-                            document.getElementById('simpleInit_result').textContent = 'Library initialized but authentication may still be in progress. Try the Event/Log buttons below.';
-                            document.getElementById('simpleInit_result').style.color = 'orange';
-                            
-                            // Enable buttons anyway since the library is initialized
-                            document.getElementById('eventBtn').disabled = false;
-                            document.getElementById('logDebugBtn').disabled = false;
-                        }
+                    if (typeof Abxr !== 'undefined' && Abxr.isConfigured()) {
+                        // Authentication completed successfully without requiring additional auth
+                        document.getElementById('simpleInit_result').textContent = 'Authentication successful! Library is ready to use.\n\nAuth Details:\n- App ID: ' + app_id + '\n- Org ID: ' + org_id + '\n- REST URL: ' + restUrl;
+                        document.getElementById('simpleInit_result').style.color = 'green';
+                        
+                        // Enable the shared event and log buttons
+                        document.getElementById('eventBtn').disabled = false;
+                        document.getElementById('logDebugBtn').disabled = false;
+                    } else if (typeof Abxr !== 'undefined' && !Abxr.getRequiresFinalAuth()) {
+                        // Library is initialized but authentication may still be in progress
+                        document.getElementById('simpleInit_result').textContent = 'Library initialized but authentication may still be in progress. Try the Event/Log buttons below.';
+                        document.getElementById('simpleInit_result').style.color = 'orange';
+                        
+                        // Enable buttons anyway since the library is initialized
+                        document.getElementById('eventBtn').disabled = false;
+                        document.getElementById('logDebugBtn').disabled = false;
+                    }
+                    // If requiresFinalAuth is true, the callback will have already handled the UI
                 } catch (error) {
                     document.getElementById('simpleInit_result').textContent = 'Error checking authentication status: ' + error.message;
                     document.getElementById('simpleInit_result').style.color = 'red';

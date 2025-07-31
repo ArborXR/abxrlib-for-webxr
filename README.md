@@ -126,7 +126,43 @@ The SDK automatically handles device ID generation and persistence:
 
 #### Two-Step Authentication (authMechanism)
 
-The SDK supports two-step authentication when the backend requires additional credentials (like a PIN):
+The SDK supports two-step authentication when the backend requires additional credentials (like a PIN or email). There are two approaches to handle this:
+
+##### Option 1: Callback-Based Approach (Recommended)
+
+Use a callback function to automatically handle authMechanism requirements:
+
+```typescript
+import { Abxr_init, Abxr, AuthMechanismData } from 'abxrlib-for-webxr';
+
+// Define callback to handle authentication requirements
+function handleAuthMechanism(authData: AuthMechanismData) {
+    console.log('Auth required:', authData.type); // e.g., 'email', 'assessmentPin'
+    console.log('Prompt:', authData.prompt);      // e.g., 'Enter your Email'
+    console.log('Domain:', authData.domain);      // e.g., 'acme.com' (for email type)
+    
+    // Show UI to collect user input
+    const userInput = prompt(authData.prompt);
+    
+    // Format and submit authentication data
+    const formattedAuthData = Abxr.formatAuthDataForSubmission(userInput, authData.type, authData.domain);
+    
+    Abxr.completeFinalAuth(formattedAuthData).then(success => {
+        if (success) {
+            console.log('Authentication complete');
+        } else {
+            console.log('Authentication failed');
+        }
+    });
+}
+
+// Initialize with callback
+Abxr_init('app123', 'org456', 'secret789', undefined, handleAuthMechanism);
+```
+
+##### Option 2: Manual Check Approach
+
+Check for additional authentication requirements manually:
 
 ```typescript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
@@ -134,40 +170,44 @@ import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 // Step 1: Initial authentication
 Abxr_init('app123', 'org456', 'secret789');
 
-// Check if additional authentication is required
+// Step 2: Check if additional authentication is required
 if (Abxr.getRequiresFinalAuth()) {
     console.log('Additional authentication required');
     
-    // Step 2: Complete final authentication with required data
-    const authData = { pin: '123456' }; // or whatever the backend requires
-    const success = await Abxr.completeFinalAuth(authData);
-    
-    if (success) {
-        console.log('Authentication complete');
-    } else {
-        console.log('Final authentication failed');
+    // Extract structured auth data
+    const authData = Abxr.extractAuthMechanismData();
+    if (authData) {
+        console.log('Auth type:', authData.type);     // e.g., 'email', 'assessmentPin'
+        console.log('Prompt:', authData.prompt);      // e.g., 'Enter your Email'
+        console.log('Domain:', authData.domain);      // e.g., 'acme.com'
+        
+        // Get user input
+        const userInput = prompt(authData.prompt);
+        
+        // Format and submit
+        const formattedData = Abxr.formatAuthDataForSubmission(userInput, authData.type, authData.domain);
+        const success = await Abxr.completeFinalAuth(formattedData);
+        
+        if (success) {
+            console.log('Authentication complete');
+        }
     }
 }
 ```
 
-**Browser Usage:**
-```javascript
-// Initialize
-Abxr_init('app123', 'org456', 'secret789');
+##### AuthMechanism Types
 
-// Check for additional auth requirements
-if (Abxr.getRequiresFinalAuth()) {
-    // Get user input (e.g., PIN)
-    const pin = prompt('Enter PIN:');
-    
-    // Complete authentication
-    Abxr.completeFinalAuth({ pin: pin }).then(success => {
-        if (success) {
-            console.log('Authentication complete');
-        }
-    });
-}
-```
+The SDK supports various authentication types:
+- **`email`**: Email-based authentication with domain support
+- **`assessmentPin`**: PIN-based authentication for assessments
+- **Custom types**: As defined by your backend service
+
+##### Helper Methods
+
+- `Abxr.extractAuthMechanismData()` - Get structured auth requirements
+- `Abxr.formatAuthDataForSubmission(input, type, domain?)` - Format user input for submission
+- `Abxr.getRequiresFinalAuth()` - Check if additional auth is required
+- `Abxr.completeFinalAuth(authData)` - Submit final authentication credentials
 
 #### Import Options
 
@@ -506,8 +546,14 @@ Abxr.LogDebug('test message');
 - `Abxr.getDebugMode()` - Get current debug mode
 - `Abxr.isConfigured()` - Check if library is authenticated
 - `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
+
+### AuthMechanism Methods
+
 - `Abxr.getRequiresFinalAuth()` - Check if additional authentication is required
-- `Abxr.completeFinalAuth(authData)` - Complete final authentication with required credentials
+- `Abxr.extractAuthMechanismData()` - Get structured authentication requirements
+- `Abxr.formatAuthDataForSubmission(input, type, domain?)` - Format user input for authentication
+- `Abxr.completeFinalAuth(authData)` - Submit final authentication credentials
+- `Abxr.setAuthMechanismCallback(callback)` - Set callback for authentication requirements
 
 ### Available Types and Enums
 
@@ -556,19 +602,16 @@ meta.set('custom_field', 'value');
 Abxr.Event('custom_event', meta);
 ```
 
-```
-
-```
-
 ## API Reference
 
 ### Initialization
 
-- `Abxr_init(appId, orgId?, authSecret?, appConfig?)` - Initialize and authenticate the library
+- `Abxr_init(appId, orgId?, authSecret?, appConfig?, authMechanismCallback?)` - Initialize and authenticate the library
   - `appId` (required): Your application ID
   - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
   - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)
   - `appConfig` (optional): Custom XML configuration string
+  - `authMechanismCallback` (optional): Callback function to handle two-step authentication requirements
 
 ### Core Methods
 
