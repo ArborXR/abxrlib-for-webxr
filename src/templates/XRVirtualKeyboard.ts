@@ -173,6 +173,7 @@ export class XRVirtualKeyboard {
     private config: VirtualKeyboardConfig;
     private layoutType: string;
     private onCancel: (() => void) | null = null;
+    private onSubmit: (() => void) | null = null;
     
     constructor(layoutType: string = 'full', config: VirtualKeyboardConfig = defaultKeyboardConfig) {
         this.layoutType = layoutType;
@@ -182,9 +183,10 @@ export class XRVirtualKeyboard {
     /**
      * Initialize the virtual keyboard and connect it to an input field
      */
-    initialize(inputElement: HTMLInputElement, onCancel?: () => void): void {
+    initialize(inputElement: HTMLInputElement, onCancel?: () => void, onSubmit?: () => void): void {
         this.targetInput = inputElement;
         this.onCancel = onCancel || null;
+        this.onSubmit = onSubmit || null;
         this.setupEventListeners();
         this.updateCapsLockState();
     }
@@ -318,10 +320,15 @@ export class XRVirtualKeyboard {
      * Handle enter key (submit form)
      */
     private handleEnter(): void {
-        // Trigger submit button click
-        const submitButton = document.getElementById('abxrlib-xr-submit') as HTMLButtonElement;
-        if (submitButton) {
-            submitButton.click();
+        // Use direct submit handler if available (for when dialog buttons are hidden)
+        if (this.onSubmit) {
+            this.onSubmit();
+        } else {
+            // Fallback: trigger submit button click if it exists
+            const submitButton = document.getElementById('abxrlib-xr-submit') as HTMLButtonElement;
+            if (submitButton) {
+                submitButton.click();
+            }
         }
     }
     

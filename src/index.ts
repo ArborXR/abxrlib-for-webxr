@@ -629,7 +629,16 @@ export class Abxr {
         let virtualKeyboard: XRVirtualKeyboard | null = null;
         if (showVirtualKeyboard) {
             virtualKeyboard = new XRVirtualKeyboard(authData.type);
-            virtualKeyboard.initialize(input, onCancel); // Pass cancel callback to virtual keyboard
+            // Pass both cancel and submit callbacks to virtual keyboard
+            const handleSubmitWrapper = () => {
+                const value = input.value.trim();
+                if (value) {
+                    onSubmit(value);
+                } else {
+                    this.showXRError('Please enter a value');
+                }
+            };
+            virtualKeyboard.initialize(input, onCancel, handleSubmitWrapper);
         }
         
         // Focus input
