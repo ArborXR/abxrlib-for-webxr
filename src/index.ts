@@ -7,8 +7,7 @@ import { AbxrLibAnalytics } from "./AbxrLibAnalytics";
 import { ConfigurationManager, DateTime, AbxrResult, AbxrDictStrings, StringList, TimeSpan, InteractionType, ResultOptions } from './network/utils/DotNetishTypes';
 import { AbxrBase, AbxrEvent, AbxrLog, AbxrStorage, AbxrTelemetry, AbxrAIProxy, LogLevel } from "./AbxrLibCoreModel";
 import { Partner } from "./AbxrLibClient";
-// Import dialog templates
-import { getHTMLDialogTemplate, AuthDialogData as HTMLAuthDialogData } from './templates/HTMLAuthDialog';
+// Import XR dialog template
 import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig, XRVirtualKeyboard } from './templates/XRAuthDialog';
 
 
@@ -126,11 +125,20 @@ export type AuthMechanismCallback = (data: AuthMechanismData) => void;
 // Configuration options for built-in browser dialog
 export interface AuthMechanismDialogOptions {
     enabled?: boolean;           // Enable built-in dialog (default: true for browser environments)
-    type?: 'html' | 'xr' | 'auto'; // Dialog type: 'html' for DOM, 'xr' for WebXR, 'auto' for auto-detect
     customCallback?: AuthMechanismCallback;  // Custom callback to use instead
-    dialogStyle?: Partial<CSSStyleDeclaration>; // Custom dialog styling (HTML dialog only)
-    overlayStyle?: Partial<CSSStyleDeclaration>; // Custom overlay styling (HTML dialog only)
-    xrFallback?: boolean;        // Use HTML fallback if XR dialog fails (default: true)
+    xrStyle?: {                  // Custom XR dialog styling options
+        colors?: {
+            background?: string;     // Dialog background color
+            primary?: string;        // Primary accent color (borders, highlights)
+            keyBg?: string;         // Virtual keyboard key background
+            keyText?: string;       // Virtual keyboard key text color
+            keyHover?: string;      // Virtual keyboard key hover state
+            keyActive?: string;     // Virtual keyboard key active state
+            success?: string;       // Success/submit button color
+        };
+        dialog?: Partial<CSSStyleDeclaration>; // Custom dialog container styling
+        overlay?: Partial<CSSStyleDeclaration>; // Custom overlay styling
+    };
 }
 
 // Global Abxr class that gets configured by Abxr_init()
@@ -146,9 +154,7 @@ export class Abxr {
     } = {};
     private static authMechanismCallback: AuthMechanismCallback | null = null;
     private static dialogOptions: AuthMechanismDialogOptions = { 
-        enabled: true, 
-        type: 'auto',
-        xrFallback: true 
+        enabled: true
     };
     private static currentAuthData: AuthMechanismData | null = null;
     
@@ -435,169 +441,7 @@ export class Abxr {
         return { ...this.dialogOptions };
     }
     
-    // Create built-in authentication dialog using template
-    private static createAuthDialog(authData: AuthMechanismData): void {
-        if (typeof window === 'undefined' || typeof document === 'undefined') {
-            return; // Not in browser environment
-        }
-        
-        // Check if dialog already exists
-        if (document.getElementById('abxr-auth-dialog')) {
-            return;
-        }
-        
-        // Generate dialog HTML from template
-        const dialogHTML = getHTMLDialogTemplate(authData);
-        
-        // Insert dialog into DOM
-        document.body.insertAdjacentHTML('beforeend', dialogHTML);
-        
-        // Apply custom styling if provided
-        const dialog = document.getElementById('abxr-auth-dialog');
-        const content = document.getElementById('abxr-auth-dialog-content');
-        
-        if (this.dialogOptions.overlayStyle && dialog) {
-            Object.assign(dialog.style, this.dialogOptions.overlayStyle);
-        }
-        
-        if (this.dialogOptions.dialogStyle && content) {
-            Object.assign(content.style, this.dialogOptions.dialogStyle);
-        }
-        
-        // Add event listeners
-        this.setupDialogEventListeners();
-    }
-    
-    // Setup event listeners for dialog
-    private static setupDialogEventListeners(): void {
-        if (typeof document === 'undefined') return;
-        
-        const submitBtn = document.getElementById('abxr-auth-submit');
-        const cancelBtn = document.getElementById('abxr-auth-cancel');
-        const input = document.getElementById('abxr-auth-input') as HTMLInputElement;
-        
-        if (submitBtn) {
-            submitBtn.addEventListener('click', () => this.handleDialogSubmit());
-        }
-        
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => this.hideAuthDialog());
-        }
-        
-        if (input) {
-            // Handle Enter key
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.handleDialogSubmit();
-                }
-            });
-            
-            // Clear error on input
-            input.addEventListener('input', () => this.hideAuthError());
-        }
-    }
-    
-    // Show authentication dialog with data
-    private static showAuthDialog(authData: AuthMechanismData): void {
-        if (typeof document === 'undefined') return;
-        
-        this.currentAuthData = authData;
-        
-        // Create dialog with authData (template handles all configuration)
-        this.createAuthDialog(authData);
-        
-        const dialog = document.getElementById('abxr-auth-dialog');
-        const input = document.getElementById('abxr-auth-input') as HTMLInputElement;
-        const domainSpan = document.getElementById('abxr-auth-domain');
-        
-        if (!dialog || !input) {
-            console.error('AbxrLib: Auth dialog elements not found');
-            return;
-        }
-        
-        // Clear any previous values and errors
-        input.value = '';
-        this.hideAuthError();
-        
-        // Handle email domain display (template creates the structure, we just show it)
-        if (authData.type === 'email' && authData.domain && domainSpan) {
-            domainSpan.style.display = 'inline';
-        }
-        
-        // Show dialog and focus input
-        dialog.style.display = 'block';
-        input.focus();
-    }
-    
-    // Hide authentication dialog
-    private static hideAuthDialog(): void {
-        if (typeof document === 'undefined') return;
-        
-        const dialog = document.getElementById('abxr-auth-dialog');
-        if (dialog) {
-            dialog.style.display = 'none';
-        }
-        
-        this.currentAuthData = null;
-    }
-    
-    // Show error in dialog
-    private static showAuthError(message: string): void {
-        if (typeof document === 'undefined') return;
-        
-        const errorDiv = document.getElementById('abxr-auth-error');
-        if (errorDiv) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-    }
-    
-    // Hide error in dialog
-    private static hideAuthError(): void {
-        if (typeof document === 'undefined') return;
-        
-        const errorDiv = document.getElementById('abxr-auth-error');
-        if (errorDiv) {
-            errorDiv.style.display = 'none';
-        }
-    }
-    
-    // Handle dialog form submission
-    private static async handleDialogSubmit(): Promise<void> {
-        if (typeof document === 'undefined' || !this.currentAuthData) return;
-        
-        const input = document.getElementById('abxr-auth-input') as HTMLInputElement;
-        if (!input) return;
-        
-        const value = input.value.trim();
-        if (!value) {
-            this.showAuthError('Please enter a value');
-            return;
-        }
-        
-        try {
-            // Format and submit authentication data
-            const authData = this.formatAuthDataForSubmission(value, this.currentAuthData.type, this.currentAuthData.domain);
-            
-            console.log('AbxrLib: Submitting built-in dialog authentication:', authData);
-            
-            const success = await this.completeFinalAuth(authData);
-            
-            if (success) {
-                this.hideAuthDialog();
-                console.log('AbxrLib: Built-in dialog authentication successful - library ready to use');
-            } else {
-                const authTypeLabel = this.currentAuthData.type === 'email' ? 'email' : 
-                                    this.currentAuthData.type === 'assessmentPin' ? 'PIN' : 'credentials';
-                this.showAuthError(`Authentication failed. Please check your ${authTypeLabel} and try again.`);
-                input.focus();
-                input.select();
-            }
-        } catch (error: any) {
-            console.error('AbxrLib: Built-in dialog authentication error:', error);
-            this.showAuthError('Authentication error: ' + error.message);
-        }
-    }
+
     
     // Built-in authentication handler (browser-only)
     static builtInAuthMechanismHandler(authData: AuthMechanismData): void {
@@ -606,80 +450,19 @@ export class Abxr {
             return;
         }
         
-        const options = this.getDialogOptions();
-        const dialogType = this.determineDialogType(options);
-        
-        console.log(`AbxrLib: Using built-in authentication dialog (${dialogType}) for:`, authData.type);
-        
-        if (dialogType === 'xr') {
-            this.showXRDialog(authData);
-        } else {
-            this.showAuthDialog(authData);
-        }
-    }
-    
-    // Determine which dialog type to use based on environment and options
-    private static determineDialogType(options: AuthMechanismDialogOptions): 'html' | 'xr' {
-        if (options.type === 'html') return 'html';
-        if (options.type === 'xr') return 'xr';
-        
-        // Auto-detect: use XR if WebXR is available and active, otherwise HTML
-        if (options.type === 'auto' || !options.type) {
-            return this.isXREnvironment() ? 'xr' : 'html';
-        }
-        
-        return 'html';
-    }
-    
-    // Detect if we're in an ACTIVE XR environment (not just XR-capable)
-    private static isXREnvironment(): boolean {
-        if (typeof window === 'undefined' || !('navigator' in window)) {
-            return false;
-        }
-        
-        try {
-            // Only return true if we're actually IN an XR session, not just XR-capable
-            
-            // Check for active WebXR session
-            if ('xr' in navigator && (navigator as any).xr) {
-                // Note: This would need to be async in real implementation to check for active session
-                // For now, we'll be conservative and return false unless explicitly XR
-                
-                // Check if we have clear indicators of being in XR
-                const isInVR = !!(document as any).mozFullScreenElement || 
-                              !!(document as any).webkitFullscreenElement ||
-                              !!document.fullscreenElement;
-                              
-                const hasVRDisplay = !!(navigator as any).getVRDisplays;
-                const hasActiveVRDisplay = hasVRDisplay && (window as any).VRDisplay;
-                
-                // Only return true if we have strong evidence of active XR
-                return hasActiveVRDisplay && isInVR;
-            }
-            
-            // For now, default to false to prefer HTML dialog
-            // This ensures built-in dialog works as expected for regular web usage
-            return false;
-            
-        } catch (error) {
-            console.warn('AbxrLib: Error detecting XR environment:', error);
-            return false;
-        }
+        console.log('AbxrLib: Using XR authentication dialog for:', authData.type);
+        this.showXRDialog(authData);
     }
     
     // Show XR authentication dialog
     private static showXRDialog(authData: AuthMechanismData): void {
         try {
-            // Try to load and show XR dialog
+            // Load and show XR dialog
             this.loadXRDialog(authData);
         } catch (error) {
-            console.warn('AbxrLib: Failed to show XR dialog, falling back to HTML dialog:', error);
-            const options = this.getDialogOptions();
-            if (options.xrFallback !== false) {
-                this.showAuthDialog(authData);
-            } else {
-                console.error('AbxrLib: XR dialog failed and fallback is disabled');
-            }
+            console.error('AbxrLib: Failed to show XR dialog:', error);
+            // You may want to call your custom callback here if dialog creation fails
+            throw error;
         }
     }
     
@@ -747,7 +530,11 @@ export class Abxr {
         document.head.appendChild(style);
         
         // Generate XR dialog HTML from template (with virtual keyboard for XR environments)
-        const dialogHTML = getXRDialogTemplate(authData, { showVirtualKeyboard: true });
+        const options = this.getDialogOptions();
+        const dialogHTML = getXRDialogTemplate(authData, { 
+            showVirtualKeyboard: true,
+            customStyle: options.xrStyle
+        });
         
         // Insert dialog into DOM
         document.body.insertAdjacentHTML('beforeend', dialogHTML);
@@ -761,6 +548,18 @@ export class Abxr {
         if (!overlay || !input || !submitBtn || !cancelBtn) {
             console.error('AbxrLib: XR dialog elements not found');
             return;
+        }
+        
+        // Apply custom styling if provided
+        if (options.xrStyle?.overlay && overlay) {
+            Object.assign(overlay.style, options.xrStyle.overlay);
+        }
+        
+        if (options.xrStyle?.dialog) {
+            const dialogContent = document.getElementById('xr-dialog-content');
+            if (dialogContent) {
+                Object.assign(dialogContent.style, options.xrStyle.dialog);
+            }
         }
         
         // Clear any existing error messages
@@ -1028,12 +827,15 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
     }
     
     // Set up authMechanism handling
+    const currentOptions = Abxr.getDialogOptions();
     if (authMechanismCallback) {
-        // Use custom callback
+        // Use custom callback from function parameter
         Abxr.setAuthMechanismCallback(authMechanismCallback);
+    } else if (currentOptions.customCallback) {
+        // Use custom callback from dialogOptions
+        Abxr.setAuthMechanismCallback(currentOptions.customCallback);
     } else {
         // Determine if we should use built-in dialog
-        const currentOptions = Abxr.getDialogOptions();
         const isBrowser = typeof window !== 'undefined';
         const shouldUseBuiltIn = currentOptions.enabled !== false && isBrowser;
         

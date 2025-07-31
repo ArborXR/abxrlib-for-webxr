@@ -3,6 +3,21 @@
 
 import { getXRVirtualKeyboardTemplate, XRVirtualKeyboard, defaultKeyboardConfig } from './XRVirtualKeyboard';
 
+/**
+ * Convert hex color to RGB values for rgba() usage
+ */
+function hexToRgb(hex: string): string {
+    // Remove # if present
+    hex = hex.replace('#', '');
+    
+    // Parse r, g, b values
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    return `${r}, ${g}, ${b}`;
+}
+
 export interface AuthDialogData {
     type: string;
     prompt?: string;
@@ -12,6 +27,21 @@ export interface AuthDialogData {
 
 export interface XRDialogOptions {
     showVirtualKeyboard?: boolean;  // Default: true for XR environments
+    customStyle?: XRDialogCustomStyle; // Custom styling options
+}
+
+export interface XRDialogCustomStyle {
+    colors?: {
+        background?: string;     // Dialog background color
+        primary?: string;        // Primary accent color (borders, highlights)
+        keyBg?: string;         // Virtual keyboard key background
+        keyText?: string;       // Virtual keyboard key text color
+        keyHover?: string;      // Virtual keyboard key hover state
+        keyActive?: string;     // Virtual keyboard key active state
+        success?: string;       // Success/submit button color
+    };
+    dialog?: Partial<CSSStyleDeclaration>; // Custom dialog container styling
+    overlay?: Partial<CSSStyleDeclaration>; // Custom overlay styling
 }
 
 /**
@@ -30,6 +60,28 @@ export function getXRDialogStyles(): string {
  * Generate HTML template for the XR authentication dialog
  */
 export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogOptions = { showVirtualKeyboard: true }): string {
+    // Merge custom colors with defaults
+    const defaultColors = {
+        background: 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
+        primary: '#5A58EB',
+        success: '#05DA98',
+        primaryRgba: 'rgba(90, 88, 235, 0.3)',
+        inputBg: 'rgba(51, 51, 51, 0.8)',
+        keyBg: '#333',
+        keyText: '#ffffff',
+        keyHover: 'rgba(90, 88, 235, 0.3)',
+        keyActive: '#5A58EB'
+    };
+    
+    const colors = {
+        ...defaultColors,
+        ...(options.customStyle?.colors || {}),
+        // Convert primary color to rgba for glow effects
+        primaryRgba: options.customStyle?.colors?.primary 
+            ? `rgba(${hexToRgb(options.customStyle.colors.primary)}, 0.3)`
+            : defaultColors.primaryRgba
+    };
+
     const getTitle = () => {
         if (authData.prompt) return authData.prompt;
         if (authData.type === 'email') return 'XR Email Authentication';
@@ -69,19 +121,19 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
             overflow-y: auto;
         ">
             <div id="xr-dialog-content" style="
-                background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+                background: ${colors.background};
                 color: #ffffff;
                 padding: 30px;
                 border-radius: 15px;
-                border: 2px solid #5A58EB;
-                box-shadow: 0 0 30px rgba(90, 88, 235, 0.3);
+                border: 2px solid ${colors.primary};
+                box-shadow: 0 0 30px ${colors.primaryRgba};
                 max-width: 400px;
                 width: 100%;
                 text-align: center;
                 animation: xrGlow 2s ease-in-out infinite alternate;
                 margin-bottom: ${options.showVirtualKeyboard ? '0' : '0'};
             ">
-                <h2 style="margin: 0 0 20px 0; color: #5A58EB; text-shadow: 0 0 10px rgba(90, 88, 235, 0.5);">
+                <h2 style="margin: 0 0 20px 0; color: ${colors.primary}; text-shadow: 0 0 10px ${colors.primaryRgba};">
                     ${getTitle()}
                 </h2>
                 <div id="abxrlib-xr-error" style="
@@ -110,7 +162,7 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                             padding: 15px;
                             border: 2px solid #333;
                             border-radius: 8px;
-                            background: rgba(51, 51, 51, 0.8);
+                            background: ${colors.inputBg};
                             color: #ffffff;
                             font-size: 16px;
                             box-sizing: border-box;
@@ -141,15 +193,15 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                         transition: all 0.3s ease;
                     ">Cancel</button>
                     <button id="abxrlib-xr-submit" style="
-                        background: linear-gradient(145deg, #05DA98, #04C185);
+                        background: ${colors.success};
                         color: white;
-                        border: 2px solid #5A58EB;
+                        border: 2px solid ${colors.primary};
                         padding: 12px 24px;
                         border-radius: 8px;
                         cursor: pointer;
                         font-size: 14px;
                         transition: all 0.3s ease;
-                        box-shadow: 0 0 15px rgba(90, 88, 235, 0.3);
+                        box-shadow: 0 0 15px ${colors.primaryRgba};
                     ">Submit</button>
                 </div>
                 <p style="
@@ -158,11 +210,20 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                     font-size: 10px;
                     font-style: italic;
                 ">
-                    XR-Optimized Authentication Dialog
                 </p>
             </div>
             
-            ${options.showVirtualKeyboard ? getXRVirtualKeyboardTemplate(authData.type, defaultKeyboardConfig) : ''}
+            ${options.showVirtualKeyboard ? getXRVirtualKeyboardTemplate(authData.type, {
+                colors: {
+                    background: colors.background,
+                    primary: colors.primary,
+                    keyBg: colors.keyBg,
+                    keyText: colors.keyText,
+                    keyHover: colors.keyHover,
+                    keyActive: colors.keyActive,
+                    success: colors.success
+                }
+            }) : ''}
         </div>
     `;
 }

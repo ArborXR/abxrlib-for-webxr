@@ -3,24 +3,21 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Built-in Authentication Dialog Demo - abxrlib-for-webxr.js</title>
+  <title>XR Authentication Dialog Demo - abxrlib-for-webxr.js</title>
   <!-- Include your bundled JS file -->
   <script src="dist/abxrlib-for-webxr.js"></script>
   <script>
     
     // Authentication configuration
-    const app_id = 'cf639ac9-7e64-4b02-84bc-ba289aac9525';
-    const org_id = '787277ea-f448-4ee7-a84e-637816e83c49';
-    const auth_secret = 'ayTBSNwoin2j8eBYzCudzgcj7_XXobUy4weuU3RakgHJTWZX_pzkvJrzglOoJq72';
-    //const app_id = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
-    //const org_id = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
-    //const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
+    const app_id = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
+    const org_id = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
+    const auth_secret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
 
     const rest_url = 'https://lib-backend.xrdm.app/v1/';
     
 
-    // Built-in dialog system - no custom dialog functions needed!
-    // The library handles everything automatically.
+    // XR dialog system - no custom dialog functions needed!
+    // The library handles everything automatically with beautiful XR-optimized dialogs.
     
     // Initialize form values
     document.addEventListener('DOMContentLoaded', function() {
@@ -110,26 +107,26 @@
         }
     }
 
-    // Built-in Dialog Demo Functions
+    // XR Dialog Demo Functions
     async function initBuiltinDefault() {
-        console.log("Testing built-in dialog (default)");
-        updateBuiltinResult('Initializing with built-in dialog (default behavior)...', 'info');
+        console.log("Testing XR dialog (default)");
+        updateBuiltinResult('Initializing with XR dialog (default behavior)...', 'info');
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
             const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
             
-            // No callback or dialog options - uses built-in dialog automatically
+            // No callback or dialog options - uses XR dialog automatically
             Abxr_init(app_id, org_id, auth_secret, appConfig);
             Abxr.setDebugMode(true);
             
             // Check authentication status
             setTimeout(() => {
                 if (Abxr.isConfigured()) {
-                    updateBuiltinResult('Authentication completed successfully with built-in dialog!', 'success');
+                    updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. Built-in dialog should appear automatically for additional authentication.', 'warning');
+                    updateBuiltinResult('Initial authentication successful. XR dialog should appear automatically for additional authentication with purple theme and virtual keyboard.', 'warning');
                 } else {
                     updateBuiltinResult('Authentication in progress...', 'info');
                 }
@@ -138,7 +135,7 @@
             // Set up periodic check for completion
             const checkAuth = setInterval(() => {
                 if (Abxr.isConfigured()) {
-                    updateBuiltinResult('Authentication completed successfully with built-in dialog!', 'success');
+                    updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
                     enableSharedButtons();
                     clearInterval(checkAuth);
                 }
@@ -149,24 +146,32 @@
     }
 
     async function initBuiltinCustom() {
-        console.log("Testing built-in dialog with custom styling");
-        updateBuiltinResult('Initializing with custom-styled built-in dialog...', 'info');
+        console.log("Testing XR dialog with custom styling");
+        updateBuiltinResult('Initializing with custom-styled XR dialog...', 'info');
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
             const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
             
-            // Custom styling for the built-in dialog
+            // Custom styling for the XR dialog
             const dialogOptions = {
                 enabled: true,
-                dialogStyle: {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    borderRadius: '20px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-                },
-                overlayStyle: {
-                    background: 'rgba(102, 126, 234, 0.8)'
+                xrStyle: {
+                    colors: {
+                        primary: '#667eea',        // Purple/blue accent
+                        success: '#764ba2',        // Darker purple for submit
+                        background: 'linear-gradient(135deg, #1e2a38, #2d4356)', // Dark blue/gray
+                        keyBg: 'rgba(102, 126, 234, 0.2)',     // Semi-transparent purple keys
+                        keyText: '#ffffff',
+                        keyActive: '#667eea'
+                    },
+                    dialog: {
+                        borderRadius: '25px',
+                        boxShadow: '0 15px 40px rgba(102, 126, 234, 0.4)'
+                    },
+                    overlay: {
+                        background: 'rgba(102, 126, 234, 0.3)'
+                    }
                 }
             };
             
@@ -178,7 +183,7 @@
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. Custom-styled built-in dialog should appear!', 'warning');
+                    updateBuiltinResult('Initial authentication successful. Custom-styled XR dialog should appear with blue/purple theme!', 'warning');
                 } else {
                     updateBuiltinResult('Authentication in progress...', 'info');
                 }
@@ -186,7 +191,7 @@
             
             const checkAuth = setInterval(() => {
                 if (Abxr.isConfigured()) {
-                    updateBuiltinResult('Authentication completed with custom-styled built-in dialog!', 'success');
+                    updateBuiltinResult('Authentication completed with custom-styled XR dialog!', 'success');
                     enableSharedButtons();
                     clearInterval(checkAuth);
                 }
@@ -197,18 +202,35 @@
     }
 
     async function initXRDialog() {
-        console.log("Testing XR Dialog (WebXR optimized)");
-        updateBuiltinResult('Initializing with XR Dialog (WebXR optimized)...', 'info');
+        console.log("Testing XR Dialog with Advanced Customization");
+        updateBuiltinResult('Initializing with advanced XR dialog customization...', 'info');
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
             const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
             
-            // Force XR dialog type
+            // Advanced XR dialog customization
             const dialogOptions = {
                 enabled: true,
-                type: 'xr',
-                xrFallback: true
+                xrStyle: {
+                    colors: {
+                        primary: '#00ffff',        // Cyan accent (classic XR color)
+                        success: '#00ff88',        // Neon green submit
+                        background: 'linear-gradient(135deg, #0a0a0a, #1a1a2e)', // Dark with subtle color
+                        keyBg: 'rgba(0, 255, 255, 0.1)',     // Subtle cyan keys
+                        keyText: '#ffffff',
+                        keyHover: 'rgba(0, 255, 255, 0.3)',
+                        keyActive: '#00ffff'
+                    },
+                    dialog: {
+                        borderRadius: '20px',
+                        border: '3px solid #00ffff',
+                        boxShadow: '0 0 50px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(0, 255, 255, 0.1)'
+                    },
+                    overlay: {
+                        background: 'radial-gradient(circle, rgba(0, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.9) 100%)'
+                    }
+                }
             };
             
             Abxr_init(app_id, org_id, auth_secret, appConfig, undefined, dialogOptions);
@@ -216,10 +238,10 @@
             
             setTimeout(() => {
                 if (Abxr.isConfigured()) {
-                    updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
+                    updateBuiltinResult('Authentication completed successfully with advanced XR styling!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. XR dialog should appear for additional authentication with cyan glow and VR-optimized styling!', 'warning');
+                    updateBuiltinResult('Initial authentication successful. Advanced XR dialog should appear with cyan glow, neon effects, and enhanced VR-optimized styling!', 'warning');
                 } else {
                     updateBuiltinResult('Authentication in progress...', 'info');
                 }
@@ -227,7 +249,7 @@
             
             const checkAuth = setInterval(() => {
                 if (Abxr.isConfigured()) {
-                    updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
+                    updateBuiltinResult('Authentication completed successfully with advanced XR dialog!', 'success');
                     enableSharedButtons();
                     clearInterval(checkAuth);
                 }
@@ -238,14 +260,14 @@
     }
 
     async function initBuiltinDisabled() {
-        console.log("Testing with built-in dialog disabled");
-        updateBuiltinResult('Initializing with built-in dialog disabled...', 'info');
+        console.log("Testing with XR dialog disabled");
+        updateBuiltinResult('Initializing with XR dialog disabled...', 'info');
         
         try {
             const restUrl = document.getElementById('rest_url_input').value;
             const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
             
-            // Disable built-in dialog
+            // Disable XR dialog
             const dialogOptions = { enabled: false };
             
             Abxr_init(app_id, org_id, auth_secret, appConfig, undefined, dialogOptions);
@@ -256,9 +278,132 @@
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Additional authentication required, but built-in dialog is disabled. You would need to implement custom handling or call Abxr.extractAuthMechanismData() to get the auth requirements.', 'warning');
+                    updateBuiltinResult('Additional authentication required, but XR dialog is disabled. You would need to implement custom handling or call Abxr.extractAuthMechanismData() to get the auth requirements.', 'warning');
                 } else {
                     updateBuiltinResult('Authentication in progress...', 'info');
+                }
+            }, 1000);
+        } catch (error) {
+            updateBuiltinResult('Error: ' + error.message, 'error');
+        }
+    }
+
+    async function initCustomCallback() {
+        console.log("Testing with custom callback (developer-provided dialog)");
+        updateBuiltinResult('Initializing with custom callback - developer provides their own dialog...', 'info');
+        
+        try {
+            const restUrl = document.getElementById('rest_url_input').value;
+            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // Custom callback function - developer implements their own dialog
+            const customAuthCallback = (authData) => {
+                console.log("Custom callback received auth data:", authData);
+                updateBuiltinResult(`Custom callback triggered! Auth type: ${authData.type}, Domain: ${authData.domain || 'N/A'}`, 'warning');
+                
+                // Simulate custom dialog - in real implementation, developer would show their own UI
+                setTimeout(() => {
+                    let userInput;
+                    if (authData.type === 'assessmentPin') {
+                        userInput = prompt(`Custom Dialog: Enter your PIN`);
+                    } else if (authData.type === 'email') {
+                        userInput = prompt(`Custom Dialog: Enter your username (domain: ${authData.domain})`);
+                    } else {
+                        userInput = prompt(`Custom Dialog: Enter your ${authData.type}`);
+                    }
+                    
+                    if (userInput) {
+                        // Format data for submission
+                        const formattedData = {};
+                        if (authData.type === 'email') {
+                            formattedData.email = userInput;
+                        } else if (authData.type === 'assessmentPin') {
+                            formattedData.pin = userInput;
+                        } else {
+                            formattedData[authData.type] = userInput;
+                        }
+                        
+                        // Complete authentication with custom data
+                        Abxr.completeFinalAuth(formattedData)
+                            .then(success => {
+                                if (success) {
+                                    updateBuiltinResult('Authentication completed successfully with custom callback!', 'success');
+                                    enableSharedButtons();
+                                } else {
+                                    updateBuiltinResult('Authentication failed. Please check your credentials.', 'error');
+                                }
+                            })
+                            .catch(error => {
+                                updateBuiltinResult('Authentication error: ' + error.message, 'error');
+                            });
+                    } else {
+                        updateBuiltinResult('Custom dialog cancelled by user.', 'warning');
+                    }
+                }, 100);
+            };
+            
+            // Method 1: Pass custom callback as function parameter
+            Abxr_init(app_id, org_id, auth_secret, appConfig, customAuthCallback);
+            Abxr.setDebugMode(true);
+            
+            setTimeout(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully with custom callback!', 'success');
+                    enableSharedButtons();
+                } else if (Abxr.getRequiresFinalAuth()) {
+                    updateBuiltinResult('Initial authentication successful. Custom callback will be triggered for additional authentication.', 'warning');
+                }
+            }, 1000);
+        } catch (error) {
+            updateBuiltinResult('Error: ' + error.message, 'error');
+        }
+    }
+
+    async function initCustomCallbackViaOptions() {
+        console.log("Testing with custom callback via dialogOptions");
+        updateBuiltinResult('Initializing with custom callback via dialogOptions...', 'info');
+        
+        try {
+            const restUrl = document.getElementById('rest_url_input').value;
+            const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="' + restUrl + '"/></appSettings></configuration>';
+            
+            // Method 2: Pass custom callback via dialogOptions
+            const dialogOptions = {
+                customCallback: (authData) => {
+                    console.log("Custom callback (via options) received auth data:", authData);
+                    updateBuiltinResult(`Custom callback (via options) triggered! Auth type: ${authData.type}`, 'warning');
+                    
+                    // Simple alert-based custom dialog for demonstration
+                    setTimeout(() => {
+                        const userInput = prompt(`Custom Dialog (via options): Enter your ${authData.type === 'email' ? 'username' : authData.type}`);
+                        if (userInput) {
+                            const formattedData = authData.type === 'email' 
+                                ? { email: userInput } 
+                                : { [authData.type]: userInput };
+                            
+                            Abxr.completeFinalAuth(formattedData)
+                                .then(success => {
+                                    if (success) {
+                                        updateBuiltinResult('Authentication completed with custom callback (via options)!', 'success');
+                                        enableSharedButtons();
+                                    } else {
+                                        updateBuiltinResult('Authentication failed.', 'error');
+                                    }
+                                });
+                        }
+                    }, 100);
+                }
+            };
+            
+            Abxr_init(app_id, org_id, auth_secret, appConfig, undefined, dialogOptions);
+            Abxr.setDebugMode(true);
+            
+            setTimeout(() => {
+                if (Abxr.isConfigured()) {
+                    updateBuiltinResult('Authentication completed successfully!', 'success');
+                    enableSharedButtons();
+                } else if (Abxr.getRequiresFinalAuth()) {
+                    updateBuiltinResult('Initial authentication successful. Custom callback (via options) will be triggered.', 'warning');
                 }
             }, 1000);
         } catch (error) {
@@ -372,16 +517,16 @@
   </style>
 </head>
 <body>
-  <!-- No custom dialog HTML needed! The library creates its own dialog automatically -->
+  <!-- No custom dialog HTML needed! The library creates beautiful XR-optimized dialogs automatically -->
 
   <div class="container">
     <h1>Testing abxrlib-for-webxr.js</h1>
     
-    <!-- Built-in Dialog Setup -->
-    <div class="section" style="background: #e7f3ff; border: 1px solid #bee5eb;">
-      <h2>Zero-Code Authentication</h2>
-      <p><strong>NEW:</strong> No custom dialog HTML/CSS/JavaScript needed! The library handles everything automatically.</p>
-      <p><strong>XR SUPPORT:</strong> Includes WebXR-optimized dialogs for VR/AR developers!</p>
+    <!-- XR Dialog Setup -->
+    <div class="section" style="background: #f5f4ff; border: 1px solid #d4d1ff;">
+      <h2>Zero-Code XR Authentication</h2>
+      <p><strong>XR BY DEFAULT:</strong> Beautiful, VR/AR-optimized dialogs with virtual keyboards! No custom dialog HTML/CSS/JavaScript needed!</p>
+      <p><strong>WORKS EVERYWHERE:</strong> Perfect in desktop browsers, mobile, and XR headsets - automatically adapts!</p>
       
       <div style="margin-bottom: 15px;">
         <label for="rest_url_input" style="display: block; margin-bottom: 5px; font-weight: bold;">REST Server URL:</label>
@@ -390,38 +535,54 @@
       </div>
       
       <div style="display: flex; gap: 10px; flex-wrap: wrap; margin: 15px 0;">
-        <button onclick="initBuiltinDefault()" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
-          Built-in Dialog (Default)
+        <button onclick="initBuiltinDefault()" style="background: #5A58EB; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; box-shadow: 0 0 10px rgba(90, 88, 235, 0.3);">
+          XR Dialog (Default)
         </button>
         
-        <button onclick="initBuiltinCustom()" style="background: #6f42c1; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
-          Custom Styled Dialog
+        <button onclick="initBuiltinCustom()" style="background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+          Custom Blue Theme
         </button>
         
         <button onclick="initXRDialog()" style="background: #00ffff; color: black; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);">
-          XR Dialog (WebXR)
+          Advanced Neon XR
         </button>
         
         <button onclick="initBuiltinDisabled()" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
           Dialog Disabled
         </button>
       </div>
-      
-      <div id="builtin_result" class="result">
-        Click a button above to test the built-in authentication dialog system
+
+      <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 4px; font-size: 14px; border-left: 4px solid #ffc107;">
+        <strong>Custom Callback Examples:</strong> For developers who want to provide their own authentication UI
       </div>
       
-      <div style="margin-top: 15px; padding: 15px; background: #d1ecf1; border-radius: 4px; font-size: 14px;">
-        <strong>What makes this special:</strong>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin: 15px 0;">
+        <button onclick="initCustomCallback()" style="background: #fd7e14; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+          Custom Callback (Parameter)
+        </button>
+        
+        <button onclick="initCustomCallbackViaOptions()" style="background: #e83e8c; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+          Custom Callback (Options)
+        </button>
+      </div>
+      
+      <div id="builtin_result" class="result">
+        Click a button above to test the XR authentication dialog system
+      </div>
+      
+      <div style="margin-top: 15px; padding: 15px; background: #e8e5ff; border-radius: 4px; font-size: 14px; border-left: 4px solid #5A58EB;">
+        <strong>What makes XR dialogs special:</strong>
         <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.6;">
-          <li><strong>Zero Config:</strong> Just call <code>Abxr_init()</code> - dialog appears automatically</li>
+          <li><strong>Zero Config:</strong> Just call <code>Abxr_init()</code> - XR dialog appears automatically</li>
+          <li><strong>VR/AR Optimized:</strong> Beautiful in both desktop browsers and XR headsets</li>
+          <li><strong>Virtual Keyboard:</strong> Built-in keyboard for XR environments (PIN pad for PINs)</li>
           <li><strong>Smart UI:</strong> Handles email domains, PIN masking, error messages automatically</li>
-          <li><strong>Browser Only:</strong> Automatically detects environment - safe for server use</li>
-          <li><strong>Customizable:</strong> Override styling, disable, or use custom callbacks</li>
+          <li><strong>Fully Customizable:</strong> Colors, styling, and behavior - match your brand</li>
+          <li><strong>Custom Callbacks:</strong> Developers can provide their own authentication UI</li>
           <li><strong>No HTML needed:</strong> Compare this page's HTML - no dialog code!</li>
         </ul>
-        <div style="margin-top: 10px; padding: 10px; background: #b8daff; border-radius: 4px; border-left: 4px solid #007bff;">
-          <strong>Developer Impact:</strong> This replaces ~100+ lines of custom dialog HTML/CSS/JavaScript with zero lines. Same functionality, zero effort!
+        <div style="margin-top: 10px; padding: 10px; background: #d4d1ff; border-radius: 4px; border-left: 4px solid #5A58EB;">
+          <strong>Developer Impact:</strong> This replaces ~100+ lines of custom dialog HTML/CSS/JavaScript with zero lines. XR-ready, beautiful by default, zero effort!
         </div>
       </div>
     </div>

@@ -131,7 +131,7 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
             user-select: none;
             ${layoutType === 'assessmentPin' 
                 ? 'max-width: 300px; width: 100%; min-width: 250px;'
-                : 'max-width: 600px; width: 100%; min-width: 500px;'}
+                : 'max-width: 550px; width: 100%; min-width: 450px;'}
         ">
             <div style="
                 text-align: center;
@@ -140,7 +140,6 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
                 margin-bottom: 15px;
                 text-shadow: 0 0 10px rgba(90, 88, 235, 0.5);
             ">
-                XR Virtual Keyboard
             </div>
             
             ${rowsHTML}
