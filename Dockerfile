@@ -15,6 +15,7 @@ RUN chmod +x abxr-launch.sh
 COPY src ./src
 COPY tester.html ./tester.html
 COPY tester-basic.html ./tester-basic.html
+COPY tester-webxr.html ./tester-webxr.html
 
 RUN npm install
 RUN npm install process --save-dev

@@ -159,7 +159,7 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                         id="abxrlib-xr-input"
                         placeholder="${getPlaceholder()}"
                         style="
-                            ${authData.type === 'email' && authData.domain ? 'flex: 1;' : 'width: 100%;'}
+                            ${authData.type === 'email' && authData.domain ? 'flex: 1; max-width: 180px;' : 'width: 100%; max-width: 200px;'}
                             padding: 15px;
                             border: 2px solid #333;
                             border-radius: 8px;
