@@ -4,7 +4,7 @@ import { AbxrLibAsync } from "./AbxrLibAsync";
 import { AbxrLibSend } from "./AbxrLibSend";
 import { AbxrLibClient } from "./AbxrLibClient";
 import { AbxrLibAnalytics } from "./AbxrLibAnalytics";
-import { ConfigurationManager, DateTime, AbxrResult, AbxrDictStrings, StringList, TimeSpan, InteractionType, ResultOptions } from './network/utils/DotNetishTypes';
+import { ConfigurationManager, DateTime, AbxrResult, AbxrDictStrings, StringList, TimeSpan, InteractionType, EventStatus } from './network/utils/DotNetishTypes';
 import { AbxrBase, AbxrEvent, AbxrLog, AbxrStorage, AbxrTelemetry, AbxrAIProxy, LogLevel } from "./AbxrLibCoreModel";
 import { Partner } from "./AbxrLibClient";
 // Import XR dialog template
@@ -140,7 +140,7 @@ export {
     LogLevel,
     Partner,
     InteractionType,
-    ResultOptions
+    EventStatus
 };
 
 // Types for authMechanism notification
@@ -193,7 +193,7 @@ export class Abxr {
     private static currentAuthData: AuthMechanismData | null = null;
     
     // Expose commonly used types and enums for easy access
-    static readonly ResultOptions = ResultOptions;
+    static readonly EventStatus = EventStatus;
     static readonly InteractionType = InteractionType;
     static readonly LogLevel = LogLevel;
     static readonly Partner = Partner;
@@ -241,7 +241,7 @@ export class Abxr {
         return await AbxrLibSend.EventAssessmentStart(assessmentName, dictMeta);
     }
     
-    static async EventAssessmentComplete(assessmentName: string, score: string, resultOptions: ResultOptions, meta?: any): Promise<number> {
+    static async EventAssessmentComplete(assessmentName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Assessment complete event not sent - not authenticated');
@@ -249,7 +249,7 @@ export class Abxr {
             return 0;
         }
         const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventAssessmentComplete(assessmentName, score, resultOptions, dictMeta);
+        return await AbxrLibSend.EventAssessmentComplete(assessmentName, score, eventStatus, dictMeta);
     }
     
     // Objective Events
@@ -264,7 +264,7 @@ export class Abxr {
         return await AbxrLibSend.EventObjectiveStart(objectiveName, dictMeta);
     }
     
-    static async EventObjectiveComplete(objectiveName: string, score: string, resultOptions: ResultOptions, meta?: any): Promise<number> {
+    static async EventObjectiveComplete(objectiveName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Objective complete event not sent - not authenticated');
@@ -272,7 +272,7 @@ export class Abxr {
             return 0;
         }
         const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventObjectiveComplete(objectiveName, score, resultOptions, dictMeta);
+        return await AbxrLibSend.EventObjectiveComplete(objectiveName, score, eventStatus, dictMeta);
     }
     
     // Interaction Events
@@ -287,7 +287,7 @@ export class Abxr {
         return await AbxrLibSend.EventInteractionStart(interactionName, dictMeta);
     }
     
-    static async EventInteractionComplete(interactionName: string, result: string, resultDetails: string, interactionType: InteractionType, meta?: any): Promise<number> {
+    static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, response: string = "", meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Interaction complete event not sent - not authenticated');
@@ -295,7 +295,7 @@ export class Abxr {
             return 0;
         }
         const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventInteractionComplete(interactionName, result, resultDetails, interactionType, dictMeta);
+        return await AbxrLibSend.EventInteractionComplete(interactionName, interactionType, response, dictMeta);
     }
     
     // Level Events

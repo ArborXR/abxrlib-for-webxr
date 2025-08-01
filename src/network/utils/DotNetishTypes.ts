@@ -138,33 +138,33 @@ export function InteractionTypeToString(eRet: InteractionType): string
 /// In EventXXXComplete() functions.
 ///		Co-maintained with the one in AbxrInterop.cs.
 /// </summary>
-export enum ResultOptions
+export enum EventStatus
 {
-    eNull,
-    ePass,
-    eFail,
     eComplete,
-    eIncomplete
-};
+    ePass,
+    eFail, 
+    eIncomplete,
+    eBrowsed
+}
 
-export function ResultOptionsToString(eRet: ResultOptions): string
+export function EventStatusToString(eRet: EventStatus): string
 {
     switch (eRet)
     {
-    case ResultOptions.eNull:
-        return "Null";
-    case ResultOptions.ePass:
-        return "Pass";
-    case ResultOptions.eFail:
-        return "Fail";
-    case ResultOptions.eComplete:
+    case EventStatus.eComplete:
         return "Complete";
-    case ResultOptions.eIncomplete:
+    case EventStatus.ePass:
+        return "Pass";
+    case EventStatus.eFail:
+        return "Fail";
+    case EventStatus.eIncomplete:
         return "Incomplete";
+    case EventStatus.eBrowsed:
+        return "Browsed";
     default:
         break;
     }
-    return "Null";
+    return "Complete";
 }
 
 /// <summary>

@@ -313,7 +313,7 @@ await Abxr.Event('item_collected', meta);
 
 #### Assessments
 ```typescript
-import { Abxr, ResultOptions } from 'abxrlib-for-webxr';
+import { Abxr, EventStatus } from 'abxrlib-for-webxr';
 
 // Start assessment
 const startMeta = new Abxr.DictStrings();
@@ -324,13 +324,13 @@ await Abxr.Event('assessment_start', startMeta);
 const completeMeta = new Abxr.DictStrings();
 completeMeta.set('assessment_name', 'final_exam');
 completeMeta.set('score', '92');
-completeMeta.set('result', ResultOptions.Pass.toString());
+completeMeta.set('result', EventStatus.ePass.toString());
 await Abxr.Event('assessment_complete', completeMeta);
 ```
 
 #### Objectives
 ```typescript
-import { Abxr, ResultOptions } from 'abxrlib-for-webxr';
+import { Abxr, EventStatus } from 'abxrlib-for-webxr';
 
 // Start objective
 const startMeta = new Abxr.DictStrings();
@@ -341,7 +341,7 @@ await Abxr.Event('objective_start', startMeta);
 const completeMeta = new Abxr.DictStrings();
 completeMeta.set('objective_name', 'open_valve');
 completeMeta.set('score', '100');
-completeMeta.set('result', ResultOptions.Complete.toString());
+completeMeta.set('result', EventStatus.eComplete.toString());
 await Abxr.Event('objective_complete', completeMeta);
 ```
 
@@ -616,9 +616,9 @@ The `Abxr` class exposes commonly used types and enums for easy access:
 
 ```javascript
 // Result options for assessments and objectives
-Abxr.ResultOptions.ePassed
-Abxr.ResultOptions.eFailed
-Abxr.ResultOptions.eIncomplete
+Abxr.EventStatus.ePass
+Abxr.EventStatus.eFail
+Abxr.EventStatus.eIncomplete
 
 // Interaction types
 Abxr.InteractionType.eClick
@@ -646,7 +646,7 @@ Abxr_init('app123', 'org456', 'secret789');
 Abxr.setDebugMode(true);
 
 // Assessment with result options
-Abxr.EventAssessmentComplete('math_test', '85', Abxr.ResultOptions.ePassed, { time_spent: '30min' });
+Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { time_spent: '30min' });
 
 // Interaction with interaction type
 Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
@@ -682,11 +682,11 @@ Abxr.Event('custom_event', meta);
 
 #### Assessment Events
 - `Abxr.EventAssessmentStart(assessmentName, meta?)` - Start an assessment
-- `Abxr.EventAssessmentComplete(assessmentName, score, resultOptions, meta?)` - Complete an assessment
+- `Abxr.EventAssessmentComplete(assessmentName, score, eventStatus, meta?)` - Complete an assessment
 
 #### Objective Events
 - `Abxr.EventObjectiveStart(objectiveName, meta?)` - Start an objective
-- `Abxr.EventObjectiveComplete(objectiveName, score, resultOptions, meta?)` - Complete an objective
+- `Abxr.EventObjectiveComplete(objectiveName, score, eventStatus, meta?)` - Complete an objective
 
 #### Interaction Events
 - `Abxr.EventInteractionStart(interactionName, meta?)` - Start an interaction

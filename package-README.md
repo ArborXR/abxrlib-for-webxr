@@ -159,9 +159,9 @@ The `Abxr` class exposes commonly used types and enums for easy access:
 
 ```javascript
 // Result options for assessments and objectives
-Abxr.ResultOptions.ePassed
-Abxr.ResultOptions.eFailed
-Abxr.ResultOptions.eIncomplete
+Abxr.EventStatus.ePass
+Abxr.EventStatus.eFail
+Abxr.EventStatus.eIncomplete
 
 // Interaction types
 Abxr.InteractionType.eClick
@@ -189,7 +189,7 @@ Abxr_init('app123', 'org456', 'secret789');
 Abxr.setDebugMode(true);
 
 // Assessment with result options
-Abxr.EventAssessmentComplete('math_test', '85', Abxr.ResultOptions.ePassed, { time_spent: '30min' });
+Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { time_spent: '30min' });
 
 // Interaction with interaction type
 Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
@@ -362,11 +362,11 @@ Abxr.AIProxy(
 
 #### Assessment Events
 - `Abxr.EventAssessmentStart(assessmentName, meta?)` - Start an assessment
-- `Abxr.EventAssessmentComplete(assessmentName, score, resultOptions, meta?)` - Complete an assessment
+- `Abxr.EventAssessmentComplete(assessmentName, score, eventStatus, meta?)` - Complete an assessment
 
 #### Objective Events
 - `Abxr.EventObjectiveStart(objectiveName, meta?)` - Start an objective
-- `Abxr.EventObjectiveComplete(objectiveName, score, resultOptions, meta?)` - Complete an objective
+- `Abxr.EventObjectiveComplete(objectiveName, score, eventStatus, meta?)` - Complete an objective
 
 #### Interaction Events
 - `Abxr.EventInteractionStart(interactionName, meta?)` - Start an interaction
@@ -411,9 +411,9 @@ The `Abxr` class exposes commonly used types and enums for easy access:
 
 ```javascript
 // Result options for assessments and objectives
-Abxr.ResultOptions.ePassed
-Abxr.ResultOptions.eFailed
-Abxr.ResultOptions.eIncomplete
+Abxr.EventStatus.ePass
+Abxr.EventStatus.eFail
+Abxr.EventStatus.eIncomplete
 
 // Interaction types
 Abxr.InteractionType.eClick
@@ -441,7 +441,7 @@ Abxr_init('app123', 'org456', 'secret789');
 Abxr.debugMode = true;
 
 // Assessment with result options
-Abxr.EventAssessmentComplete('math_test', '85', Abxr.ResultOptions.ePassed, { time_spent: '30min' });
+Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { time_spent: '30min' });
 
 // Interaction with interaction type
 Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
