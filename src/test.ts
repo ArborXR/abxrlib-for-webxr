@@ -169,7 +169,7 @@ function TestRegex()
 
 	while ((result = reg.exec(targetText)) !== null)
 	{
-		console.log(result[0]);
+		console.log("AbxrLib: ", result[0]);
 	}
 }
 
@@ -191,7 +191,7 @@ async function TestHttp()
 	objRequest.AddHttpHeader("X-AbxrLib-Timestamp", dtNow.ToString());
 	// ---
 	await objRequest.Post("http://192.168.5.2:19080/api/v1/telemetry", [], Buffer.from("Some egregiously invalid body content."), {szResponse: ""});
-	console.log(objRequest.m_objResponse);
+	console.log("AbxrLib: ", objRequest.m_objResponse);
 }
 
 async function TestLoginAndSend(): Promise<void>
@@ -205,7 +205,7 @@ async function TestLoginAndSend(): Promise<void>
 	FieldPropertiesRecordContainer.FromString({obj: AbxrLibStorage.m_abxrLibConfiguration, szKey: 'm_nMaximumCachedItems'}, "1025");
 	FieldPropertiesRecordContainer.FromString({obj: AbxrLibStorage.m_abxrLibConfiguration, szKey: 'm_bRetainLocalAfterSent'}, "false");
 	FieldPropertiesRecordContainer.FromString({obj: AbxrLibStorage.m_abxrLibConfiguration, szKey: 'm_dictAuthMechanism'}, "{\"Hey\": \"Pedro\", \"There\": \"Juan\", \"What\": \"Up\"}");
-	console.log(AbxrLibStorage.m_abxrLibConfiguration);
+	console.log("AbxrLib: ", AbxrLibStorage.m_abxrLibConfiguration);
 	var	dtNow:			DateTime = DateTime.ConvertUnixTime(DateTime.Now()),
 						dtOlderThan:	DateTime = DateTime.ConvertUnixTime(dtNow.ToUnixTime() - (AbxrLibStorage.m_abxrLibConfiguration.m_tsPruneSentItemsOlderThan as TimeSpan).ToInt64());
 	if (await AbxrLibAnalyticsTests.TestAuthenticate() === AbxrResult.eOk)
@@ -224,7 +224,7 @@ async function PrintStuffEveryThirdOfASecond(): Promise<number>
 
 	for (i = 0; i < 30; i++)
 	{
-		console.log(`I is ${i}`);
+		console.log(`AbxrLib: I is ${i}`);
 		await Sleep(333);
 	}
 	return 0;
@@ -236,7 +236,7 @@ async function PrintStuffEveryHalfOfASecond(): Promise<number>
 
 	for (j = 0; j < 20; j++)
 	{
-		console.log(`J is ${j}`);
+		console.log(`AbxrLib: J is ${j}`);
 		await Sleep(500);
 	}
 	return 1;

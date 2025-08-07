@@ -653,14 +653,15 @@ export function LoadFromJson(o: DataObjectBase | null, szJSON: string): JsonResu
 				}
 				else
 				{
-					return JsonResult.eMissingField;
+					// Gracefully ignore unknown fields - this is normal JSON behavior
+					continue;
 				}
 			}
 		}
 	}
 	catch (error)
 	{
-		console.log(error);
+		console.log("AbxrLib: ", error);
 		return JsonResult.eBadJsonStructure;
 	}
 	// ---

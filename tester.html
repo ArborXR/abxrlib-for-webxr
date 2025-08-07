@@ -13,9 +13,9 @@
     const orgId = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
     const authSecret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
     const restUrl = 'https://lib-backend.xrdm.app/v1/';
-    const appConfigTemplate = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="{{REST_URL}}"/></appSettings></configuration>';
-    
+   
     // Helper function to create appConfig with specific REST URL
+    const appConfigTemplate = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="{{REST_URL}}"/></appSettings></configuration>';
     function createAppConfig(restUrl) {
         return appConfigTemplate.replace('{{REST_URL}}', restUrl);
     }
@@ -62,7 +62,7 @@
     }
 
     async function try_Event() {
-        console.log("Executing Abxr.Event()");
+        console.log("Tester: Executing Abxr.Event()");
         try {
             const eventValue = document.getElementById('event_input').value;
             const dictMeta = { verb: "started", assessment_name: eventValue };
@@ -81,7 +81,7 @@
     }
 
     async function try_logDebug() {
-        console.log("Executing Abxr.LogDebug()");
+        console.log("Tester: Executing Abxr.LogDebug()");
         try {
             const debugValue = document.getElementById('log_input').value;
             
@@ -100,7 +100,7 @@
 
     // XR Dialog Demo Functions
     async function initBuiltinDefault() {
-        console.log("Testing XR dialog (default)");
+        console.log("Tester: Testing XR dialog (default)");
         updateBuiltinResult('Initializing with XR dialog (default behavior)...', 'info');
         
         try {
@@ -140,7 +140,7 @@
     }
 
     async function initBuiltinCustom() {
-        console.log("Testing XR dialog with custom styling");
+        console.log("Tester: Testing XR dialog with custom styling");
         updateBuiltinResult('Initializing with custom-styled XR dialog...', 'info');
         
         try {
@@ -201,7 +201,7 @@
     }
 
     async function initXRDialog() {
-        console.log("Testing XR Dialog with Advanced Customization");
+        console.log("Tester: Testing XR Dialog with Advanced Customization");
         updateBuiltinResult('Initializing with advanced XR dialog customization...', 'info');
         
         try {
@@ -265,7 +265,7 @@
     }
 
     async function initDesktopNoKeyboard() {
-        console.log("Testing XR dialog without virtual keyboard (desktop mode)");
+        console.log("Tester: Testing XR dialog without virtual keyboard (desktop mode)");
         updateBuiltinResult('Initializing XR dialog optimized for desktop (no virtual keyboard)...', 'info');
         
         try {
@@ -310,7 +310,7 @@
     }
 
     async function initBuiltinDisabled() {
-        console.log("Testing with XR dialog disabled");
+        console.log("Tester: Testing with XR dialog disabled");
         updateBuiltinResult('Initializing with XR dialog disabled...', 'info');
         
         try {
@@ -341,7 +341,7 @@
     }
 
     async function initCustomCallback() {
-        console.log("Testing with custom callback (developer-provided dialog)");
+        console.log("Tester: Testing with custom callback (developer-provided dialog)");
         updateBuiltinResult('Initializing with custom callback - developer provides their own dialog...', 'info');
         
         try {
@@ -350,7 +350,7 @@
             
             // Custom callback function - developer implements their own dialog
             const customAuthCallback = (authData) => {
-                console.log("Custom callback received auth data:", authData);
+                console.log("Tester: Custom callback received auth data:", authData);
                 updateBuiltinResult(`Custom callback triggered! Auth type: ${authData.type}, Domain: ${authData.domain || 'N/A'}`, 'warning');
                 
                 // Simulate custom dialog - in real implementation, developer would show their own UI
@@ -416,7 +416,7 @@
     }
 
     async function initCustomCallbackViaOptions() {
-        console.log("Testing with custom callback via dialogOptions");
+        console.log("Tester: Testing with custom callback via dialogOptions");
         updateBuiltinResult('Initializing with custom callback via dialogOptions...', 'info');
         
         try {
@@ -426,7 +426,7 @@
             // Method 2: Pass custom callback via dialogOptions
             const dialogOptions = {
                 customCallback: (authData) => {
-                    console.log("Custom callback (via options) received auth data:", authData);
+                    console.log("Tester: Custom callback (via options) received auth data:", authData);
                     updateBuiltinResult(`Custom callback (via options) triggered! Auth type: ${authData.type}`, 'warning');
                     
                     // Simple alert-based custom dialog for demonstration
@@ -490,6 +490,140 @@
     function enableSharedButtons() {
         document.getElementById('eventBtn').disabled = false;
         document.getElementById('logDebugBtn').disabled = false;
+        
+        // Enable assessment, objective, and interaction buttons
+        document.getElementById('assessmentStartBtn').disabled = false;
+        document.getElementById('assessmentCompleteBtn').disabled = false;
+        document.getElementById('objectiveStartBtn').disabled = false;
+        document.getElementById('objectiveCompleteBtn').disabled = false;
+        document.getElementById('interactionStartBtn').disabled = false;
+        document.getElementById('interactionCompleteBtn').disabled = false;
+    }
+
+    // Assessment Event Functions
+    async function try_AssessmentStart() {
+        console.log("Tester: Executing Abxr.EventAssessmentStart()");
+        try {
+            const assessmentName = document.getElementById('assessment_name').value;
+            const dictMeta = { started_at: new Date().toISOString() };
+            
+            const { result, responseData } = await executeWithResponseCapture(
+                () => Abxr.EventAssessmentStart(assessmentName, dictMeta)
+            );
+                        
+            document.getElementById('assessment_result').textContent = 
+                `Assessment Start - Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+                
+        } catch (error) {
+            document.getElementById('assessment_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    async function try_AssessmentComplete() {
+        console.log("Tester: Executing Abxr.EventAssessmentComplete()");
+        try {
+            const assessmentName = document.getElementById('assessment_name').value;
+            const score = document.getElementById('assessment_score').value;
+            const statusValue = document.getElementById('assessment_status').value;
+            const eventStatus = Abxr.EventStatus[statusValue];
+            const dictMeta = { completed_at: new Date().toISOString(), final_score: score };
+            
+            const { result, responseData } = await executeWithResponseCapture(
+                () => Abxr.EventAssessmentComplete(assessmentName, score, eventStatus, dictMeta)
+            );
+                        
+            document.getElementById('assessment_result').textContent = 
+                `Assessment Complete - Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+                
+        } catch (error) {
+            document.getElementById('assessment_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    // Objective Event Functions
+    async function try_ObjectiveStart() {
+        console.log("Tester: Executing Abxr.EventObjectiveStart()");
+        try {
+            const objectiveName = document.getElementById('objective_name').value;
+            const dictMeta = { started_at: new Date().toISOString() };
+            
+            const { result, responseData } = await executeWithResponseCapture(
+                () => Abxr.EventObjectiveStart(objectiveName, dictMeta)
+            );
+                        
+            document.getElementById('objective_result').textContent = 
+                `Objective Start - Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+                
+        } catch (error) {
+            document.getElementById('objective_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    async function try_ObjectiveComplete() {
+        console.log("Tester: Executing Abxr.EventObjectiveComplete()");
+        try {
+            const objectiveName = document.getElementById('objective_name').value;
+            const score = document.getElementById('objective_score').value;
+            const statusValue = document.getElementById('objective_status').value;
+            const eventStatus = Abxr.EventStatus[statusValue];
+            const dictMeta = { completed_at: new Date().toISOString(), final_score: score };
+            
+            const { result, responseData } = await executeWithResponseCapture(
+                () => Abxr.EventObjectiveComplete(objectiveName, score, eventStatus, dictMeta)
+            );
+                        
+            document.getElementById('objective_result').textContent = 
+                `Objective Complete - Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+                
+        } catch (error) {
+            document.getElementById('objective_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    // Interaction Event Functions
+    async function try_InteractionStart() {
+        console.log("Tester: Executing Abxr.EventInteractionStart()");
+        try {
+            const interactionName = document.getElementById('interaction_name').value;
+            const dictMeta = { started_at: new Date().toISOString() };
+            
+            const { result, responseData } = await executeWithResponseCapture(
+                () => Abxr.EventInteractionStart(interactionName, dictMeta)
+            );
+                        
+            document.getElementById('interaction_result').textContent = 
+                `Interaction Start - Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+                
+        } catch (error) {
+            document.getElementById('interaction_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    async function try_InteractionComplete() {
+        console.log("Tester: Executing Abxr.EventInteractionComplete()");
+        try {
+            const interactionName = document.getElementById('interaction_name').value;
+            const typeValue = document.getElementById('interaction_type').value;
+            const interactionType = Abxr.InteractionType[typeValue];
+            const response = document.getElementById('interaction_response').value;
+            const dictMeta = { completed_at: new Date().toISOString(), user_response: response };
+            
+            const { result, responseData } = await executeWithResponseCapture(
+                () => Abxr.EventInteractionComplete(interactionName, interactionType, response, dictMeta)
+            );
+                        
+            document.getElementById('interaction_result').textContent = 
+                `Interaction Complete - Status Code: ${result}\n` +
+                `Response: ${JSON.stringify(responseData, null, 2)}`;
+                
+        } catch (error) {
+            document.getElementById('interaction_result').textContent = 'Error: ' + error.message;
+        }
     }
 
 
@@ -683,6 +817,103 @@
           <h3>Log Debug Result:</h3>
           <div id="logDebug_result" class="result">Initialize first to enable</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Assessment, Objective, and Interaction Events Section -->
+    <div class="section shared-section">
+      <h2>Assessment, Objective & Interaction Events</h2>
+      <p>Test the specialized event types for LMS compatibility:</p>
+      
+      <!-- Assessment Events -->
+      <div style="margin-bottom: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: #495057;">Assessment Events</h3>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: end;">
+          <div style="flex: 1;">
+            <label for="assessment_name" style="display: block; margin-bottom: 5px; font-weight: bold;">Assessment Name:</label>
+            <input type="text" id="assessment_name" value="Math Quiz 101" placeholder="Enter assessment name">
+          </div>
+          <div style="flex: 1;">
+            <label for="assessment_score" style="display: block; margin-bottom: 5px; font-weight: bold;">Score (for complete):</label>
+            <input type="text" id="assessment_score" value="85" placeholder="Enter score">
+          </div>
+          <div style="flex: 1;">
+            <label for="assessment_status" style="display: block; margin-bottom: 5px; font-weight: bold;">Status (for complete):</label>
+            <select id="assessment_status">
+              <option value="eComplete">Complete</option>
+              <option value="ePass">Pass</option>
+              <option value="eFail">Fail</option>
+              <option value="eIncomplete">Incomplete</option>
+              <option value="eBrowsed">Browsed</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="action-button" onclick="try_AssessmentStart()" disabled id="assessmentStartBtn">Start Assessment</button>
+          <button class="action-button" onclick="try_AssessmentComplete()" disabled id="assessmentCompleteBtn">Complete Assessment</button>
+        </div>
+        <div id="assessment_result" class="result">Initialize first to enable</div>
+      </div>
+
+      <!-- Objective Events -->
+      <div style="margin-bottom: 30px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: #495057;">Objective Events</h3>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: end;">
+          <div style="flex: 1;">
+            <label for="objective_name" style="display: block; margin-bottom: 5px; font-weight: bold;">Objective Name:</label>
+            <input type="text" id="objective_name" value="Learn Fractions" placeholder="Enter objective name">
+          </div>
+          <div style="flex: 1;">
+            <label for="objective_score" style="display: block; margin-bottom: 5px; font-weight: bold;">Score (for complete):</label>
+            <input type="text" id="objective_score" value="92" placeholder="Enter score">
+          </div>
+          <div style="flex: 1;">
+            <label for="objective_status" style="display: block; margin-bottom: 5px; font-weight: bold;">Status (for complete):</label>
+            <select id="objective_status">
+              <option value="eComplete">Complete</option>
+              <option value="ePass" selected>Pass</option>
+              <option value="eFail">Fail</option>
+              <option value="eIncomplete">Incomplete</option>
+              <option value="eBrowsed">Browsed</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="action-button" onclick="try_ObjectiveStart()" disabled id="objectiveStartBtn">Start Objective</button>
+          <button class="action-button" onclick="try_ObjectiveComplete()" disabled id="objectiveCompleteBtn">Complete Objective</button>
+        </div>
+        <div id="objective_result" class="result">Initialize first to enable</div>
+      </div>
+
+      <!-- Interaction Events -->
+      <div style="margin-bottom: 30px; padding: 15px; background: #f0fff0; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: #495057;">Interaction Events</h3>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: end;">
+          <div style="flex: 1;">
+            <label for="interaction_name" style="display: block; margin-bottom: 5px; font-weight: bold;">Interaction Name:</label>
+            <input type="text" id="interaction_name" value="Question 1" placeholder="Enter interaction name">
+          </div>
+          <div style="flex: 1;">
+            <label for="interaction_type" style="display: block; margin-bottom: 5px; font-weight: bold;">Type (for complete):</label>
+            <select id="interaction_type">
+              <option value="eNull">Null</option>
+              <option value="eBool">Bool</option>
+              <option value="eSelect" selected>Select</option>
+              <option value="eText">Text</option>
+              <option value="eRating">Rating</option>
+              <option value="eNumber">Number</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label for="interaction_response" style="display: block; margin-bottom: 5px; font-weight: bold;">Response (for complete):</label>
+            <input type="text" id="interaction_response" value="Option A" placeholder="Enter response">
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="action-button" onclick="try_InteractionStart()" disabled id="interactionStartBtn">Start Interaction</button>
+          <button class="action-button" onclick="try_InteractionComplete()" disabled id="interactionCompleteBtn">Complete Interaction</button>
+        </div>
+        <div id="interaction_result" class="result">Initialize first to enable</div>
       </div>
     </div>
   </div>

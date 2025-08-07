@@ -307,6 +307,9 @@ export class AbxrLibClient
 	// Static property to store the last authentication error message
 	private static lastAuthError: string = '';
 	
+	// Static properties to store additional authentication response data
+	private static authResponseData: any = null;
+	
 	public static getLastAuthError(): string {
 		return this.lastAuthError;
 	}
@@ -315,8 +318,20 @@ export class AbxrLibClient
 		this.lastAuthError = '';
 	}
 	
-	private static setLastAuthError(error: string): void {
+	public static setLastAuthError(error: string): void {
 		this.lastAuthError = error;
+	}
+	
+	public static getAuthResponseData(): any {
+		return this.authResponseData;
+	}
+	
+	public static setAuthResponseData(data: any): void {
+		this.authResponseData = data;
+	}
+	
+	public static clearAuthResponseData(): void {
+		this.authResponseData = null;
 	}
 	
 	/// <summary>
@@ -452,7 +467,7 @@ export class AbxrLibClient
 							rpResponse.szResponse = JSON.stringify(parsedResponse);
 						}
 					} catch (e) {
-						console.error("Error preprocessing config response:", e);
+						console.error("AbxrLib: Error preprocessing config response:", e);
 						return AbxrResult.ePostObjectsBadJsonResponse;
 					}
 				}
@@ -471,7 +486,7 @@ export class AbxrLibClient
 						return AbxrResult.eOk;
 					}
 				} catch (jsonError) {
-					console.error("Error parsing JSON response:", jsonError);
+					console.error("AbxrLib: Error parsing JSON response:", jsonError);
 					return AbxrResult.ePostObjectsBadJsonResponse;
 				}
 
@@ -577,24 +592,14 @@ export class AbxrLibClient
 		var	szJSON:			string = GenerateJson(authTokenRequest, DumpCategory.eDumpEverything);	// Save a few ns not going with eDumpingJsonForBackend... this is not a database object, no need to exclude fields.
 		var	mbBodyContent:	Buffer = Buffer.from(szJSON);
 
+		// Clear any previous auth response data
+		this.clearAuthResponseData();
+
 		try {
 			// Set additional headers from current state
 			await AbxrLibAnalytics.SetHeadersFromCurrentState(objRequest, mbBodyContent, true, false);
 
-			// Debug logging
-			//console.log("AbxrLib: Authentication Request:", {
-			//	url: AbxrLibAnalytics.FinalUrl("auth/token"),
-			//	requestBody: JSON.parse(szJSON)
-			//});
-
 			eCurlRet = await objRequest.Post(AbxrLibAnalytics.FinalUrl("auth/token"), [], mbBodyContent, rpResponse);
-			
-			// Response logging
-			//console.log("AbxrLib: Authentication Response:", {
-			//	success: eCurlRet,
-			//	response: rpResponse.szResponse,
-			//	responseObject: JSON.parse(rpResponse.szResponse)
-			//});
 
 			if (!eCurlRet) {
 				this.setLastAuthError(objRequest.m_szLastError);

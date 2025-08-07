@@ -309,70 +309,186 @@ meta.set('item_value', '100');
 await Abxr.Event('item_collected', meta);
 ```
 
+### Metadata Formats
+
+The ABXR SDK supports multiple flexible formats for the `meta` parameter in all event and log methods. You can use whatever format is most convenient for your application:
+
+#### 1. Plain JavaScript Objects (Recommended)
+```typescript
+// Simple and intuitive - works with any object
+await Abxr.Event('user_action', { 
+    action: 'click', 
+    timestamp: new Date().toISOString(),
+    userId: 12345,
+    completed: true
+});
+
+await Abxr.LogInfo('User login', {
+    username: 'john_doe',
+    loginMethod: 'oauth',
+    deviceType: 'mobile'
+});
+```
+
+#### 2. JSON Strings
+```typescript
+// Perfect for APIs or stored JSON data
+await Abxr.EventAssessmentStart('Math Quiz', '{"difficulty": "hard", "timeLimit": 300, "attempts": 1}');
+
+await Abxr.LogError('API Error', '{"endpoint": "/api/users", "status": 500, "message": "Database timeout"}');
+```
+
+#### 3. URL Parameter Strings
+```typescript
+// Great for form data or query parameters
+await Abxr.Event('form_submit', 'name=John%20Doe&email=john@example.com&age=25');
+
+await Abxr.LogDebug('Search query', 'query=virtual+reality&category=education&page=2');
+
+// Handles complex values with = signs
+await Abxr.Event('equation_solved', 'formula=x=y+5&result=10&method=substitution');
+```
+
+#### 4. AbxrDictStrings Objects (Advanced)
+```typescript
+// For advanced users who need precise control
+const meta = new Abxr.AbxrDictStrings();
+meta.Add('custom_field', 'value');
+meta.Add('timestamp', Date.now().toString());
+await Abxr.Event('custom_event', meta);
+```
+
+#### 5. Primitive Values
+```typescript
+// For simple single-value metadata
+await Abxr.Event('score_update', 1500);  // Number
+await Abxr.LogInfo('Feature enabled', true);  // Boolean
+await Abxr.Event('user_message', 'Hello World');  // String
+```
+
+#### 6. No Metadata
+```typescript
+// Events and logs work fine without metadata
+await Abxr.Event('app_started');
+await Abxr.LogInfo('Application initialized');
+```
+
+#### Automatic Conversion Examples
+
+The SDK automatically handles conversion and URL decoding:
+
+```typescript
+// URL parameters with encoding
+'user=John%20Doe&message=Hello%20World'
+// Becomes: { user: "John Doe", message: "Hello World" }
+
+// JSON with nested data
+'{"user": {"name": "John", "age": 30}, "scores": [95, 87, 92]}'
+// Becomes: { user: "John,30", scores: "95,87,92" }
+
+// Mixed formats work seamlessly
+await Abxr.EventLevelComplete('Level 1', '85', 'score=85&attempts=3&bonus=true');
+await Abxr.EventAssessmentStart('Quiz', { startTime: Date.now(), difficulty: 'medium' });
+```
+
+**All event and log methods support these flexible metadata formats:**
+- `Abxr.Event(name, meta?)`
+- `Abxr.EventAssessmentStart/Complete(..., meta?)`
+- `Abxr.EventObjectiveStart/Complete(..., meta?)`
+- `Abxr.EventInteractionStart/Complete(..., meta?)`
+- `Abxr.EventLevelStart/Complete(..., meta?)`
+- `Abxr.LogDebug/Info/Warn/Error/Critical(message, meta?)`
+
 ### Event Wrappers (for LMS Compatibility)
 
 #### Assessments
 ```typescript
 import { Abxr, EventStatus } from 'abxrlib-for-webxr';
 
-// Start assessment
-const startMeta = new Abxr.DictStrings();
-startMeta.set('assessment_name', 'final_exam');
-await Abxr.Event('assessment_start', startMeta);
+// Start assessment - using simple object metadata
+await Abxr.EventAssessmentStart('final_exam', {
+    difficulty: 'hard',
+    timeLimit: 1800,
+    attempts: 1
+});
 
-// Complete assessment
-const completeMeta = new Abxr.DictStrings();
-completeMeta.set('assessment_name', 'final_exam');
-completeMeta.set('score', '92');
-completeMeta.set('result', EventStatus.ePass.toString());
-await Abxr.Event('assessment_complete', completeMeta);
+// Complete assessment - multiple metadata format examples
+await Abxr.EventAssessmentComplete('final_exam', '92', EventStatus.ePass, {
+    timeSpent: 1650,
+    questionsCorrect: 23,
+    questionsTotal: 25
+});
+
+// Using URL parameter format
+await Abxr.EventAssessmentComplete('quiz_2', '87', EventStatus.ePass, 'time=900&hints=2&retries=0');
+
+// Using JSON string format
+await Abxr.EventAssessmentStart('practical_exam', '{"lab": "chemistry", "equipment": ["beaker", "burner"], "supervisor": "Dr. Smith"}');
 ```
 
 #### Objectives
 ```typescript
 import { Abxr, EventStatus } from 'abxrlib-for-webxr';
 
-// Start objective
-const startMeta = new Abxr.DictStrings();
-startMeta.set('objective_name', 'open_valve');
-await Abxr.Event('objective_start', startMeta);
+// Start objective - using simple object metadata
+await Abxr.EventObjectiveStart('open_valve', {
+    location: 'engine_room',
+    tool: 'wrench',
+    difficulty: 'medium'
+});
 
-// Complete objective
-const completeMeta = new Abxr.DictStrings();
-completeMeta.set('objective_name', 'open_valve');
-completeMeta.set('score', '100');
-completeMeta.set('result', EventStatus.eComplete.toString());
-await Abxr.Event('objective_complete', completeMeta);
+// Complete objective - using URL parameter format
+await Abxr.EventObjectiveComplete('open_valve', '100', EventStatus.eComplete, 'attempts=1&time=45&hints=0');
+
+// Multiple objectives with JSON metadata
+await Abxr.EventObjectiveStart('safety_check', '{"checklist": ["helmet", "gloves", "boots"], "inspector": "safety_officer"}');
 ```
 
 #### Interactions
 ```typescript
 import { Abxr, InteractionType } from 'abxrlib-for-webxr';
 
-// Start interaction
-const startMeta = new Abxr.DictStrings();
-startMeta.set('interaction_name', 'select_option_a');
-await Abxr.Event('interaction_start', startMeta);
+// Start interaction - using simple object metadata
+await Abxr.EventInteractionStart('select_option_a', {
+    options: ['A', 'B', 'C', 'D'],
+    question: 'What is the correct answer?',
+    timeLimit: 30
+});
 
-// Complete interaction
-const completeMeta = new Abxr.DictStrings();
-completeMeta.set('interaction_name', 'select_option_a');
-completeMeta.set('result', 'true');
-completeMeta.set('result_details', 'a');
-completeMeta.set('type', InteractionType.Select.toString());
-await Abxr.Event('interaction_complete', completeMeta);
+// Complete interaction - using object metadata
+await Abxr.EventInteractionComplete('select_option_a', InteractionType.eChoice, 'A', {
+    correct: true,
+    timeSpent: 15,
+    confidence: 'high'
+});
+
+// Button click interaction with URL parameters
+await Abxr.EventInteractionComplete('button_click', InteractionType.eClick, 'submit', 'x=150&y=200&button=primary');
 ```
 
 ### Logging
 ```typescript
 import { Abxr } from 'abxrlib-for-webxr';
 
-// Send logs with different levels
+// Send logs with different levels (no metadata)
 await Abxr.LogDebug('Debug message');
 await Abxr.LogInfo('Info message');
 await Abxr.LogWarn('Warning message');
 await Abxr.LogError('Error message');
 await Abxr.LogCritical('Critical error');
+
+// Send logs with metadata - all formats supported
+await Abxr.LogInfo('User login', {
+    userId: 12345,
+    loginMethod: 'oauth',
+    ipAddress: '192.168.1.100'
+});
+
+await Abxr.LogError('API Error', 'endpoint=/api/users&status=500&timeout=5000');
+
+await Abxr.LogDebug('Performance metrics', '{"fps": 60, "memory": "512MB", "loadTime": 2.3}');
+
+await Abxr.LogWarn('Low battery', 15); // Simple number metadata
 
 // Or use the generic Log method
 await Abxr.Log(LogLevel.Info, 'Module started');
@@ -645,16 +761,26 @@ Abxr_init('app123', 'org456', 'secret789');
 // Enable debug mode
 Abxr.setDebugMode(true);
 
-// Assessment with result options
-Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { time_spent: '30min' });
+// Assessment with flexible metadata formats
+Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { 
+    timeSpent: 1800, 
+    questionsCorrect: 17, 
+    questionsTotal: 20 
+});
 
-// Interaction with interaction type
-Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
+// Interaction with URL parameter metadata
+Abxr.EventInteractionComplete('button_click', Abxr.InteractionType.eClick, 'success', 'x=150&y=200&button=submit');
 
-// Create metadata dictionary
+// Event with JSON string metadata
+Abxr.Event('custom_event', '{"user": "john_doe", "level": 5, "score": 1250}');
+
+// Log with simple object metadata
+Abxr.LogInfo('User action', { action: 'login', timestamp: Date.now() });
+
+// Traditional AbxrDictStrings still works
 const meta = new Abxr.AbxrDictStrings();
-meta.set('custom_field', 'value');
-Abxr.Event('custom_event', meta);
+meta.Add('custom_field', 'value');
+Abxr.Event('legacy_event', meta);
 ```
 
 ## API Reference
@@ -671,12 +797,14 @@ Abxr.Event('custom_event', meta);
 
 ### Core Methods
 
-- `Abxr.Event(name, meta?)` - Send a custom event
-- `Abxr.LogDebug(message)` - Send a debug log message
-- `Abxr.LogInfo(message)` - Send an info log message
-- `Abxr.LogWarn(message)` - Send a warning log message
-- `Abxr.LogError(message)` - Send an error log message
-- `Abxr.LogCritical(message)` - Send a critical log message
+- `Abxr.Event(name, meta?)` - Send a custom event with optional metadata
+- `Abxr.LogDebug(message, meta?)` - Send a debug log message with optional metadata
+- `Abxr.LogInfo(message, meta?)` - Send an info log message with optional metadata
+- `Abxr.LogWarn(message, meta?)` - Send a warning log message with optional metadata
+- `Abxr.LogError(message, meta?)` - Send an error log message with optional metadata
+- `Abxr.LogCritical(message, meta?)` - Send a critical log message with optional metadata
+
+**Note:** The `meta` parameter supports multiple formats: plain JavaScript objects, JSON strings, URL parameter strings, AbxrDictStrings objects, primitive values, or can be omitted entirely. See [Metadata Formats](#metadata-formats) for details.
 
 ### Specialized Event Methods
 
@@ -695,6 +823,8 @@ Abxr.Event('custom_event', meta);
 #### Level Events
 - `Abxr.EventLevelStart(levelName, meta?)` - Start a level
 - `Abxr.EventLevelComplete(levelName, score, meta?)` - Complete a level
+
+**Note:** All specialized event methods support the same flexible metadata formats as the core methods. See [Metadata Formats](#metadata-formats) for examples and supported formats.
 
 ### Storage Methods
 

@@ -182,6 +182,38 @@ export class AbxrLibInit
 
 				AbxrLibInit.m_abxrLibAuthentication.m_szApiToken = objAuthTokenResponseSuccess.m_szToken;
 				AbxrLibInit.m_abxrLibAuthentication.m_szApiSecret = objAuthTokenResponseSuccess.m_szApiSecret;
+				
+				// Parse the raw response to capture all fields (including ones we don't explicitly handle)
+				try {
+					const fullResponseData = JSON.parse(rpResponse.szResponse);
+					
+					// Store complete authentication response data
+					AbxrLibClient.setAuthResponseData({
+						token: objAuthTokenResponseSuccess.m_szToken,
+						secret: objAuthTokenResponseSuccess.m_szApiSecret,
+						userData: fullResponseData.userData,
+						userId: fullResponseData.userId,
+						userEmail: fullResponseData.userEmail,
+						moduleTarget: fullResponseData.moduleTarget,
+						// Store any other fields that might be present
+						...Object.keys(fullResponseData).reduce((acc, key) => {
+							if (!['token', 'secret', 'userData', 'userId', 'userEmail', 'moduleTarget'].includes(key)) {
+								acc[key] = fullResponseData[key];
+							}
+							return acc;
+						}, {} as any)
+					});
+				} catch (parseError) {
+					// Still store the basic data we got from the parsed object
+					AbxrLibClient.setAuthResponseData({
+						token: objAuthTokenResponseSuccess.m_szToken,
+						secret: objAuthTokenResponseSuccess.m_szApiSecret,
+						userData: null,
+						userId: null,
+						userEmail: null,
+						moduleTarget: null
+					});
+				}
 				// This is purely internal to this object... for two-step authentications using dictAuthMechanism so FinalAuthenticate() can use the same one used here.
 				AbxrLibInit.m_abxrLibAuthentication.m_szAuthSecret = szAuthSecret;
 				// Set current session only on successful login.
@@ -201,6 +233,14 @@ export class AbxrLibInit
 				}
 				// --- While we are here, and now that we are authenticated, try and get the config from the backend.
 				eRet = await AbxrLibStorage.ReadConfigFromBackend(bLookForAuthMechanism);
+			}
+			else if (eFailureParse === JsonResult.eOk)
+			{
+				// Store detailed error message for later retrieval
+				const errorMessage = objAuthTokenResponseFailure.m_szMessage || "Authentication failed (no error message provided)";
+				AbxrLibClient.setLastAuthError(errorMessage);
+				
+				eRet = AbxrResult.eAuthenticateFailed;
 			}
 			else
 			{

@@ -110,7 +110,7 @@ class AbxrLibBaseSetup {
             '</configuration>';
 
         const szAppConfig = customConfig || defaultConfig;
-        console.log(`AbxrLib: Using ${customConfig ? 'user-defined' : 'default'} config`);
+        //console.log(`AbxrLib: Using ${customConfig ? 'user-defined' : 'default'} config`);
         ConfigurationManager.DebugSetAppConfig(szAppConfig);
     }
 
@@ -225,7 +225,7 @@ export class Abxr {
             return 0; // Return success even when not authenticated
         }
         const event = new AbxrEvent();
-        event.Construct(name, meta || new AbxrDictStrings());
+        event.Construct(name, this.convertToAbxrDictStrings(meta));
         return await AbxrLibSend.EventCore(event);
     }
     
@@ -237,8 +237,7 @@ export class Abxr {
             }
             return 0;
         }
-        const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventAssessmentStart(assessmentName, dictMeta);
+        return await AbxrLibSend.EventAssessmentStart(assessmentName, this.convertToAbxrDictStrings(meta));
     }
     
     static async EventAssessmentComplete(assessmentName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
@@ -248,8 +247,7 @@ export class Abxr {
             }
             return 0;
         }
-        const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventAssessmentComplete(assessmentName, score, eventStatus, dictMeta);
+        return await AbxrLibSend.EventAssessmentComplete(assessmentName, score, eventStatus, this.convertToAbxrDictStrings(meta));
     }
     
     // Objective Events
@@ -260,8 +258,7 @@ export class Abxr {
             }
             return 0;
         }
-        const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventObjectiveStart(objectiveName, dictMeta);
+        return await AbxrLibSend.EventObjectiveStart(objectiveName, this.convertToAbxrDictStrings(meta));
     }
     
     static async EventObjectiveComplete(objectiveName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
@@ -271,8 +268,7 @@ export class Abxr {
             }
             return 0;
         }
-        const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventObjectiveComplete(objectiveName, score, eventStatus, dictMeta);
+        return await AbxrLibSend.EventObjectiveComplete(objectiveName, score, eventStatus, this.convertToAbxrDictStrings(meta));
     }
     
     // Interaction Events
@@ -283,8 +279,7 @@ export class Abxr {
             }
             return 0;
         }
-        const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventInteractionStart(interactionName, dictMeta);
+        return await AbxrLibSend.EventInteractionStart(interactionName, this.convertToAbxrDictStrings(meta));
     }
     
     static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, response: string = "", meta?: any): Promise<number> {
@@ -294,8 +289,7 @@ export class Abxr {
             }
             return 0;
         }
-        const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventInteractionComplete(interactionName, interactionType, response, dictMeta);
+        return await AbxrLibSend.EventInteractionComplete(interactionName, interactionType, response, this.convertToAbxrDictStrings(meta));
     }
     
     // Level Events
@@ -306,8 +300,7 @@ export class Abxr {
             }
             return 0;
         }
-        const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventLevelStart(levelName, dictMeta);
+        return await AbxrLibSend.EventLevelStart(levelName, this.convertToAbxrDictStrings(meta));
     }
     
     static async EventLevelComplete(levelName: string, score: string, meta?: any): Promise<number> {
@@ -317,11 +310,10 @@ export class Abxr {
             }
             return 0;
         }
-        const dictMeta = meta || new AbxrDictStrings();
-        return await AbxrLibSend.EventLevelComplete(levelName, score, dictMeta);
+        return await AbxrLibSend.EventLevelComplete(levelName, score, this.convertToAbxrDictStrings(meta));
     }
     
-    static async LogDebug(message: string): Promise<number> {
+    static async LogDebug(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
@@ -329,11 +321,11 @@ export class Abxr {
             return 0;
         }
         const log = new AbxrLog();
-        log.Construct(LogLevel.eDebug, message, new AbxrDictStrings());
+        log.Construct(LogLevel.eDebug, message, this.convertToAbxrDictStrings(meta));
         return await AbxrLibSend.AddLog(log);
     }
     
-    static async LogInfo(message: string): Promise<number> {
+    static async LogInfo(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
@@ -341,11 +333,11 @@ export class Abxr {
             return 0;
         }
         const log = new AbxrLog();
-        log.Construct(LogLevel.eInfo, message, new AbxrDictStrings());
+        log.Construct(LogLevel.eInfo, message, this.convertToAbxrDictStrings(meta));
         return await AbxrLibSend.AddLog(log);
     }
     
-    static async LogWarn(message: string): Promise<number> {
+    static async LogWarn(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
@@ -353,11 +345,11 @@ export class Abxr {
             return 0;
         }
         const log = new AbxrLog();
-        log.Construct(LogLevel.eWarn, message, new AbxrDictStrings());
+        log.Construct(LogLevel.eWarn, message, this.convertToAbxrDictStrings(meta));
         return await AbxrLibSend.AddLog(log);
     }
     
-    static async LogError(message: string): Promise<number> {
+    static async LogError(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
@@ -365,11 +357,11 @@ export class Abxr {
             return 0;
         }
         const log = new AbxrLog();
-        log.Construct(LogLevel.eError, message, new AbxrDictStrings());
+        log.Construct(LogLevel.eError, message, this.convertToAbxrDictStrings(meta));
         return await AbxrLibSend.AddLog(log);
     }
     
-    static async LogCritical(message: string): Promise<number> {
+    static async LogCritical(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
@@ -377,7 +369,7 @@ export class Abxr {
             return 0;
         }
         const log = new AbxrLog();
-        log.Construct(LogLevel.eCritical, message, new AbxrDictStrings());
+        log.Construct(LogLevel.eCritical, message, this.convertToAbxrDictStrings(meta));
         return await AbxrLibSend.AddLog(log);
     }
     
@@ -465,6 +457,31 @@ export class Abxr {
         return this.authenticationError;
     }
     
+    // Methods to access additional authentication response data
+    static getAuthResponseData(): any {
+        return AbxrLibClient.getAuthResponseData();
+    }
+    
+    static getUserData(): any {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return authData ? authData.userData : null;
+    }
+    
+    static getUserId(): any {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return authData ? authData.userId : null;
+    }
+    
+    static getUserEmail(): string | null {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return authData ? authData.userEmail : null;
+    }
+    
+    static getModuleTarget(): string | null {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return authData ? authData.moduleTarget : null;
+    }
+    
     static setAuthenticationFailed(failed: boolean, error: string = ''): void {
         this.authenticationFailed = failed;
         this.authenticationError = error;
@@ -482,6 +499,65 @@ export class Abxr {
     
     static getAuthMechanismCallback(): AuthMechanismCallback | null {
         return this.authMechanismCallback;
+    }
+
+    // Helper method to convert various metadata formats to AbxrDictStrings
+    private static convertToAbxrDictStrings(meta?: any): AbxrDictStrings {
+        const dictMeta = new AbxrDictStrings();
+        
+        if (!meta) {
+            return dictMeta;
+        }
+        
+        // If it's already an AbxrDictStrings, return as-is
+        if (meta instanceof AbxrDictStrings) {
+            return meta;
+        }
+        
+        // Handle JSON string
+        if (typeof meta === 'string') {
+            try {
+                // Try to parse as JSON first
+                const parsed = JSON.parse(meta);
+                if (typeof parsed === 'object' && parsed !== null) {
+                    // Successfully parsed JSON object
+                    for (const [key, value] of Object.entries(parsed)) {
+                        dictMeta.Add(key, String(value));
+                    }
+                    return dictMeta;
+                }
+            } catch (jsonError) {
+                // Not valid JSON, try URL parameters format
+                if (meta.includes('=')) {
+                    // Parse URL-style parameters: "key1=value1&key2=value2"
+                    const pairs = meta.split('&');
+                    for (const pair of pairs) {
+                        const [key, ...valueParts] = pair.split('=');
+                        if (key) {
+                            const value = valueParts.join('='); // Handle values with = in them
+                            dictMeta.Add(decodeURIComponent(key.trim()), decodeURIComponent(value || ''));
+                        }
+                    }
+                    return dictMeta;
+                }
+                
+                // If it's just a plain string that's not JSON or URL params, treat as single value
+                dictMeta.Add('value', meta);
+                return dictMeta;
+            }
+        }
+        
+        // Handle plain JavaScript object
+        if (typeof meta === 'object' && meta !== null) {
+            for (const [key, value] of Object.entries(meta)) {
+                dictMeta.Add(key, String(value));
+            }
+            return dictMeta;
+        }
+        
+        // Handle primitive values (number, boolean, etc.)
+        dictMeta.Add('value', String(meta));
+        return dictMeta;
     }
     
     // Configure built-in dialog options
@@ -502,7 +578,6 @@ export class Abxr {
             return;
         }
         
-        console.log('AbxrLib: Using XR authentication dialog for:', authData.type);
         this.showXRDialog(authData);
     }
     
@@ -520,26 +595,14 @@ export class Abxr {
     
     // Load and display XR dialog component
     private static async loadXRDialog(authData: AuthMechanismData): Promise<void> {
-        // This will be implemented to dynamically load and render the XR dialog
-        console.log('AbxrLib: Loading XR dialog for:', authData.type);
-        
-        // For now, we'll create a simple WebXR-aware interface
-        // In a full implementation, this would render the React Three Fiber component
-        
-        // For now, use the XR-styled DOM fallback
-        // Future: When React Three Fiber is properly integrated, this would dynamically
-        // import and render the full 3D XR component from src/components/XRAuthDialog.tsx
-        
         const handleSubmit = async (value: string) => {
             try {
                 const formattedData = this.formatAuthDataForSubmission(value, authData.type, authData.domain);
-                console.log('AbxrLib: Submitting XR dialog authentication:', formattedData);
                 
                 const success = await this.completeFinalAuth(formattedData);
                 
                 if (success) {
                     this.hideXRDialog();
-                    console.log('AbxrLib: XR dialog authentication successful - library ready to use');
                 } else {
                     const authTypeLabel = authData.type === 'email' ? 'email' : 
                                         (authData.type === 'assessmentPin' || authData.type === 'pin') ? 'PIN' : 'credentials';
@@ -560,7 +623,6 @@ export class Abxr {
         
         const handleCancel = () => {
             this.hideXRDialog();
-            console.log('AbxrLib: XR authentication cancelled by user');
         };
         
         // Store current auth data for XR dialog
@@ -844,16 +906,16 @@ export class Abxr {
             AbxrLibInit.set_AuthMechanism(authMechanism);
             
             // Perform final authentication
-            const result = await AbxrLibInit.FinalAuthenticate();
-            if (result === 0) {
-                console.log('AbxrLib: Final authentication successful');
-                this.setAuthenticated(true);
-                this.setRequiresFinalAuth(false);
-                return true;
-            } else {
-                console.warn(`AbxrLib: Final authentication failed with code ${result}`);
-                return false;
-            }
+                                        const result = await AbxrLibInit.FinalAuthenticate();
+                            if (result === 0) {
+                                console.log('AbxrLib: Final authentication successful - library ready');
+                                this.setAuthenticated(true);
+                                this.setRequiresFinalAuth(false);
+                                return true;
+                            } else {
+                                console.warn(`AbxrLib: Final authentication failed with code ${result}`);
+                                return false;
+                            }
         } catch (error: any) {
             console.error('AbxrLib: Final authentication error:', error);
             return false;
@@ -921,10 +983,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
         const shouldUseBuiltIn = currentOptions.enabled !== false && isBrowser;
         
         if (shouldUseBuiltIn) {
-            console.log('AbxrLib: Built-in authentication dialog enabled for browser environment');
             Abxr.setAuthMechanismCallback((authData) => Abxr.builtInAuthMechanismHandler(authData));
-        } else if (!isBrowser) {
-            console.log('AbxrLib: Non-browser environment detected - built-in dialog disabled');
         }
     }
     
@@ -972,16 +1031,13 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                         );
                         
                         if (hasAuthMechanism) {
-                            console.log('AbxrLib: Additional authentication required (authMechanism detected)');
-                            //console.log('AbxrLib: AuthMechanism data:', authMechanism);
-                            
                             // Set the library to require final authentication
                             Abxr.setRequiresFinalAuth(true);
                             
                             // Extract structured authMechanism data
                             const authData = Abxr.extractAuthMechanismData();
                             if (authData) {
-                                console.log('AbxrLib: AuthMechanism required:', authData);
+                                console.log(`AbxrLib: Additional authentication required - ${authData.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
                                 
                                 // Notify the client via callback if one is set
                                 const callback = Abxr.getAuthMechanismCallback();
@@ -991,12 +1047,12 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                                     } catch (error) {
                                         console.error('AbxrLib: Error in authMechanism callback:', error);
                                     }
-                                } else {
-                                    console.log('AbxrLib: No authMechanism callback set - client should check getRequiresFinalAuth() and call extractAuthMechanismData()');
                                 }
+                            } else {
+                                console.log('AbxrLib: Additional authentication required (authMechanism detected)');
                             }
                         } else {
-                            console.log('AbxrLib: Authentication complete - no additional auth required');
+                            console.log('AbxrLib: Authentication complete - library ready');
                             Abxr.setAuthenticated(true);
                         }
                     } else {
@@ -1015,13 +1071,5 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
             console.error('AbxrLib: Configuration error:', error);
             Abxr.setAuthenticationFailed(true, `Configuration error: ${error.message}`);
         }
-    } else {
-        console.warn('AbxrLib: Missing authentication parameters. Library will operate in debug mode.');
-        if (!finalOrgId) {
-            console.warn('AbxrLib: orgId not provided and not found in URL parameter "abxr_orgid"');
-        }
-        if (!finalAuthSecret) {
-            console.warn('AbxrLib: authSecret not provided and not found in URL parameter "abxr_auth_secret"');
-        }
-    }
+            }
 }
