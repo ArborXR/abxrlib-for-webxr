@@ -160,6 +160,17 @@ export interface AuthMechanismData {
 
 export type AuthMechanismCallback = (data: AuthMechanismData) => void;
 
+// Types for moduleTarget notification
+export interface ModuleTargetData {
+    moduleTarget: string | null;
+    userData?: any;
+    userId?: any;
+    userEmail?: string | null;
+    isAuthenticated: boolean;
+}
+
+export type ModuleTargetCallback = (data: ModuleTargetData) => void;
+
 // Configuration options for built-in browser dialog
 export interface AuthMechanismDialogOptions {
     enabled?: boolean;           // Enable built-in dialog (default: true for browser environments)
@@ -198,6 +209,7 @@ export class Abxr {
         enabled: true
     };
     private static currentAuthData: AuthMechanismData | null = null;
+    private static moduleTargetCallbacks: ModuleTargetCallback[] = [];
     
     // Expose commonly used types and enums for easy access
     static readonly EventStatus = EventStatus;
@@ -438,6 +450,11 @@ export class Abxr {
     // Internal configuration method
     static setAuthenticated(authenticated: boolean): void {
         this.isAuthenticated = authenticated;
+        
+        // Only notify moduleTarget subscribers if there's actually a moduleTarget value
+        if (authenticated && this.hasValidModuleTarget()) {
+            this.notifyModuleTargetCallbacks();
+        }
     }
     
     static setAuthParams(params: { appId?: string; orgId?: string; authSecret?: string }): void {
@@ -506,6 +523,77 @@ export class Abxr {
     
     static getAuthMechanismCallback(): AuthMechanismCallback | null {
         return this.authMechanismCallback;
+    }
+    
+    // ModuleTarget subscription methods
+    static onModuleTargetAvailable(callback: ModuleTargetCallback): void {
+        if (typeof callback !== 'function') {
+            console.warn('AbxrLib: ModuleTarget callback must be a function');
+            return;
+        }
+        
+        this.moduleTargetCallbacks.push(callback);
+        
+        // If moduleTarget is already available and has a value, notify immediately
+        if (this.isAuthenticated && this.hasValidModuleTarget()) {
+            const moduleTargetData = this.getModuleTargetData();
+            try {
+                callback(moduleTargetData);
+            } catch (error) {
+                console.error('AbxrLib: Error in moduleTarget callback:', error);
+            }
+        }
+    }
+    
+    static removeModuleTargetCallback(callback: ModuleTargetCallback): void {
+        const index = this.moduleTargetCallbacks.indexOf(callback);
+        if (index > -1) {
+            this.moduleTargetCallbacks.splice(index, 1);
+        }
+    }
+    
+    static clearModuleTargetCallbacks(): void {
+        this.moduleTargetCallbacks = [];
+    }
+    
+    // Helper method to check if moduleTarget has a valid value
+    private static hasValidModuleTarget(): boolean {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return authData && authData.moduleTarget !== null && authData.moduleTarget !== undefined && authData.moduleTarget !== '';
+    }
+    
+    // Helper method to get all moduleTarget-related data
+    private static getModuleTargetData(): ModuleTargetData {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return {
+            moduleTarget: authData ? authData.moduleTarget : null,
+            userData: authData ? authData.userData : null,
+            userId: authData ? authData.userId : null,
+            userEmail: authData ? authData.userEmail : null,
+            isAuthenticated: this.isAuthenticated
+        };
+    }
+    
+    // Internal method to notify all moduleTarget subscribers
+    private static notifyModuleTargetCallbacks(): void {
+        if (this.moduleTargetCallbacks.length === 0) {
+            return;
+        }
+        
+        const moduleTargetData = this.getModuleTargetData();
+        
+        // Double-check that we actually have a moduleTarget value before notifying
+        if (!this.hasValidModuleTarget()) {
+            return;
+        }
+        
+        for (const callback of this.moduleTargetCallbacks) {
+            try {
+                callback(moduleTargetData);
+            } catch (error) {
+                console.error('AbxrLib: Error in moduleTarget callback:', error);
+            }
+        }
     }
 
     // Helper method to convert various metadata formats to AbxrDictStrings

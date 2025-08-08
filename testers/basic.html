@@ -10,6 +10,14 @@
     //This will require orgId and Auth Secret to be set in GET parameters.
     // example: tester-basic.html?abxr_orgid=5304ef74-423f-4bd4-87d9-cba4f19c3bdb&abxr_auth_secret=vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj
     
+    // NEW: Subscribe to moduleTarget availability
+    Abxr.onModuleTargetAvailable(function(data) {
+      console.log('ModuleTarget is now available!', data);
+      
+      // Show popup with moduleTarget value
+      alert(`ModuleTarget received: ${data.moduleTarget}`);
+    });
+    
     // Check for authentication completion and log user data
     function checkAuthCompletion() {
       if (Abxr.isConfigured()) {
