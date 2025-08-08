@@ -15,95 +15,37 @@
     // Enable debug mode
     Abxr.setDebugMode(true);
     // Send a simple event
-    async function sendEvent() {
+    function sendEvent() {
         console.log("Executing Abxr.Event()");
-        try {
-            if (typeof Abxr === 'undefined') {
-                document.getElementById('eventStatus').textContent = '❌ Please initialize the library first';
-                return;
-            }
-            
-            // Store the original fetch implementation
-            const originalFetch = window.fetch;
-            let responseData = undefined;
-            let requestCount = 0;
-            
-            // Temporarily override fetch to capture the response
-            window.fetch = async (...args) => {
-                const [url, options] = args;
-                requestCount++;
-                
-                const response = await originalFetch(...args);
-                
-                // Clone the response so we can read it multiple times
-                const clone = response.clone();
-                try {
-                    const data = await clone.json();
-                    responseData = data;
-                } catch (e) {
-                    responseData = { error: "Could not parse response as JSON" };
-                }
-                
-                return response;
-            };
-            
-            const result = await Abxr.Event('user_action', { action: 'button_click', source: 'demo' });
-            
-            // Restore original fetch
-            window.fetch = originalFetch;
-            
-            document.getElementById('eventStatus').textContent = 
-                `Status Code: ${result}\n` +
-                `Response: ${JSON.stringify(responseData, null, 2)}`;
-        } catch (error) {
-            document.getElementById('eventStatus').textContent = `❌ Error: ${error.message}`;
-        }
+        Abxr.Event('user_action', { action: 'button_click', source: 'demo' });
     }
     
     // Send a debug log
-    async function sendLog() {
+    function sendLog() {
         console.log("Executing Abxr.LogDebug()");
-        try {
-            if (typeof Abxr === 'undefined') {
-                document.getElementById('logStatus').textContent = '❌ Please initialize the library first';
-                return;
-            }
-            
-            // Store the original fetch implementation
-            const originalFetch = window.fetch;
-            let responseData = undefined;
-            let requestCount = 0;
-            
-            // Temporarily override fetch to capture the response
-            window.fetch = async (...args) => {
-                const [url, options] = args;
-                requestCount++;
-                
-                const response = await originalFetch(...args);
-                
-                // Clone the response so we can read it multiple times
-                const clone = response.clone();
-                try {
-                    const data = await clone.json();
-                    responseData = data;
-                } catch (e) {
-                    responseData = { error: "Could not parse response as JSON" };
-                }
-                
-                return response;
-            };
-            
-            const result = await Abxr.LogDebug('User performed an action');
-            
-            // Restore original fetch
-            window.fetch = originalFetch;
-            
-            document.getElementById('logStatus').textContent = 
-                `Status Code: ${result}\n` +
-                `Response: ${JSON.stringify(responseData, null, 2)}`;
-        } catch (error) {
-            document.getElementById('logStatus').textContent = `❌ Error: ${error.message}`;
-        }
+        Abxr.LogDebug('User performed an action');
+    }
+
+    // Assessment Event Functions
+    function startAssessment() {
+        console.log("Executing Abxr.EventAssessmentStart()");
+        Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });
+    }
+
+    function completeAssessment() {
+        console.log("Executing Abxr.EventAssessmentComplete()");
+        Abxr.EventAssessmentComplete('Math Quiz 101', '85', Abxr.EventStatus.ePass, { questions_answered: 10 });
+    }
+
+    // Objective Event Functions
+    function startObjective() {
+        console.log("Executing Abxr.EventObjectiveStart()");
+        Abxr.EventObjectiveStart('Learn Fractions', { module: 'basic_math' });
+    }
+
+    function completeObjective() {
+        console.log("Executing Abxr.EventObjectiveComplete()");
+        Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
     }
   </script>
   <style>
@@ -143,14 +85,6 @@
     button:hover { background: #0056b3; }
     button:disabled { background: #6c757d; cursor: not-allowed; }
     
-    .result {
-      margin-top: 10px;
-      padding: 10px;
-      background: #f8f9fa;
-      border-radius: 4px;
-      min-height: 20px;
-    }
-    
     h1 { color: #333; text-align: center; }
     h2 { color: #555; margin-top: 0; }
   </style>
@@ -161,39 +95,95 @@
     
     <div class="section success">
       <h2>Send Events</h2>
-      <p>Send a simple event to test the library:</p>
+      <p>Send a simple event to test the library (check console for results):</p>
       <button onclick="sendEvent()">📤 Send Event</button>
-      <div id="eventStatus" class="result">Click the button to send an event</div>
     </div>
     
     <div class="section success">
       <h2>Send Logs</h2>
-      <p>Send a debug log to test the library:</p>
+      <p>Send a debug log to test the library (check console for results):</p>
       <button onclick="sendLog()">📝 Send Log</button>
-      <div id="logStatus" class="result">Click the button to send a log</div>
+    </div>
+    
+    <div class="section info">
+      <h2>Assessment & Objective Events</h2>
+      <p>Test assessment start and complete events (check console for results):</p>
+      <button onclick="startAssessment()">Assessment Start</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });
+      </code>
+      <button onclick="startObjective()">Objective Start</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.EventObjectiveStart('Learn Fractions', { module: 'basic_math' });
+      </code>
+      <button onclick="completeObjective()">Objective Complete</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
+      </code>
+      <button onclick="completeAssessment()">Assessment Complete</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.EventAssessmentComplete('Math Quiz 101', '85', Abxr.EventStatus.ePass, { questions_answered: 10 });
+      </code>
     </div>
     
     <div class="section warning">
       <h2>💡 Code Example</h2>
-      <p>This is how simple it is now:</p>
-      <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;">
-// 1. Include the library
-&lt;script src="node_modules/abxrlib-for-webxr/index.js"&gt;&lt;/script&gt;
+      <p>This is how simple it is to use the library:</p>
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace;">
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 1: Include the Library</h4>
+          <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block;">
+            &lt;script src="node_modules/abxrlib-for-webxr/index.js"&gt;&lt;/script&gt;
+          </code>
+        </div>
 
-// 2. Initialize and authenticate in one call
-// appId is required, orgId and authSecret are optional
-Abxr_init('app123', 'org456', 'secret789');
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 2: Initialize (Choose One Option)</h4>
+          
+          <div style="margin-bottom: 15px;">
+            <strong style="color: #27ae60;">Option A:</strong> Direct initialization with credentials
+            <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin-top: 5px;">
+              &lt;script&gt;<br/>
+                Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');<br/>
+              &lt;/script&gt;
+            </code>
+          </div>
+          
+          <div>
+            <strong style="color: #27ae60;">Option B:</strong> Use URL parameters (more secure)
+            <div style="margin: 5px 0; font-size: 14px; color: #6c757d;">
+              URL: <em>yourpage.html?abxr_orgid=your-org-id&abxr_auth_secret=your-secret</em>
+            </div>
+            <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block;">
+              &lt;script&gt;<br/>
+                Abxr_init('your-app-id');<br/>
+              &lt;/script&gt;
+            </code>
+          </div>
+        </div>
 
-// 3. Or use URL parameters for orgId and authSecret
-// URL: ?abxr_orgid=org456&abxr_authSecret=secret789
-Abxr_init('app123');
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 3: Start Using (Check Console for Results)</h4>
+          <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin-bottom: 8px;">
+            Abxr.Event('user_action', { action: 'button_click' });<br/>
+            Abxr.LogDebug('User clicked button');<br/>
+            Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });<br/>
+            Abxr.EventAssessmentComplete('Math Quiz 101', '85', Abxr.EventStatus.ePass, { questions_answered: 10 });<br/>
+            Abxr.EventObjectiveStart('Learn Fractions', { module: 'basic_math' });<br/>
+            Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
+          </code>
+        </div>
 
-// 4. Start using immediately
-Abxr.Event('user_action', { action: 'button_click' });
-Abxr.LogDebug('User clicked button');
-
-// 5. Optional: Enable debug mode
-Abxr.setDebugMode(true);</pre>
+        <div>
+          <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 4: Optional Debug Mode</h4>
+          <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block;">
+            Abxr.setDebugMode(true);
+          </code>
+          <div style="margin-top: 5px; font-size: 14px; color: #6c757d;">
+            <em>Enables detailed logging for troubleshooting</em>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
