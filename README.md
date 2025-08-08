@@ -173,7 +173,7 @@ const dialogOptions = {
     }
 };
 
-Abxr_init('app123', 'org456', 'secret789', undefined, undefined, dialogOptions);
+Abxr_init('app123', 'org456', 'secret789', undefined, dialogOptions);
 ```
 
 **What makes XR dialogs special:**
@@ -212,7 +212,7 @@ function handleAuthMechanism(authData: AuthMechanismData) {
 }
 
 // Initialize with callback
-Abxr_init('app123', 'org456', 'secret789', undefined, handleAuthMechanism);
+Abxr_init('app123', 'org456', 'secret789', undefined, undefined, handleAuthMechanism);
 ```
 
 ##### Option 3: Manual Check Approach
@@ -787,7 +787,7 @@ Abxr.Event('legacy_event', meta);
 
 ### Initialization
 
-- `Abxr_init(appId, orgId?, authSecret?, appConfig?, authMechanismCallback?, dialogOptions?)` - Initialize and authenticate the library
+- `Abxr_init(appId, orgId?, authSecret?, appConfig?, dialogOptions?, authMechanismCallback?)` - Initialize and authenticate the library
   - `appId` (required): Your application ID
   - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
   - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)

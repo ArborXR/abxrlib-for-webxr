@@ -99,7 +99,7 @@ You can provide custom app configuration:
         }
     };
     
-    Abxr_init('app123', 'org456', 'secret789', undefined, undefined, dialogOptions);
+    Abxr_init('app123', 'org456', 'secret789', undefined, dialogOptions);
 </script>
 ```
 
@@ -128,7 +128,7 @@ You can provide custom app configuration:
     }
     
     // Initialize with custom callback
-    Abxr_init('app123', 'org456', 'secret789', undefined, handleAuthMechanism);
+    Abxr_init('app123', 'org456', 'secret789', undefined, undefined, handleAuthMechanism);
 </script>
 ```
 
@@ -341,7 +341,7 @@ Abxr.AIProxy(
 
 ### Initialization
 
-- `Abxr_init(appId, orgId?, authSecret?, appConfig?, authMechanismCallback?, dialogOptions?)` - Initialize and authenticate the library
+- `Abxr_init(appId, orgId?, authSecret?, appConfig?, dialogOptions?, authMechanismCallback?)` - Initialize and authenticate the library
   - `appId` (required): Your application ID
   - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
   - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)

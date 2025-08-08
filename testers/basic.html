@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Simple AbxrLib Test</title>
+  <script src="dist/abxrlib-for-webxr.js"></script>
+  <script>
+    // Initialize AbxrLib with appId only. 
+    Abxr_init('471fd6fd-f5d0-4096-bc0c-17100c1c4fa0');
+    //This will require orgId and Auth Secret to be set in GET parameters.
+    // example: tester-basic.html?abxr_orgid=5304ef74-423f-4bd4-87d9-cba4f19c3bdb&abxr_auth_secret=vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj
+  </script>
+
+  <script>
+    // Enable debug mode
+    Abxr.setDebugMode(true);
+    // Send a simple event
+    function sendEvent() {
+        console.log("Executing Abxr.Event()");
+        Abxr.Event('user_action', { action: 'button_click', source: 'demo' });
+    }
+    
+    // Send a debug log
+    function sendLog() {
+        console.log("Executing Abxr.LogDebug()");
+        Abxr.LogDebug('User performed an action');
+    }
+
+    // Assessment Event Functions
+    function startAssessment() {
+        console.log("Executing Abxr.EventAssessmentStart()");
+        Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });
+    }
+
+    function completeAssessment() {
+        console.log("Executing Abxr.EventAssessmentComplete()");
+        Abxr.EventAssessmentComplete('Math Quiz 101', '85', Abxr.EventStatus.ePass, { questions_answered: 10 });
+    }
+
+    // Objective Event Functions
+    function startObjective() {
+        console.log("Executing Abxr.EventObjectiveStart()");
+        Abxr.EventObjectiveStart('Learn Fractions', { module: 'basic_math' });
+    }
+
+    function completeObjective() {
+        console.log("Executing Abxr.EventObjectiveComplete()");
+        Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
+    }
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .logevents { background-color: #d4edda; border-color: #c3e6cb; }
+    .info { background-color: #d1ecf1; border-color: #bee5eb; }
+    .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+    
+    button {
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { background: #0056b3; }
+    button:disabled { background: #6c757d; cursor: not-allowed; }
+    
+    h1 { color: #333; text-align: center; }
+    h2 { color: #555; margin-top: 0; }
+    
+    .nav-menu {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+      border: 1px solid #dee2e6;
+    }
+    .nav-menu h3 {
+      margin: 0 0 10px 0;
+      color: #495057;
+      font-size: 18px;
+    }
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .nav-link {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    .nav-link:hover {
+      background: #0056b3;
+    }
+    .nav-link.current {
+      background: #28a745;
+      cursor: default;
+    }
+    .nav-description {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AbxrLib Testers</h1>
+
+    <div class="section logevents">
+      <h2>Send Logs & Events</h2>
+      <p>Send a debug logs & Events to test the library (check console for results):</p>
+      <button onclick="sendLog()">📝 Send Log</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.LogDebug('User performed an action');
+      </code>
+
+      <button onclick="sendEvent()">📤 Send Event</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.Event('user_action', { action: 'button_click', source: 'demo' });
+      </code>
+    </div>
+    
+    <div class="section info">
+      <h2>Assessment & Objective Events</h2>
+      <p>Test assessment start and complete events (check console for results):</p>
+      <button onclick="startAssessment()">Assessment Start</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });
+      </code>
+      <button onclick="startObjective()">Objective Start</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.EventObjectiveStart('Learn Fractions', { module: 'basic_math' });
+      </code>
+      <button onclick="completeObjective()">Objective Complete</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
+      </code>
+      <button onclick="completeAssessment()">Assessment Complete</button>
+      <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+        Abxr.EventAssessmentComplete('Math Quiz 101', '85', Abxr.EventStatus.ePass, { questions_answered: 10 });
+      </code>
+    </div>
+    
+    <div class="section warning">
+      <h2>💡 Code Example</h2>
+      <p>This is how simple it is to use the library:</p>
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace;">
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 1: Include the Library</h4>
+          <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block;">
+            &lt;script src="node_modules/abxrlib-for-webxr/index.js"&gt;&lt;/script&gt;
+          </code>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 2: Initialize (Choose One Option)</h4>
+          
+          <div style="margin-bottom: 15px;">
+            <strong style="color: #27ae60;">Option A:</strong> Direct initialization with credentials
+            <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin-top: 5px;">
+              &lt;script&gt;<br/>
+                Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');<br/>
+              &lt;/script&gt;
+            </code>
+          </div>
+          
+          <div>
+            <strong style="color: #27ae60;">Option B:</strong> Use URL parameters (more secure)
+            <div style="margin: 5px 0; font-size: 14px; color: #6c757d;">
+              URL: <em>yourpage.html?abxr_orgid=your-org-id&abxr_auth_secret=your-secret</em>
+            </div>
+            <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block;">
+              &lt;script&gt;<br/>
+                Abxr_init('your-app-id');<br/>
+              &lt;/script&gt;
+            </code>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 3: Start Using (Check Console for Results)</h4>
+          <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin-bottom: 8px;">
+            Abxr.Event('user_action', { action: 'button_click' });<br/>
+            Abxr.LogDebug('User clicked button');<br/>
+            Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });<br/>
+            Abxr.EventAssessmentComplete('Math Quiz 101', '85', Abxr.EventStatus.ePass, { questions_answered: 10 });<br/>
+            Abxr.EventObjectiveStart('Learn Fractions', { module: 'basic_math' });<br/>
+            Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
+          </code>
+        </div>
+
+        <div>
+          <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 4: Optional Debug Mode</h4>
+          <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block;">
+            Abxr.setDebugMode(true);
+          </code>
+          <div style="margin-top: 5px; font-size: 14px; color: #6c757d;">
+            <em>Enables detailed logging for troubleshooting</em>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

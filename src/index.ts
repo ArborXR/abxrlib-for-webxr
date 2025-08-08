@@ -948,7 +948,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Global function for easy access
-export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string, authMechanismCallback?: AuthMechanismCallback, dialogOptions?: AuthMechanismDialogOptions): void {
+export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string, dialogOptions?: AuthMechanismDialogOptions, authMechanismCallback?: AuthMechanismCallback): void {
     
     // Validate required appId
     if (!appId) {
