@@ -9,27 +9,72 @@
   <script>
     
     // Authentication configuration
-    const appId = '471fd6fd-f5d0-4096-bc0c-17100c1c4fa0';
+    const appId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
     const orgId = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
     const authSecret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
     //const restUrl = 'https://lib-backend.xrdm.app/v1/';
    
-    // Helper function to create appConfig with specific REST URL
-    function createAppConfig(restUrl) {
-        if (restUrl && restUrl.trim() !== '') {
-            const appConfigTemplate = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="{{REST_URL}}"/></appSettings></configuration>';
-            return appConfigTemplate.replace('{{REST_URL}}', restUrl);
+    // Helper function to create appConfig only when REST URL differs from AbxrLib's default
+    function createAppConfig(customRestUrl) {
+        // Use parameter if provided, otherwise check global restUrl
+        const urlToUse = customRestUrl || (typeof restUrl !== 'undefined' ? restUrl : undefined);
+        
+        if (urlToUse && urlToUse.trim() !== '') {
+            // Get AbxrLib's default REST URL (same logic as in AbxrLibBaseSetup.SetAppConfig)
+            const abxrDefaultUrl = 'https://lib-backend.xrdm.app/v1/';
+            
+            // Only create config if the URL is different from AbxrLib's default
+            if (urlToUse.trim() !== abxrDefaultUrl) {
+                const appConfigTemplate = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="{{REST_URL}}"/></appSettings></configuration>';
+                return appConfigTemplate.replace('{{REST_URL}}', urlToUse);
+            }
         }
-        return undefined; // Return null if restUrl is not set or empty
+        return undefined; // Return undefined to let AbxrLib use its default config
     }
 
     // XR dialog system - no custom dialog functions needed!
     // The library handles everything automatically with beautiful XR-optimized dialogs.
     
+    // Helper function to get URL parameter (same logic as AbxrLib uses)
+    function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
     // Initialize form values
     document.addEventListener('DOMContentLoaded', function() {
-        // Set initial REST URL value
-        document.getElementById('rest_url_input').value = restUrl;
+        let initialRestUrl = '';
+        
+        // Priority 1: Use global restUrl if defined
+        if (typeof restUrl !== 'undefined' && restUrl) {
+            initialRestUrl = restUrl;
+        }
+        // Priority 2: Check URL parameters (same as AbxrLib does)
+        else {
+            const urlRestUrl = getUrlParameter('abxr_rest_url');
+            if (urlRestUrl) {
+                initialRestUrl = decodeURIComponent(urlRestUrl);
+            }
+            // Priority 3: Fall back to AbxrLib's configured REST URL if no URL parameter
+            else {
+                try {
+                    // AbxrLib exposes AbxrLibStorage globally, which has get_RestUrl()
+                    if (typeof AbxrLib !== 'undefined' && AbxrLib.AbxrLibStorage && typeof AbxrLib.AbxrLibStorage.get_RestUrl === 'function') {
+                        const abxrRestUrl = AbxrLib.AbxrLibStorage.get_RestUrl();
+                        if (abxrRestUrl && abxrRestUrl.trim() !== '') {
+                            initialRestUrl = abxrRestUrl;
+                        }
+                    }
+                } catch (error) {
+                    console.log('Could not get REST URL from AbxrLib:', error);
+                }
+            }
+        }
+        
+        // Set the input field value if we found a REST URL
+        if (initialRestUrl) {
+            document.getElementById('rest_url_input').value = initialRestUrl;
+        }
     });
 
     // Utility function to capture API responses

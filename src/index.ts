@@ -1038,12 +1038,14 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                                 
                                 // Notify the client via callback if one is set
                                 const callback = Abxr.getAuthMechanismCallback();
-                                if (callback) {
+                                if (callback && typeof callback === 'function') {
                                     try {
                                         callback(authData);
                                     } catch (error) {
                                         console.error('AbxrLib: Error in authMechanism callback:', error);
                                     }
+                                } else if (!callback) {
+                                    console.log('AbxrLib: No callback configured for additional authentication');
                                 }
                             } else {
                                 console.log('AbxrLib: Additional authentication required (authMechanism detected)');

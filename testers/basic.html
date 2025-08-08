@@ -6,9 +6,37 @@
   <script src="dist/abxrlib-for-webxr.js"></script>
   <script>
     // Initialize AbxrLib with appId only. 
-    Abxr_init('471fd6fd-f5d0-4096-bc0c-17100c1c4fa0');
+    Abxr_init('06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9');
     //This will require orgId and Auth Secret to be set in GET parameters.
     // example: tester-basic.html?abxr_orgid=5304ef74-423f-4bd4-87d9-cba4f19c3bdb&abxr_auth_secret=vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj
+    
+    // Check for authentication completion and log user data
+    function checkAuthCompletion() {
+      if (Abxr.isConfigured()) {
+        console.log('AbxrLib: Authentication completed successfully!');
+        
+        // Get and log user data
+        const userId = Abxr.getUserId();
+        const userData = Abxr.getUserData();
+        const moduleTarget = Abxr.getModuleTarget();
+        
+        console.log('AbxrLib: User ID:', userId);
+        console.log('AbxrLib: User Data:', userData);
+        console.log('AbxrLib: Module Target:', moduleTarget);
+        
+        // Stop checking once authenticated
+        clearInterval(authCheckInterval);
+      } else if (Abxr.hasAuthenticationFailed()) {
+        console.log('AbxrLib: Authentication failed:', Abxr.getAuthenticationError());
+        clearInterval(authCheckInterval);
+      }
+    }
+    
+    // Check authentication status every 500ms
+    const authCheckInterval = setInterval(checkAuthCompletion, 500);
+    
+    // Also check immediately in case auth completes very quickly
+    setTimeout(checkAuthCompletion, 100);
   </script>
 
   <script>
