@@ -281,7 +281,7 @@ export function XRAuthDialogFallback({
 
         <form onSubmit={handleSubmit}>
           <input
-            type={authData.type === 'assessmentPin' || authData.type === 'pin' ? 'password' : 'text'}
+            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={getPlaceholder()}

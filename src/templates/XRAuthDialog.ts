@@ -91,7 +91,7 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
     };
 
     const getInputType = () => {
-        return (authData.type === 'assessmentPin' || authData.type === 'pin') ? 'password' : 'text';
+        return 'text'; // Always show typed values for confirmation
     };
 
     const getPlaceholder = () => {
