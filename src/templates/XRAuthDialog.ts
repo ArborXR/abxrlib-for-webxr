@@ -183,17 +183,7 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                     }
                 </div>
                 ${!options.hideDialogButtons ? `
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <button id="abxrlib-xr-cancel" style="
-                        background: rgba(102, 102, 102, 0.8);
-                        color: white;
-                        border: 2px solid #666;
-                        padding: 12px 24px;
-                        border-radius: 8px;
-                        cursor: pointer;
-                        font-size: 14px;
-                        transition: all 0.3s ease;
-                    ">Cancel</button>
+                <div style="display: flex; justify-content: center;">
                     <button id="abxrlib-xr-submit" style="
                         background: ${colors.success};
                         color: white;

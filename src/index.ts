@@ -628,22 +628,17 @@ export class Abxr {
             }
         };
         
-        const handleCancel = () => {
-            this.hideXRDialog();
-        };
-        
         // Store current auth data for XR dialog
         this.currentAuthData = authData;
         
         // Use XR-styled DOM fallback (looks great, works everywhere)
-        this.showXRDialogFallback(authData, handleSubmit, handleCancel);
+        this.showXRDialogFallback(authData, handleSubmit);
     }
     
     // Show XR dialog using template
     private static showXRDialogFallback(
         authData: AuthMechanismData, 
-        onSubmit: (value: string) => void, 
-        onCancel: () => void
+        onSubmit: (value: string) => void
     ): void {
         // Add XR-style glow animation CSS
         const style = document.createElement('style');
@@ -670,14 +665,13 @@ export class Abxr {
         const overlay = document.getElementById('abxrlib-xr-dialog-overlay');
         const input = document.querySelector('#abxrlib-xr-input') as HTMLInputElement;
         const submitBtn = document.querySelector('#abxrlib-xr-submit') as HTMLButtonElement;
-        const cancelBtn = document.querySelector('#abxrlib-xr-cancel') as HTMLButtonElement;
         
         if (!overlay || !input) {
             console.error('AbxrLib: XR dialog essential elements not found');
             return;
         }
         
-        // Note: submitBtn and cancelBtn may be null if hideDialogButtons is true
+        // Note: submitBtn may be null if hideDialogButtons is true
         
         // Apply custom styling if provided
         if (options.xrStyle?.overlay && overlay) {
@@ -698,7 +692,7 @@ export class Abxr {
         let virtualKeyboard: XRVirtualKeyboard | null = null;
         if (showVirtualKeyboard) {
             virtualKeyboard = new XRVirtualKeyboard(authData.type);
-            // Pass both cancel and submit callbacks to virtual keyboard
+            // Pass submit callback to virtual keyboard (no cancel needed for captive dialog)
             const handleSubmitWrapper = () => {
                 const value = input.value.trim();
                 if (value) {
@@ -707,7 +701,7 @@ export class Abxr {
                     this.showXRError('Please enter a value');
                 }
             };
-            virtualKeyboard.initialize(input, onCancel, handleSubmitWrapper);
+            virtualKeyboard.initialize(input, undefined, handleSubmitWrapper);
         }
         
         // Focus input
@@ -737,20 +731,15 @@ export class Abxr {
             }
         };
         
-        // Add event listeners only if buttons exist (they may be hidden when virtual keyboard is shown)
+        // Add event listeners only if submit button exists (it may be hidden when virtual keyboard is shown)
         if (submitBtn) {
             submitBtn.addEventListener('click', handleSubmitClick);
         }
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', onCancel);
-        }
         
-        // Handle Enter key
+        // Handle Enter key (removed Escape key handling for captive dialog)
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 handleSubmitClick();
-            } else if (e.key === 'Escape') {
-                onCancel();
             }
         });
         

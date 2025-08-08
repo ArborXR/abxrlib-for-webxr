@@ -46,8 +46,7 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
         specialKeys = [
             { key: 'Backspace', display: '⌫', width: '80px' },
             { key: '0', display: '0', width: '80px' },
-            { key: 'Enter', display: 'Submit', width: '80px' },
-            { key: 'Cancel', display: 'Cancel', width: '80px' }
+            { key: 'Enter', display: 'Submit', width: '160px' }
         ];
     } else {
         // Full QWERTY keyboard layout
@@ -62,8 +61,7 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
             { key: 'CapsLock', display: 'Caps', width: '60px' },
             { key: 'Backspace', display: '⌫', width: '80px' },
             { key: ' ', display: 'Space', width: '120px' },
-            { key: 'Enter', display: 'Submit', width: '80px' },
-            { key: 'Cancel', display: 'Cancel', width: '80px' }
+            { key: 'Enter', display: 'Submit', width: '120px' }
         ];
     }
     
@@ -116,8 +114,7 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
                     height: 45px;
                     border: 2px solid #333;
                     border-radius: 8px;
-                    background: ${key === 'Enter' ? colors.success : 
-                                key === 'Cancel' ? 'rgba(102, 102, 102, 0.8)' : colors.keyBg};
+                    background: ${key === 'Enter' ? colors.success : colors.keyBg};
                     color: ${colors.keyText};
                     font-size: 14px;
                     font-weight: bold;
@@ -259,9 +256,7 @@ export class XRVirtualKeyboard {
             case 'Enter':
                 this.handleEnter();
                 break;
-            case 'Cancel':
-                this.handleCancel();
-                break;
+
             case ' ':
                 this.insertText(' ');
                 break;
@@ -332,14 +327,7 @@ export class XRVirtualKeyboard {
         }
     }
     
-    /**
-     * Handle cancel key (cancel dialog)
-     */
-    private handleCancel(): void {
-        if (this.onCancel) {
-            this.onCancel();
-        }
-    }
+
     
     /**
      * Toggle caps lock state
