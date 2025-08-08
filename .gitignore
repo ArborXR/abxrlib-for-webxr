@@ -8,3 +8,4 @@ node_modules
 /abxrlib-for-webxr
 /dist
 yarn.lock
+testers/dist

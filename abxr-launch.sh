@@ -50,6 +50,12 @@ if $do_build; then
 		# Handle the error, e.g., log it, take alternative action, or exit
 		# exit 1
 	fi
+	
+	# Copy built JS file to testers/dist for easy access
+	echo "Copying built JS file to testers/dist..."
+	mkdir -p testers/dist
+	cp dist/abxrlib-for-webxr.js testers/dist/abxrlib-for-webxr.js
+	echo "Built file copied to testers/dist/abxrlib-for-webxr.js"
 fi
 
 if $do_publish; then
@@ -193,12 +199,15 @@ if $do_publish; then
 fi
 
 if $do_serve; then
-	# Configure nginx to serve tester.html
+	# Configure nginx to serve testers folder as document root
 	echo "Configuring nginx..."
-	echo 'server { listen 8000; location / { root /opt/arborxr; index tester.html; } }' > /etc/nginx/sites-available/default
+	echo 'server { listen 8000; location / { root /opt/arborxr/testers; index index.html; } }' > /etc/nginx/sites-available/default
 	nginx -g "daemon off;" &
 
 	# Keep container running
-	echo "Container is running. Access tester.html at http://localhost:8000/tester.html"
+	echo "Container is running. Access testers at:"
+	echo "  http://localhost:8000/index.html (default)"
+	echo "  http://localhost:8000/tester.html"
+	echo "  http://localhost:8000/tester-webxr.html"
 	sleep infinity
 fi

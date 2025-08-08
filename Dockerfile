@@ -13,9 +13,7 @@ COPY package.json ts-node-config.json tsconfig.json webpack.config.js .eslintign
 COPY abxr-launch.sh ./ 
 RUN chmod +x abxr-launch.sh
 COPY src ./src
-COPY tester.html ./tester.html
-COPY tester-basic.html ./tester-basic.html
-COPY tester-webxr.html ./tester-webxr.html
+COPY testers ./testers
 
 RUN npm install
 RUN npm install process --save-dev

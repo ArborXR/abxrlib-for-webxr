@@ -15,3 +15,4 @@ services:
     volumes:
       - ./build:/opt/arborxr/build
       - ./dist:/opt/arborxr/dist
+      - ./testers:/opt/arborxr/testers
