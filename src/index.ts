@@ -87,10 +87,17 @@ function shouldShowVirtualKeyboardByDefault(): boolean {
 class AbxrLibBaseSetup {
     public static SetAppConfig(customConfig?: string): void
     {
+        const restUrl = getUrlParameter('abxr_rest_url') || 'https://lib-backend.xrdm.app/v1/';
+        if (getUrlParameter('abxr_rest_url')) {
+            console.log(`AbxrLib: Using REST URL from parameter: ${restUrl}`);
+        }
+        else {
+            //console.log(`AbxrLib: Using default REST URL: ${restUrl}`);
+        }
         const defaultConfig: string = '<?xml version="1.0" encoding="utf-8" ?>' +
             '<configuration>' +
                 '<appSettings>' +
-                    '<add key="REST_URL" value="https://lib-backend.xrdm.app/v1/"/>' +
+                    `<add key="REST_URL" value="${restUrl}"/>` +
                     '<add key="SendRetriesOnFailure" value="3"/>' +
                     '<!-- Bandwidth config parameters. -->' +
                     '<add key="SendRetryInterval" value="00:00:03"/>' +
@@ -999,15 +1006,16 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
     
     // If we have all required authentication parameters, attempt to authenticate
     if (appId && finalOrgId && finalAuthSecret) {
-        // Set default app config if none provided
-        const defaultConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="https://lib-backend.xrdm.app/v1/"/></appSettings></configuration>';
-        const configToUse = appConfig || defaultConfig;
+        // Use provided appConfig, or let AbxrLibBaseSetup.SetAppConfig use its comprehensive default
+        const configToUse = appConfig;
         
-        // Store app config
-        Abxr.setAppConfig(configToUse);
+        // Store app config (only if provided)
+        if (configToUse) {
+            Abxr.setAppConfig(configToUse);
+        }
         
         try {
-            // Configure the library
+            // Configure the library (SetAppConfig handles undefined by using its default)
             AbxrLibBaseSetup.SetAppConfig(configToUse);
             AbxrLibInit.InitStatics();
             AbxrLibInit.Start();

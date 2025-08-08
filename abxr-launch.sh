@@ -207,7 +207,7 @@ if $do_serve; then
 	# Keep container running
 	echo "Container is running. Access testers at:"
 	echo "  http://localhost:8000/index.html (default)"
-	echo "  http://localhost:8000/tester.html"
-	echo "  http://localhost:8000/tester-webxr.html"
+	echo "  http://localhost:8000/advanced.html"
+	echo "  http://localhost:8000/webxr.html"
 	sleep infinity
 fi
