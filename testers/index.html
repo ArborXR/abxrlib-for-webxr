@@ -103,19 +103,151 @@
         <strong>WebXR:</strong> VR/AR optimized testing environment
       </div>
     </div>
+  
+
+    <!-- AbxrLib Configuration Form -->
+    <div class="section" style="background: #e8f4fd; border-color: #b3d9ff;">
+      <h2>AbxrLib Configuration</h2>
+      <p>Set your AbxrLib parameters. These values will be saved to cookies and persist across sessions.</p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+        <div>
+          <label for="config_orgid" style="display: block; margin-bottom: 5px; font-weight: bold;">Organization ID:</label>
+          <input type="text" id="config_orgid" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter Organization ID">
+        </div>
+        <div>
+          <label for="config_auth_secret" style="display: block; margin-bottom: 5px; font-weight: bold;">Auth Secret:</label>
+          <input type="password" id="config_auth_secret" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter Auth Secret">
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <label for="config_rest_url" style="display: block; margin-bottom: 5px; font-weight: bold;">REST URL:</label>
+        <input type="text" id="config_rest_url" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter REST URL (optional - uses default if empty)">
+        <small style="color: #666; display: block; margin-top: 2px;">Default: https://lib-backend.xrdm.app/v1/</small>
+      </div>
+      
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button onclick="saveConfiguration()" style="background: #28a745;">Save Configuration</button>
+        <button onclick="clearConfiguration()" style="background: #dc3545;">Clear All</button>
+        <span id="config_status" style="margin-left: 10px; font-weight: bold;"></span>
+      </div>
+    </div>
 
     <script>
-      // Preserve GET parameters when navigating between pages
-      document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const paramString = urlParams.toString();
+      // Cookie utility functions (same as in AbxrLib)
+      function setCookie(name, value, days = 30) {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+        const expiresStr = expires.toUTCString();
+        // No URL encoding needed for our simple configuration values
+        document.cookie = `${name}=${value}; expires=${expiresStr}; path=/; SameSite=Lax`;
+      }
+
+      function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
         
-        if (paramString) {
-          // Update navigation links to include current GET parameters
-          document.getElementById('nav-basic').href = 'basic.html?' + paramString;
-          document.getElementById('nav-advanced').href = 'advanced.html?' + paramString;
-          document.getElementById('nav-webxr').href = 'webxr.html?' + paramString;
+        for (let i = 0; i < ca.length; i++) {
+          let c = ca[i];
+          while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+          if (c.indexOf(nameEQ) === 0) {
+            return c.substring(nameEQ.length, c.length);
+          }
         }
+        return null;
+      }
+
+      function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+      }
+
+      // Get abxr parameter with priority: GET params -> cookies -> fallback
+      function getAbxrParameter(name, fallback) {
+        // Priority 1: GET parameters
+        const urlParam = getUrlParameter(name);
+        if (urlParam) {
+          setCookie(name, urlParam); // Save to cookie for future use
+          return urlParam;
+        }
+        
+        // Priority 2: Cookies
+        const cookieParam = getCookie(name);
+        if (cookieParam) {
+          return cookieParam;
+        }
+        
+        // Priority 3: Fallback value
+        return fallback;
+      }
+
+      // Configuration management functions
+      function saveConfiguration() {
+        const orgId = document.getElementById('config_orgid').value.trim();
+        const authSecret = document.getElementById('config_auth_secret').value.trim();
+        const restUrl = document.getElementById('config_rest_url').value.trim();
+        
+        // Save non-empty values to cookies
+        if (orgId) setCookie('abxr_orgid', orgId);
+        if (authSecret) setCookie('abxr_auth_secret', authSecret);
+        if (restUrl) setCookie('abxr_rest_url', restUrl);
+        
+        // Show status
+        const statusEl = document.getElementById('config_status');
+        statusEl.textContent = 'Configuration saved to cookies!';
+        statusEl.style.color = '#28a745';
+        
+        // Clear status after 3 seconds
+        setTimeout(() => {
+          statusEl.textContent = '';
+        }, 3000);
+      }
+
+      function clearConfiguration() {
+        // Clear cookies by setting them to expire in the past
+        document.cookie = 'abxr_orgid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'abxr_auth_secret=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'abxr_rest_url=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        // Clear form fields
+        document.getElementById('config_orgid').value = '';
+        document.getElementById('config_auth_secret').value = '';
+        document.getElementById('config_rest_url').value = '';
+        
+        // Show status
+        const statusEl = document.getElementById('config_status');
+        statusEl.textContent = 'Configuration cleared!';
+        statusEl.style.color = '#dc3545';
+        
+        // Clear status after 3 seconds
+        setTimeout(() => {
+          statusEl.textContent = '';
+        }, 3000);
+      }
+
+      // Initialize form with current values and handle navigation
+      document.addEventListener('DOMContentLoaded', function() {
+        // Populate form fields with current active values (GET params -> cookies -> defaults)
+        const currentOrgId = getAbxrParameter('abxr_orgid');
+        const currentAuthSecret = getAbxrParameter('abxr_auth_secret');
+        const currentRestUrl = getAbxrParameter('abxr_rest_url', 'https://lib-backend.xrdm.app/v1/');
+        
+        // Set form field values
+        if (currentOrgId) {
+          document.getElementById('config_orgid').value = currentOrgId;
+        }
+        if (currentAuthSecret) {
+          document.getElementById('config_auth_secret').value = currentAuthSecret;
+        }
+        if (currentRestUrl) {
+          document.getElementById('config_rest_url').value = currentRestUrl;
+        }
+        
+        // Update navigation links (no longer need to pass GET parameters since we use cookies)
+        document.getElementById('nav-basic').href = 'basic.html';
+        document.getElementById('nav-advanced').href = 'advanced.html';
+        document.getElementById('nav-webxr').href = 'webxr.html';
       });
     </script>
   </div>

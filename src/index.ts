@@ -35,6 +35,54 @@ function getUrlParameter(name: string): string | null {
     return urlParams.get(name);
 }
 
+// Cookie utility functions
+function setCookie(name: string, value: string, days: number = 30): void {
+    if (typeof document === 'undefined') return;
+    
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expiresStr = expires.toUTCString();
+    
+    // No URL encoding needed for our simple configuration values
+    document.cookie = `${name}=${value}; expires=${expiresStr}; path=/; SameSite=Lax`;
+}
+
+function getCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null;
+    
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) {
+            return c.substring(nameEQ.length, c.length);
+        }
+    }
+    return null;
+}
+
+// Utility function to get abxr parameter with priority: GET params -> cookies -> fallback
+function getAbxrParameter(name: string, fallback?: string): string | undefined {
+    // Priority 1: GET parameters
+    const urlParam = getUrlParameter(name);
+    if (urlParam) {
+        // Save to cookie for future use
+        setCookie(name, urlParam);
+        return urlParam;
+    }
+    
+    // Priority 2: Cookies
+    const cookieParam = getCookie(name);
+    if (cookieParam) {
+        return cookieParam;
+    }
+    
+    // Priority 3: Fallback value
+    return fallback;
+}
+
 // Utility function to get or create device ID
 function getOrCreateDeviceId(): string {
     if (typeof window === 'undefined') {
@@ -87,9 +135,12 @@ function shouldShowVirtualKeyboardByDefault(): boolean {
 class AbxrLibBaseSetup {
     public static SetAppConfig(customConfig?: string): void
     {
-        const restUrl = getUrlParameter('abxr_rest_url') || 'https://lib-backend.xrdm.app/v1/';
+        const restUrl = getAbxrParameter('abxr_rest_url', 'https://lib-backend.xrdm.app/v1/');
         if (getUrlParameter('abxr_rest_url')) {
-            console.log(`AbxrLib: Using REST URL from parameter: ${restUrl}`);
+            console.log(`AbxrLib: Using REST URL from GET parameter: ${restUrl}`);
+        }
+        else if (getCookie('abxr_rest_url')) {
+            console.log(`AbxrLib: Using REST URL from cookie: ${restUrl}`);
         }
         else {
             //console.log(`AbxrLib: Using default REST URL: ${restUrl}`);
@@ -1071,15 +1122,16 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
         }
     }
     
-    // Try to get orgId and authSecret from URL parameters first, then fall back to function parameters
-    const finalOrgId = getUrlParameter('abxr_orgid') || orgId || undefined;
-    const finalAuthSecret = getUrlParameter('abxr_auth_secret') || authSecret || undefined;
+    // Get parameters with priority: GET params -> cookies -> function params
+    // Note: appId is always taken from function parameter only (not from GET/cookies)
+    const finalOrgId = getAbxrParameter('abxr_orgid', orgId);
+    const finalAuthSecret = getAbxrParameter('abxr_auth_secret', authSecret);
     
     // Generate or retrieve device ID
     const deviceId = getOrCreateDeviceId();
     
     // Store auth parameters (without deviceId since it's handled internally)
-    Abxr.setAuthParams({ appId, orgId: finalOrgId, authSecret: finalAuthSecret });
+    Abxr.setAuthParams({ appId: appId, orgId: finalOrgId, authSecret: finalAuthSecret });
     
     // If we have all required authentication parameters, attempt to authenticate
     if (appId && finalOrgId && finalAuthSecret) {

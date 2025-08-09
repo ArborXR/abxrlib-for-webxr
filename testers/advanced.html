@@ -41,41 +41,40 @@
         return urlParams.get(name);
     }
 
-    // Initialize form values
-    document.addEventListener('DOMContentLoaded', function() {
-        let initialRestUrl = '';
+    // Cookie utility functions (same as in AbxrLib and index.html)
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
         
-        // Priority 1: Use global restUrl if defined
-        if (typeof restUrl !== 'undefined' && restUrl) {
-            initialRestUrl = restUrl;
-        }
-        // Priority 2: Check URL parameters (same as AbxrLib does)
-        else {
-            const urlRestUrl = getUrlParameter('abxr_rest_url');
-            if (urlRestUrl) {
-                initialRestUrl = decodeURIComponent(urlRestUrl);
-            }
-            // Priority 3: Fall back to AbxrLib's configured REST URL if no URL parameter
-            else {
-                try {
-                    // AbxrLib exposes AbxrLibStorage globally, which has get_RestUrl()
-                    if (typeof AbxrLib !== 'undefined' && AbxrLib.AbxrLibStorage && typeof AbxrLib.AbxrLibStorage.get_RestUrl === 'function') {
-                        const abxrRestUrl = AbxrLib.AbxrLibStorage.get_RestUrl();
-                        if (abxrRestUrl && abxrRestUrl.trim() !== '') {
-                            initialRestUrl = abxrRestUrl;
-                        }
-                    }
-                } catch (error) {
-                    console.log('Could not get REST URL from AbxrLib:', error);
-                }
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) {
+                return c.substring(nameEQ.length, c.length);
             }
         }
-        
-        // Set the input field value if we found a REST URL
-        if (initialRestUrl) {
-            document.getElementById('rest_url_input').value = initialRestUrl;
+        return null;
+    }
+
+    // Get abxr parameter with priority: GET params -> cookies -> fallback
+    function getAbxrParameter(name, fallback) {
+        // Priority 1: GET parameters
+        const urlParam = getUrlParameter(name);
+        if (urlParam) {
+            return urlParam;
         }
-    });
+        
+        // Priority 2: Cookies
+        const cookieParam = getCookie(name);
+        if (cookieParam) {
+            return cookieParam;
+        }
+        
+        // Priority 3: Fallback value
+        return fallback;
+    }
+
+
 
     // Utility function to capture API responses
     async function executeWithResponseCapture(apiCall) {
@@ -150,7 +149,7 @@
         updateBuiltinResult('Initializing with XR dialog (default behavior)...', 'info');
         
         try {
-            const restUrl = document.getElementById('rest_url_input').value;
+            const restUrl = getAbxrParameter('abxr_rest_url');
             // No callback or dialog options - uses XR dialog automatically
             Abxr_init(appId, orgId, authSecret, createAppConfig(restUrl));
             Abxr.setDebugMode(true);
@@ -190,7 +189,7 @@
         updateBuiltinResult('Initializing with custom-styled XR dialog...', 'info');
         
         try {
-            const restUrl = document.getElementById('rest_url_input').value;
+            const restUrl = getAbxrParameter('abxr_rest_url');
             const appConfig = createAppConfig(restUrl);
             
             // Custom styling for the XR dialog
@@ -251,7 +250,7 @@
         updateBuiltinResult('Initializing with advanced XR dialog customization...', 'info');
         
         try {
-            const restUrl = document.getElementById('rest_url_input').value;
+            const restUrl = getAbxrParameter('abxr_rest_url');
             const appConfig = createAppConfig(restUrl);
             
             // Advanced XR dialog customization
@@ -315,7 +314,7 @@
         updateBuiltinResult('Initializing XR dialog optimized for desktop (no virtual keyboard)...', 'info');
         
         try {
-            const restUrl = document.getElementById('rest_url_input').value;
+            const restUrl = getAbxrParameter('abxr_rest_url');
             const appConfig = createAppConfig(restUrl);
             
             // XR dialog without virtual keyboard (perfect for desktop with physical keyboard)
@@ -360,7 +359,7 @@
         updateBuiltinResult('Initializing with XR dialog disabled...', 'info');
         
         try {
-            const restUrl = document.getElementById('rest_url_input').value;
+            const restUrl = getAbxrParameter('abxr_rest_url');
             const appConfig = createAppConfig(restUrl);
             
             // Disable XR dialog
@@ -391,7 +390,7 @@
         updateBuiltinResult('Initializing with custom callback - developer provides their own dialog...', 'info');
         
         try {
-            const restUrl = document.getElementById('rest_url_input').value;
+            const restUrl = getAbxrParameter('abxr_rest_url');
             const appConfig = createAppConfig(restUrl);
             
             // Custom callback function - developer implements their own dialog
@@ -466,7 +465,7 @@
         updateBuiltinResult('Initializing with custom callback via dialogOptions...', 'info');
         
         try {
-            const restUrl = document.getElementById('rest_url_input').value;
+            const restUrl = getAbxrParameter('abxr_rest_url');
             const appConfig = createAppConfig(restUrl);
             
             // Method 2: Pass custom callback via dialogOptions
@@ -768,11 +767,6 @@
       <p><strong>XR BY DEFAULT:</strong> Beautiful, VR/AR-optimized dialogs with virtual keyboards! No custom dialog HTML/CSS/JavaScript needed!</p>
       <p><strong>WORKS EVERYWHERE:</strong> Perfect in desktop browsers, mobile, and XR headsets - automatically adapts!</p>
       
-      <div style="margin-bottom: 15px;">
-        <label for="rest_url_input" style="display: block; margin-bottom: 5px; font-weight: bold;">REST Server URL:</label>
-        <input type="text" id="rest_url_input" style="width: 500px;" placeholder="Enter REST server URL">
-        <small style="color: #666; display: block; margin-top: 2px;">Make sure your server is running and has proper CORS headers</small>
-      </div>
       
       <div style="display: flex; gap: 10px; flex-wrap: wrap; margin: 15px 0;">
         <button onclick="initBuiltinDefault()" style="background: #5A58EB; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; box-shadow: 0 0 10px rgba(90, 88, 235, 0.3);">
