@@ -17,20 +17,9 @@
     const appId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
     const orgId = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
     const authSecret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
-    //const restUrl = 'https://lib-backend.xrdm.app/v1/';
 
-    // Helper function to create appConfig with specific REST URL
-    function createAppConfig() {
-        // Check if restUrl is defined globally
-        if (typeof restUrl !== 'undefined' && restUrl && restUrl.trim() !== '') {
-            const appConfigTemplate = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="{{REST_URL}}"/></appSettings></configuration>';
-            return appConfigTemplate.replace('{{REST_URL}}', restUrl);
-        }
-        return undefined; // Return null if restUrl is not set or empty
-    }
-    
     // Initialize AbxrLib with variables
-    Abxr_init(appId, orgId, authSecret, createAppConfig());
+    Abxr_init(appId, orgId, authSecret);
     
     // Enable debug mode
     Abxr.setDebugMode(true);

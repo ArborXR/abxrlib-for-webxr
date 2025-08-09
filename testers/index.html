@@ -163,19 +163,65 @@
         return urlParams.get(name);
       }
 
+      // Security validation functions
+      function isValidUrl(url) {
+        try {
+          const parsedUrl = new URL(url);
+          return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+        } catch {
+          return false;
+        }
+      }
+
+      function isValidAlphanumericId(value) {
+        const pattern = /^[A-Za-z0-9_-]{8,128}$/;
+        return pattern.test(value);
+      }
+
+      function sanitizeForDisplay(value) {
+        return value
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+          .substring(0, 200); // Limit length
+      }
+
+      function validateParameter(name, value) {
+        if (!value || value.length === 0) return null;
+        
+        switch (name) {
+          case 'abxr_rest_url':
+            return isValidUrl(value) ? value : null;
+          case 'abxr_orgid':
+          case 'abxr_appid':
+          case 'abxr_auth_secret':
+            return isValidAlphanumericId(value) ? value : null;
+          default:
+            return value.length <= 500 ? value : value.substring(0, 500);
+        }
+      }
+
       // Get abxr parameter with priority: GET params -> cookies -> fallback
       function getAbxrParameter(name, fallback) {
         // Priority 1: GET parameters
         const urlParam = getUrlParameter(name);
         if (urlParam) {
-          setCookie(name, urlParam); // Save to cookie for future use
-          return urlParam;
+          const validParam = validateParameter(name, urlParam);
+          if (validParam) {
+            setCookie(name, validParam);
+            return validParam;
+          }
         }
         
         // Priority 2: Cookies
         const cookieParam = getCookie(name);
         if (cookieParam) {
-          return cookieParam;
+          const validParam = validateParameter(name, cookieParam);
+          if (validParam) {
+            return validParam;
+          }
         }
         
         // Priority 3: Fallback value
@@ -188,15 +234,48 @@
         const authSecret = document.getElementById('config_auth_secret').value.trim();
         const restUrl = document.getElementById('config_rest_url').value.trim();
         
-        // Save non-empty values to cookies
-        if (orgId) setCookie('abxr_orgid', orgId);
-        if (authSecret) setCookie('abxr_auth_secret', authSecret);
-        if (restUrl) setCookie('abxr_rest_url', restUrl);
-        
-        // Show status
         const statusEl = document.getElementById('config_status');
-        statusEl.textContent = 'Configuration saved to cookies!';
-        statusEl.style.color = '#28a745';
+        let hasErrors = false;
+        
+        // Validate and save values
+        if (orgId) {
+          const validOrgId = validateParameter('abxr_orgid', orgId);
+          if (validOrgId) {
+            setCookie('abxr_orgid', validOrgId);
+          } else {
+            statusEl.textContent = 'Invalid Organization ID format (8-128 alphanumeric chars, hyphens, underscores)';
+            statusEl.style.color = '#dc3545';
+            hasErrors = true;
+          }
+        }
+        
+        if (authSecret && !hasErrors) {
+          const validAuthSecret = validateParameter('abxr_auth_secret', authSecret);
+          if (validAuthSecret) {
+            setCookie('abxr_auth_secret', validAuthSecret);
+          } else {
+            statusEl.textContent = 'Invalid Auth Secret format (8-128 alphanumeric chars, hyphens, underscores)';
+            statusEl.style.color = '#dc3545';
+            hasErrors = true;
+          }
+        }
+        
+        if (restUrl && !hasErrors) {
+          const validRestUrl = validateParameter('abxr_rest_url', restUrl);
+          if (validRestUrl) {
+            setCookie('abxr_rest_url', validRestUrl);
+          } else {
+            statusEl.textContent = 'Invalid REST URL format';
+            statusEl.style.color = '#dc3545';
+            hasErrors = true;
+          }
+        }
+        
+        if (!hasErrors) {
+          // Show success status
+          statusEl.textContent = 'Configuration saved to cookies!';
+          statusEl.style.color = '#28a745';
+        }
         
         // Clear status after 3 seconds
         setTimeout(() => {

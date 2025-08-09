@@ -63,20 +63,157 @@ function getCookie(name: string): string | null {
     return null;
 }
 
+// Security validation functions
+function isValidUrl(url: string): boolean {
+    try {
+        const parsedUrl = new URL(url);
+        // Only allow HTTP and HTTPS protocols
+        return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
+function isValidAlphanumericId(value: string): boolean {
+    // Allow alphanumeric characters plus hyphens and underscores, reasonable length
+    // Used for appId, orgId, and authSecret validation
+    const pattern = /^[A-Za-z0-9_-]{8,128}$/;
+    return pattern.test(value);
+}
+
+// URL version handling utilities
+function hasApiVersion(url: string): boolean {
+    try {
+        const parsedUrl = new URL(url);
+        // Check if path contains version pattern like /v1/, /v2/, /api/v1/, etc.
+        const versionPattern = /\/v\d+\/?$/;
+        return versionPattern.test(parsedUrl.pathname);
+    } catch {
+        return false;
+    }
+}
+
+function addApiVersion(url: string, version: string = 'v1'): string {
+    try {
+        const parsedUrl = new URL(url);
+        // Ensure the path ends with /
+        if (!parsedUrl.pathname.endsWith('/')) {
+            parsedUrl.pathname += '/';
+        }
+        // Add version if not already present
+        if (!hasApiVersion(url)) {
+            parsedUrl.pathname += `${version}/`;
+        }
+        return parsedUrl.toString();
+    } catch {
+        // Fallback: simple string manipulation if URL parsing fails
+        const cleanUrl = url.endsWith('/') ? url : url + '/';
+        return cleanUrl + `${version}/`;
+    }
+}
+
+function sanitizeForXml(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function sanitizeForLog(value: string): string {
+    // Remove potential log injection characters and limit length
+    return value
+        .replace(/[\r\n\t]/g, ' ')
+        .replace(/[^\x20-\x7E]/g, '') // Remove non-printable ASCII
+        .substring(0, 200); // Limit length
+}
+
+function validateAndSanitizeParameter(name: string, value: string): string | null {
+    if (!value || value.length === 0) {
+        return null;
+    }
+    
+    // Validate based on parameter type
+    switch (name) {
+        case 'abxr_rest_url':
+            if (!isValidUrl(value)) {
+                console.warn(`AbxrLib: Invalid REST URL format: ${sanitizeForLog(value)}`);
+                return null;
+            }
+            break;
+            
+        case 'abxr_orgid':
+        case 'abxr_appid':
+        case 'abxr_auth_secret':
+            if (!isValidAlphanumericId(value)) {
+                console.warn(`AbxrLib: Invalid format for ${name}: ${sanitizeForLog(value)}`);
+                return null;
+            }
+            break;
+            
+        default:
+            // For unknown parameters, do basic sanitization
+            if (value.length > 500) {
+                console.warn(`AbxrLib: Parameter ${name} too long, truncating`);
+                return value.substring(0, 500);
+            }
+            break;
+    }
+    
+    return value;
+}
+
+// Helper function to determine if we should try version fallback for URL errors
+function shouldTryVersionFallback(errorMessage: string): boolean {
+    if (!errorMessage) return false;
+    
+    // Look for common CORS/redirect error indicators
+    const corsIndicators = [
+        'cors',
+        'redirect',
+        'preflight',
+        'access control',
+        'cross-origin',
+        'failed to fetch',
+        'network error',
+        'net::err_failed'
+    ];
+    
+    const lowerError = errorMessage.toLowerCase();
+    return corsIndicators.some(indicator => lowerError.includes(indicator));
+}
+
+// Enhanced function to handle REST URL with automatic version fallback
+function getAbxrRestUrlWithFallback(fallback?: string): string {
+    // Get the URL using normal priority
+    const restUrl = getAbxrParameter('abxr_rest_url', fallback);
+    
+    // For REST URLs, we might need to add version fallback logic later
+    // For now, just return the URL as-is
+    return restUrl || fallback || 'https://lib-backend.xrdm.app/v1/';
+}
+
 // Utility function to get abxr parameter with priority: GET params -> cookies -> fallback
 function getAbxrParameter(name: string, fallback?: string): string | undefined {
     // Priority 1: GET parameters
     const urlParam = getUrlParameter(name);
     if (urlParam) {
-        // Save to cookie for future use
-        setCookie(name, urlParam);
-        return urlParam;
+        const sanitizedParam = validateAndSanitizeParameter(name, urlParam);
+        if (sanitizedParam) {
+            // Save to cookie for future use
+            setCookie(name, sanitizedParam);
+            return sanitizedParam;
+        }
     }
     
     // Priority 2: Cookies
     const cookieParam = getCookie(name);
     if (cookieParam) {
-        return cookieParam;
+        const sanitizedParam = validateAndSanitizeParameter(name, cookieParam);
+        if (sanitizedParam) {
+            return sanitizedParam;
+        }
     }
     
     // Priority 3: Fallback value
@@ -135,12 +272,12 @@ function shouldShowVirtualKeyboardByDefault(): boolean {
 class AbxrLibBaseSetup {
     public static SetAppConfig(customConfig?: string): void
     {
-        const restUrl = getAbxrParameter('abxr_rest_url', 'https://lib-backend.xrdm.app/v1/');
+        const restUrl = getAbxrParameter('abxr_rest_url', 'https://lib-backend.xrdm.app/v1/') || 'https://lib-backend.xrdm.app/v1/';
         if (getUrlParameter('abxr_rest_url')) {
-            console.log(`AbxrLib: Using REST URL from GET parameter: ${restUrl}`);
+            console.log(`AbxrLib: Using REST URL from GET parameter: ${sanitizeForLog(restUrl)}`);
         }
         else if (getCookie('abxr_rest_url')) {
-            console.log(`AbxrLib: Using REST URL from cookie: ${restUrl}`);
+            console.log(`AbxrLib: Using REST URL from cookie: ${sanitizeForLog(restUrl)}`);
         }
         else {
             //console.log(`AbxrLib: Using default REST URL: ${restUrl}`);
@@ -148,7 +285,7 @@ class AbxrLibBaseSetup {
         const defaultConfig: string = '<?xml version="1.0" encoding="utf-8" ?>' +
             '<configuration>' +
                 '<appSettings>' +
-                    `<add key="REST_URL" value="${restUrl}"/>` +
+                    `<add key="REST_URL" value="${sanitizeForXml(restUrl)}"/>` +
                     '<add key="SendRetriesOnFailure" value="3"/>' +
                     '<!-- Bandwidth config parameters. -->' +
                     '<add key="SendRetryInterval" value="00:00:03"/>' +
@@ -198,7 +335,9 @@ export {
     LogLevel,
     Partner,
     InteractionType,
-    EventStatus
+    EventStatus,
+    hasApiVersion,
+    addApiVersion
 };
 
 // Types for authMechanism notification
@@ -993,6 +1132,39 @@ export class Abxr {
         return authData;
     }
     
+    // Method to attempt version fallback on authentication failure
+    static async attemptVersionFallback(): Promise<boolean> {
+        try {
+            const currentRestUrl = getAbxrParameter('abxr_rest_url') || 'https://lib-backend.xrdm.app/v1/';
+            
+            console.log(`AbxrLib: Attempting version fallback for URL: ${sanitizeForLog(currentRestUrl)}`);
+            
+            // Check if URL already has a version
+            if (hasApiVersion(currentRestUrl)) {
+                console.log(`AbxrLib: URL already has version, skipping fallback`);
+                return false;
+            }
+            
+            // Add /v1/ to the URL
+            const versionedUrl = addApiVersion(currentRestUrl, 'v1');
+            console.log(`AbxrLib: Saving versioned URL to cookie: ${sanitizeForLog(versionedUrl)}`);
+            
+            // Save the versioned URL to cookies for persistence
+            setCookie('abxr_rest_url', versionedUrl);
+            
+            // Force page refresh to reload with new cookie value
+            if (typeof window !== 'undefined') {
+                console.log(`AbxrLib: Refreshing page to apply versioned URL`);
+                window.location.reload();
+            }
+            
+            return true; // Indicate that fallback was attempted
+        } catch (error) {
+            console.error('AbxrLib: Error during version fallback:', error);
+            return false;
+        }
+    }
+
     // Method to complete final authentication when authMechanism is required
     static async completeFinalAuth(authData: any): Promise<boolean> {
         if (!this.requiresFinalAuth) {
@@ -1198,6 +1370,16 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                         // Try to get detailed error message from AbxrLibClient
                         const detailedError = AbxrLibClient.getLastAuthError();
                         const errorMessage = detailedError || `Authentication failed with code ${result}`;
+                        
+                        // Check if this looks like a CORS/redirect error and try version fallback
+                        if (shouldTryVersionFallback(errorMessage)) {
+                            console.log(`AbxrLib: Authentication failed with CORS/redirect error, attempting version fallback`);
+                            
+                            // Attempt version fallback (this will save cookie and refresh page if successful)
+                            await Abxr.attemptVersionFallback();
+                            // Note: If fallback is attempted, page will refresh and execution won't continue here
+                        }
+                        
                         console.warn(`AbxrLib: Authentication failed - ${errorMessage}`);
                         Abxr.setAuthenticationFailed(true, errorMessage);
                     }

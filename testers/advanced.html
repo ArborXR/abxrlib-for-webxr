@@ -35,44 +35,8 @@
     // XR dialog system - no custom dialog functions needed!
     // The library handles everything automatically with beautiful XR-optimized dialogs.
     
-    // Helper function to get URL parameter (same logic as AbxrLib uses)
-    function getUrlParameter(name) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(name);
-    }
-
-    // Cookie utility functions (same as in AbxrLib and index.html)
-    function getCookie(name) {
-        const nameEQ = name + "=";
-        const ca = document.cookie.split(';');
-        
-        for (let i = 0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) === 0) {
-                return c.substring(nameEQ.length, c.length);
-            }
-        }
-        return null;
-    }
-
-    // Get abxr parameter with priority: GET params -> cookies -> fallback
-    function getAbxrParameter(name, fallback) {
-        // Priority 1: GET parameters
-        const urlParam = getUrlParameter(name);
-        if (urlParam) {
-            return urlParam;
-        }
-        
-        // Priority 2: Cookies
-        const cookieParam = getCookie(name);
-        if (cookieParam) {
-            return cookieParam;
-        }
-        
-        // Priority 3: Fallback value
-        return fallback;
-    }
+    // Note: This file uses hard-coded credentials for advanced testing
+    // For configurable credentials, use the basic.html or index.html configuration
 
 
 
@@ -149,7 +113,7 @@
         updateBuiltinResult('Initializing with XR dialog (default behavior)...', 'info');
         
         try {
-            const restUrl = getAbxrParameter('abxr_rest_url');
+            const restUrl = undefined; // Use AbxrLib's default REST URL
             // No callback or dialog options - uses XR dialog automatically
             Abxr_init(appId, orgId, authSecret, createAppConfig(restUrl));
             Abxr.setDebugMode(true);
@@ -189,7 +153,7 @@
         updateBuiltinResult('Initializing with custom-styled XR dialog...', 'info');
         
         try {
-            const restUrl = getAbxrParameter('abxr_rest_url');
+            const restUrl = undefined; // Use AbxrLib's default REST URL
             const appConfig = createAppConfig(restUrl);
             
             // Custom styling for the XR dialog
@@ -250,7 +214,7 @@
         updateBuiltinResult('Initializing with advanced XR dialog customization...', 'info');
         
         try {
-            const restUrl = getAbxrParameter('abxr_rest_url');
+            const restUrl = undefined; // Use AbxrLib's default REST URL
             const appConfig = createAppConfig(restUrl);
             
             // Advanced XR dialog customization
@@ -314,7 +278,7 @@
         updateBuiltinResult('Initializing XR dialog optimized for desktop (no virtual keyboard)...', 'info');
         
         try {
-            const restUrl = getAbxrParameter('abxr_rest_url');
+            const restUrl = undefined; // Use AbxrLib's default REST URL
             const appConfig = createAppConfig(restUrl);
             
             // XR dialog without virtual keyboard (perfect for desktop with physical keyboard)
@@ -359,7 +323,7 @@
         updateBuiltinResult('Initializing with XR dialog disabled...', 'info');
         
         try {
-            const restUrl = getAbxrParameter('abxr_rest_url');
+            const restUrl = undefined; // Use AbxrLib's default REST URL
             const appConfig = createAppConfig(restUrl);
             
             // Disable XR dialog
@@ -390,7 +354,7 @@
         updateBuiltinResult('Initializing with custom callback - developer provides their own dialog...', 'info');
         
         try {
-            const restUrl = getAbxrParameter('abxr_rest_url');
+            const restUrl = undefined; // Use AbxrLib's default REST URL
             const appConfig = createAppConfig(restUrl);
             
             // Custom callback function - developer implements their own dialog
@@ -465,7 +429,7 @@
         updateBuiltinResult('Initializing with custom callback via dialogOptions...', 'info');
         
         try {
-            const restUrl = getAbxrParameter('abxr_rest_url');
+            const restUrl = undefined; // Use AbxrLib's default REST URL
             const appConfig = createAppConfig(restUrl);
             
             // Method 2: Pass custom callback via dialogOptions
