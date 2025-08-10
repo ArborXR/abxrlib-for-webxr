@@ -1,6 +1,17 @@
-# AbxrLib for WebXR
+# ABXRLib SDK for WebXR
 
-A JavaScript library for WebXR applications, providing tools for XR development, analytics, and client management.
+The name "ABXR" stands for "Analytics Backbone for XR"—a flexible, open-source foundation for capturing and transmitting spatial, interaction, and performance data in XR. When combined with **ArborXR Insights**, ABXR transforms from a lightweight instrumentation layer into a full-scale enterprise analytics solution—unlocking powerful dashboards, LMS/BI integrations, and AI-enhanced insights.
+
+The **ABXRLib SDK for WebXR** is an open-source analytics and data collection library that provides developers with the tools to collect and send XR data to any service of their choice. This library enables scalable event tracking, telemetry, and session-based storage—essential for enterprise and education XR environments.
+
+> 💡 **Quick Start:** Most developers can integrate ABXRLib SDK and log their first event in under **15 minutes**.
+
+**Why Use ABXRLib SDK?**
+
+- **Open-Source** & portable to any backend—no vendor lock-in  
+- **Quick integration**—track user interactions in minutes  
+- **Secure & scalable**—ready for enterprise use cases  
+- **Pluggable with ArborXR Insights**—seamless access to LMS/BI integrations, session replays, AI diagnostics, and more
 
 ## Installation
 
@@ -179,6 +190,146 @@ Abxr.LogLevel.eCritical
 Abxr.AbxrDictStrings
 ```
 
+## Sending Data
+
+### Event Methods
+```javascript
+// JavaScript Event Method Signatures
+Abxr.Event(name)
+Abxr.Event(name, meta = null)
+
+// Example Usage - Basic Event
+Abxr.Event('button_pressed');
+
+// Example Usage - Event with Metadata
+Abxr.Event('item_collected', {
+    'item_type': 'coin',
+    'item_value': '100'
+});
+```
+
+**Parameters:**
+- `name` (string): The name of the event. Use snake_case for better analytics processing.
+- `meta` (object|string|null): Optional. Additional key-value pairs describing the event. Supports multiple formats: plain objects, JSON strings, URL parameter strings, or AbxrDictStrings objects.
+
+### Event Wrappers (for LMS Compatibility)
+
+#### Assessments
+```javascript
+// JavaScript Event Method Signatures
+Abxr.EventAssessmentStart(assessmentName, meta = null)
+Abxr.EventAssessmentComplete(assessmentName, score, eventStatus = EventStatus.eComplete, meta = null)
+
+// Example Usage
+Abxr.EventAssessmentStart('final_exam');
+Abxr.EventAssessmentComplete('final_exam', '92', Abxr.EventStatus.ePass);
+```
+
+#### Objectives
+```javascript
+// JavaScript Event Method Signatures
+Abxr.EventObjectiveStart(objectiveName, meta = null)
+Abxr.EventObjectiveComplete(objectiveName, score, eventStatus = EventStatus.eComplete, meta = null)
+
+// Example Usage
+Abxr.EventObjectiveStart('open_valve');
+Abxr.EventObjectiveComplete('open_valve', '100', Abxr.EventStatus.eComplete);
+```
+
+#### Interactions
+```javascript
+// JavaScript Event Method Signatures
+Abxr.EventInteractionStart(interactionName, meta = null)
+Abxr.EventInteractionComplete(interactionName, interactionType, response = "", meta = null)
+
+// Example Usage
+Abxr.EventInteractionStart('select_option_a');
+Abxr.EventInteractionComplete('select_option_a', Abxr.InteractionType.eSelect, 'A');
+```
+
+### Logging
+```javascript
+// JavaScript Event Method Signatures
+Abxr.LogDebug(message, meta = null)
+Abxr.LogInfo(message, meta = null)
+Abxr.LogWarn(message, meta = null)
+Abxr.LogError(message, meta = null)
+Abxr.LogCritical(message, meta = null)
+
+// Example usage
+Abxr.LogError('Critical error in assessment phase');
+Abxr.LogInfo('User login', {'userId': 12345, 'loginMethod': 'oauth'});
+```
+
+### Storage API
+```javascript
+// JavaScript Event Method Signatures
+Abxr.SetStorageEntry(data, name = "state", keepLatest = true, origin = null, sessionData = false)
+Abxr.GetStorageEntry(name = "state")
+Abxr.RemoveStorageEntry(name = "state")
+
+// Example usage
+Abxr.SetStorageEntry({'progress': '75%'});
+var state = Abxr.GetStorageEntry('state');
+```
+
+### Telemetry
+```javascript
+// JavaScript Event Method Signatures
+Abxr.Telemetry(name, data)
+
+// Example usage
+Abxr.Telemetry('headset_position', {'x': '1.23', 'y': '4.56', 'z': '7.89'});
+```
+
+### AI Integration
+```javascript
+// JavaScript Event Method Signatures
+Abxr.AIProxy(prompt, pastMessages = "", botId = "")
+
+// Example usage
+Abxr.AIProxy('Provide me a randomized greeting that includes common small talk and ends by asking some form of how can I help');
+```
+
+## Module Target Callback (LMS Multi-Module Support)
+
+The **Module Target** feature enables single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application automatically directs the user to that module.
+
+### Quick Setup
+
+```javascript
+// Initialize ABXRLib SDK
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
+
+// Subscribe to moduleTarget availability
+Abxr.onModuleTargetAvailable(function(data) {
+    console.log('ModuleTarget received:', data.moduleTarget);
+    
+    // Direct user to specific module
+    if (data.moduleTarget) {
+        loadModule(data.moduleTarget);
+        Abxr.EventAssessmentStart(data.moduleTarget);
+    } else {
+        showMainMenu();
+    }
+});
+```
+
+### Available Methods
+
+```javascript
+// Subscribe to module target notifications
+Abxr.onModuleTargetAvailable(callback)
+
+// Get module target directly (after authentication)
+Abxr.getModuleTarget()
+Abxr.getUserId()
+Abxr.getUserData()
+
+// Remove callback when no longer needed
+Abxr.removeModuleTargetCallback(callback)
+```
+
 ### Usage Examples
 
 ```javascript
@@ -189,14 +340,14 @@ Abxr_init('app123', 'org456', 'secret789');
 Abxr.setDebugMode(true);
 
 // Assessment with result options
-Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { time_spent: '30min' });
+Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { 'time_spent': '30min' });
 
 // Interaction with interaction type
-Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
+Abxr.EventInteractionComplete('button_click', Abxr.InteractionType.eClick, 'success', {'x': 150, 'y': 200});
 
 // Create metadata dictionary
 const meta = new Abxr.AbxrDictStrings();
-meta.set('custom_field', 'value');
+meta.Add('custom_field', 'value');
 Abxr.Event('custom_event', meta);
 ```
 
@@ -277,7 +428,7 @@ You can provide custom app configuration:
 
 ### Analytics Integration
 
-```typescript
+```javascript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
 // Initialize
@@ -292,14 +443,14 @@ Abxr.LogDebug('User completed tutorial');
 
 ### Storage API
 
-```typescript
+```javascript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
 // Initialize
 Abxr_init('app123', 'org456', 'secret789');
 
 // Store data
-Abxr.SetStorageEntry('user_progress', '75%');
+Abxr.SetStorageEntry({'user_progress': '75%'});
 
 // Retrieve data
 const entry = Abxr.GetStorageEntry('user_progress');
@@ -307,34 +458,26 @@ const entry = Abxr.GetStorageEntry('user_progress');
 
 ### Telemetry
 
-```typescript
+```javascript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
 // Initialize
 Abxr_init('app123', 'org456', 'secret789');
 
 // Send telemetry data
-const data = new Abxr.AbxrDictStrings();
-data.set('x', '1.23');
-data.set('y', '4.56');
-data.set('z', '7.89');
-Abxr.Telemetry('headset_position', data);
+Abxr.Telemetry('headset_position', {'x': '1.23', 'y': '4.56', 'z': '7.89'});
 ```
 
 ### AI Integration
 
-```typescript
+```javascript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
 // Initialize
 Abxr_init('app123', 'org456', 'secret789');
 
 // Send AI proxy request
-Abxr.AIProxy(
-  'Provide a greeting message',
-  '', // past messages
-  'default' // bot id
-);
+Abxr.AIProxy('Provide a greeting message', '', 'default');
 ```
 
 ## API Reference
@@ -396,6 +539,14 @@ Abxr.AIProxy(
 - `Abxr.getDebugMode()` - Get current debug mode
 - `Abxr.isConfigured()` - Check if library is authenticated
 - `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
+
+### Module Target Methods
+
+- `Abxr.onModuleTargetAvailable(callback)` - Subscribe to module target availability notifications
+- `Abxr.removeModuleTargetCallback(callback)` - Remove a module target callback
+- `Abxr.getModuleTarget()` - Get the current module target identifier
+- `Abxr.getUserId()` - Get the current user ID
+- `Abxr.getUserData()` - Get the current user data
 
 ### AuthMechanism Methods
 
