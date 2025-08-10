@@ -8,35 +8,31 @@
   <script src="dist/abxrlib-for-webxr.js"></script>
   <script>
     
-    // Authentication configuration
-    const appId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
-    const orgId = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
-    const authSecret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
-    //const restUrl = 'https://lib-backend.xrdm.app/v1/';
-   
-    // Helper function to create appConfig only when REST URL differs from AbxrLib's default
-    function createAppConfig(customRestUrl) {
-        // Use parameter if provided, otherwise check global restUrl
-        const urlToUse = customRestUrl || (typeof restUrl !== 'undefined' ? restUrl : undefined);
-        
-        if (urlToUse && urlToUse.trim() !== '') {
-            // Get AbxrLib's default REST URL (same logic as in AbxrLibBaseSetup.SetAppConfig)
-            const abxrDefaultUrl = 'https://lib-backend.xrdm.app/v1/';
-            
-            // Only create config if the URL is different from AbxrLib's default
-            if (urlToUse.trim() !== abxrDefaultUrl) {
-                const appConfigTemplate = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="{{REST_URL}}"/></appSettings></configuration>';
-                return appConfigTemplate.replace('{{REST_URL}}', urlToUse);
-            }
+    // Cookie utility function (same as in index.html)
+    function getCookie(name) {
+      const nameEQ = name + "=";
+      const ca = document.cookie.split(';');
+      
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) {
+          return c.substring(nameEQ.length, c.length);
         }
-        return undefined; // Return undefined to let AbxrLib use its default config
+      }
+      return null;
     }
+
+    // Get appId from cookie with fallback to const (for testing/demo purposes)
+    const defaultAppId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
+    const appId = getCookie('abxr_appid') || defaultAppId;
+
 
     // XR dialog system - no custom dialog functions needed!
     // The library handles everything automatically with beautiful XR-optimized dialogs.
     
-    // Note: This file uses hard-coded credentials for advanced testing
-    // For configurable credentials, use the basic.html or index.html configuration
+    // Note: This file now uses cookie-based configuration from index.html
+    // Set your credentials in index.html configuration panel first
 
 
 
@@ -113,9 +109,9 @@
         updateBuiltinResult('Initializing with XR dialog (default behavior)...', 'info');
         
         try {
-            const restUrl = undefined; // Use AbxrLib's default REST URL
             // No callback or dialog options - uses XR dialog automatically
-            Abxr_init(appId, orgId, authSecret, createAppConfig(restUrl));
+            // Credentials come from cookies/GET parameters
+            Abxr_init(appId);
             Abxr.setDebugMode(true);
             
             // Check authentication status
@@ -153,9 +149,6 @@
         updateBuiltinResult('Initializing with custom-styled XR dialog...', 'info');
         
         try {
-            const restUrl = undefined; // Use AbxrLib's default REST URL
-            const appConfig = createAppConfig(restUrl);
-            
             // Custom styling for the XR dialog
             const dialogOptions = {
                 enabled: true,
@@ -178,7 +171,8 @@
                 }
             };
             
-            Abxr_init(appId, orgId, authSecret, appConfig, dialogOptions);
+            // Credentials come from cookies/GET parameters
+            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
@@ -214,9 +208,6 @@
         updateBuiltinResult('Initializing with advanced XR dialog customization...', 'info');
         
         try {
-            const restUrl = undefined; // Use AbxrLib's default REST URL
-            const appConfig = createAppConfig(restUrl);
-            
             // Advanced XR dialog customization
             const dialogOptions = {
                 enabled: true,
@@ -242,7 +233,8 @@
                 }
             };
             
-            Abxr_init(appId, orgId, authSecret, appConfig, dialogOptions);
+            // Credentials come from cookies/GET parameters
+            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
@@ -278,16 +270,14 @@
         updateBuiltinResult('Initializing XR dialog optimized for desktop (no virtual keyboard)...', 'info');
         
         try {
-            const restUrl = undefined; // Use AbxrLib's default REST URL
-            const appConfig = createAppConfig(restUrl);
-            
             // XR dialog without virtual keyboard (perfect for desktop with physical keyboard)
             const dialogOptions = {
                 enabled: true,
                 showVirtualKeyboard: false  // Disable virtual keyboard for desktop - uses default theme
             };
             
-            Abxr_init(appId, orgId, authSecret, appConfig, dialogOptions);
+            // Credentials come from cookies/GET parameters
+            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
@@ -323,13 +313,11 @@
         updateBuiltinResult('Initializing with XR dialog disabled...', 'info');
         
         try {
-            const restUrl = undefined; // Use AbxrLib's default REST URL
-            const appConfig = createAppConfig(restUrl);
-            
             // Disable XR dialog
             const dialogOptions = { enabled: false };
             
-            Abxr_init(appId, orgId, authSecret, appConfig, dialogOptions);
+            // Credentials come from cookies/GET parameters
+            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
@@ -354,9 +342,6 @@
         updateBuiltinResult('Initializing with custom callback - developer provides their own dialog...', 'info');
         
         try {
-            const restUrl = undefined; // Use AbxrLib's default REST URL
-            const appConfig = createAppConfig(restUrl);
-            
             // Custom callback function - developer implements their own dialog
             const customAuthCallback = (authData) => {
                 console.log("Tester: Custom callback received auth data:", authData);
@@ -404,7 +389,8 @@
             };
             
             // Method 1: Pass custom callback as function parameter
-            Abxr_init(appId, orgId, authSecret, appConfig, undefined, customAuthCallback);
+            // Credentials come from cookies/GET parameters
+            Abxr_init(appId, undefined, undefined, undefined, undefined, customAuthCallback);
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
@@ -429,9 +415,6 @@
         updateBuiltinResult('Initializing with custom callback via dialogOptions...', 'info');
         
         try {
-            const restUrl = undefined; // Use AbxrLib's default REST URL
-            const appConfig = createAppConfig(restUrl);
-            
             // Method 2: Pass custom callback via dialogOptions
             const dialogOptions = {
                 customCallback: (authData) => {
@@ -460,7 +443,8 @@
                 }
             };
             
-            Abxr_init(appId, orgId, authSecret, appConfig, dialogOptions);
+            // Credentials come from cookies/GET parameters
+            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.setDebugMode(true);
             
             setTimeout(() => {

@@ -13,13 +13,27 @@
   <script src="dist/abxrlib-for-webxr.js"></script>
   
   <script>
-    // Authentication configuration variables
-    const appId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
-    const orgId = '5304ef74-423f-4bd4-87d9-cba4f19c3bdb';
-    const authSecret = 'vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj';
+    // Cookie utility function (same as in index.html)
+    function getCookie(name) {
+      const nameEQ = name + "=";
+      const ca = document.cookie.split(';');
+      
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) {
+          return c.substring(nameEQ.length, c.length);
+        }
+      }
+      return null;
+    }
 
-    // Initialize AbxrLib with variables
-    Abxr_init(appId, orgId, authSecret);
+    // Get appId from cookie with fallback to const (for testing/demo purposes)
+    const defaultAppId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
+    const appId = getCookie('abxr_appid') || defaultAppId;
+
+    // Initialize AbxrLib with appId (credentials come from cookies/GET parameters)
+    Abxr_init(appId);
     
     // Enable debug mode
     Abxr.setDebugMode(true);

@@ -112,13 +112,21 @@
       
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
         <div>
+          <label for="config_appid" style="display: block; margin-bottom: 5px; font-weight: bold;">App ID:</label>
+          <input type="text" id="config_appid" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter App ID">
+        </div>
+        <div>
           <label for="config_orgid" style="display: block; margin-bottom: 5px; font-weight: bold;">Organization ID:</label>
           <input type="text" id="config_orgid" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter Organization ID">
         </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
         <div>
           <label for="config_auth_secret" style="display: block; margin-bottom: 5px; font-weight: bold;">Auth Secret:</label>
           <input type="password" id="config_auth_secret" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter Auth Secret">
         </div>
+        <div style="flex: 1;"></div> <!-- Empty div for grid alignment -->
       </div>
       
       <div style="margin-bottom: 20px;">
@@ -230,6 +238,7 @@
 
       // Configuration management functions
       function saveConfiguration() {
+        const appId = document.getElementById('config_appid').value.trim();
         const orgId = document.getElementById('config_orgid').value.trim();
         const authSecret = document.getElementById('config_auth_secret').value.trim();
         const restUrl = document.getElementById('config_rest_url').value.trim();
@@ -238,7 +247,18 @@
         let hasErrors = false;
         
         // Validate and save values
-        if (orgId) {
+        if (appId) {
+          const validAppId = validateParameter('abxr_appid', appId);
+          if (validAppId) {
+            setCookie('abxr_appid', validAppId);
+          } else {
+            statusEl.textContent = 'Invalid App ID format (8-128 alphanumeric chars, hyphens, underscores)';
+            statusEl.style.color = '#dc3545';
+            hasErrors = true;
+          }
+        }
+        
+        if (orgId && !hasErrors) {
           const validOrgId = validateParameter('abxr_orgid', orgId);
           if (validOrgId) {
             setCookie('abxr_orgid', validOrgId);
@@ -285,11 +305,13 @@
 
       function clearConfiguration() {
         // Clear cookies by setting them to expire in the past
+        document.cookie = 'abxr_appid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'abxr_orgid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'abxr_auth_secret=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'abxr_rest_url=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         
         // Clear form fields
+        document.getElementById('config_appid').value = '';
         document.getElementById('config_orgid').value = '';
         document.getElementById('config_auth_secret').value = '';
         document.getElementById('config_rest_url').value = '';
@@ -308,11 +330,15 @@
       // Initialize form with current values and handle navigation
       document.addEventListener('DOMContentLoaded', function() {
         // Populate form fields with current active values (GET params -> cookies -> defaults)
+        const currentAppId = getAbxrParameter('abxr_appid', '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9');
         const currentOrgId = getAbxrParameter('abxr_orgid');
         const currentAuthSecret = getAbxrParameter('abxr_auth_secret');
         const currentRestUrl = getAbxrParameter('abxr_rest_url', 'https://lib-backend.xrdm.app/v1/');
         
         // Set form field values
+        if (currentAppId) {
+          document.getElementById('config_appid').value = currentAppId;
+        }
         if (currentOrgId) {
           document.getElementById('config_orgid').value = currentOrgId;
         }
