@@ -605,7 +605,7 @@ export function GenerateJsonList(l: DbSet<DataObjectBase>, eDumpCategory: DumpCa
 	return szJSON;
 }
 
-export function LoadFromJson(o: DataObjectBase | null, szJSON: string): JsonResult
+export function LoadFromJson(o: DataObjectBase | null, szJSON: string, bErrorOnOutOfBandData: boolean): JsonResult
 {
 	var objJsonObject:	any = null;
 
@@ -646,7 +646,7 @@ export function LoadFromJson(o: DataObjectBase | null, szJSON: string): JsonResu
 
 							if (objChild !== null)
 							{
-								LoadFromJson(objChild, szValue as string);
+								LoadFromJson(objChild, szValue as string, bErrorOnOutOfBandData);
 							}
 						}
 					}

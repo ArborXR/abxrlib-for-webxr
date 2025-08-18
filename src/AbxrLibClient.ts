@@ -6,7 +6,7 @@ import { AbxrLibAnalytics, AbxrLibInit } from "./AbxrLibAnalytics";
 import { AbxrAIProxy, AbxrBase, AbxrEvent, AbxrLibConfiguration, AbxrLog, AbxrStorage, AbxrTelemetry, AbxrXXXContainer, RESTEndpointFromType } from "./AbxrLibCoreModel";
 import { CurlHttp, EnsureSingleEndingCharacter, JsonScalarArrayElement, SUID, time_t } from "./network/types";
 import { DataObjectBase, DbSet, DumpCategory, FieldProperties, FieldPropertiesRecordContainer, FieldPropertyFlags, GenerateJson, GenerateJsonAlternate, GenerateJsonList, LoadFromJson } from "./network/utils/DataObjectBase";
-import { AbxrResult, JsonResult, AbxrDictStrings, StringList } from "./network/utils/DotNetishTypes";
+import { AbxrResult, JsonResult, JsonSuccess, AbxrDictStrings, StringList } from "./network/utils/DotNetishTypes";
 
 // Buffer type definition for browser environments
 declare global {
@@ -140,6 +140,11 @@ export class AuthTokenDecodedJWT extends DataObjectBase
 	{
 		return AuthTokenDecodedJWT.m_mapProperties;
 	}
+	// ---
+	public IsValid(): boolean
+	{
+		return (this.m_szType.length !== 0 && this.m_szJti.length !== 0);
+	}
 };
 
 /// <summary>
@@ -159,6 +164,11 @@ export class AuthTokenResponseSuccess extends DataObjectBase
 	{
 		return AuthTokenResponseSuccess.m_mapProperties;
 	}
+	// ---
+	public IsValid(): boolean
+	{
+		return (this.m_szToken.length !== 0 && this.m_szApiSecret.length !== 0);
+	}
 };
 
 /// <summary>
@@ -176,6 +186,11 @@ export class PostObjectsResponseSuccess extends DataObjectBase
 	{
 		return PostObjectsResponseSuccess.m_mapProperties;
 	}
+	// ---
+	public IsValid(): boolean
+	{
+		return (this.m_szStatus.length !== 0);
+	}
 };
 
 /// <summary>
@@ -192,6 +207,11 @@ export class PostObjectsResponseFailure extends DataObjectBase
 	public GetMapProperties(): FieldPropertiesRecordContainer // virtual
 	{
 		return PostObjectsResponseFailure.m_mapProperties;
+	}
+	// ---
+	public IsValid(): boolean
+	{
+		return (this.m_szDetail.length !== 0);
 	}
 };
 
@@ -401,16 +421,16 @@ export class AbxrLibClient
 			// bailing on the first failure is better but I do not know for sure.
 			if (eCurlRet)
 			{
-				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse);
-				if (eJsonRet === JsonResult.eOk)
+				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false);
+				if (JsonSuccess(eJsonRet) && objResponseSuccess.IsValid())
 				{
 					return AbxrResult.eOk;
 				}
 				else
 				{
 					// Did not get success, does failure parse?
-					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse);
-					if (eJsonRet === JsonResult.eOk)
+					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
+					if (JsonSuccess(eJsonRet) && objResponseFailure.IsValid())
 					{
 						// Failure parses, probably auth error.
 						eReauthResult = await AbxrLibInit.ReAuthenticate(true);
@@ -475,13 +495,13 @@ export class AbxrLibClient
 				try {
 					if (ptResponse)
 					{
-						eJsonRet = LoadFromJson(ptResponse, rpResponse.szResponse);
+						eJsonRet = LoadFromJson(ptResponse, rpResponse.szResponse, false);
 					}
 					else
 					{
-						eJsonRet = LoadFromJson(ptContainedResponse, rpResponse.szResponse);
+						eJsonRet = LoadFromJson(ptContainedResponse, rpResponse.szResponse, false);
 					}
-					if (eJsonRet === JsonResult.eOk)
+					if (JsonSuccess(eJsonRet))
 					{
 						return AbxrResult.eOk;
 					}
@@ -491,8 +511,8 @@ export class AbxrLibClient
 				}
 
 				// Did not get success, does failure parse?
-				eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse);
-				if (eJsonRet === JsonResult.eOk)
+				eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
+				if (JsonSuccess(eJsonRet))
 				{
 					// Failure parses, probably auth error.
 					eReauthResult = await AbxrLibInit.ReAuthenticate(true);
@@ -539,16 +559,16 @@ export class AbxrLibClient
 			// OUTPUTDEBUGSTRING(szResponse, "\n");
 			if (eCurlRet)
 			{
-				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse);
-				if (eJsonRet === JsonResult.eOk)
+				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false);
+				if (JsonSuccess(eJsonRet) && objResponseSuccess.IsValid())
 				{
 					return AbxrResult.eOk;
 				}
 				else
 				{
 					// Did not get success, does failure parse?
-					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse);
-					if (eJsonRet === JsonResult.eOk)
+					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
+					if (JsonSuccess(eJsonRet) && objResponseFailure.IsValid())
 					{
 						// Failure parses, probably auth error.
 						eReauthResult = await AbxrLibInit.ReAuthenticate(true);

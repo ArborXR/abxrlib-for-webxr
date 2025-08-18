@@ -28,16 +28,16 @@
 	"author": "ArborXR <devs@arborxr.com> (https://arborxr.com)",
 	"license": "ISC",
 	"devDependencies": {
+		"@react-three/fiber": "^8.15.0",
+		"@react-three/uikit": "^0.8.0",
 		"@types/jsonwebtoken": "^9.0.6",
 		"@types/node": "^22.9.1",
 		"@types/react": "^18.2.0",
 		"@types/react-dom": "^18.2.0",
 		"@types/three": "^0.160.0",
+		"gts": "^5.3.1",
 		"react": "^18.2.0",
 		"react-dom": "^18.2.0",
-		"@react-three/fiber": "^8.15.0",
-		"@react-three/uikit": "^0.8.0",
-		"gts": "^5.3.1",
 		"ts-loader": "^9.5.2",
 		"ts-node": "^10.9.2",
 		"typescript": "^4.9.5",
@@ -45,17 +45,17 @@
 		"webpack-cli": "^6.0.1"
 	},
 	"dependencies": {
-		"vm-browserify": "^1.1.2",
-		"util": "^0.12.5",
 		"buffer": "^6.0.3",
-		"stream-browserify": "^3.0.0",
 		"crypto-browserify": "^3.12.1",
 		"guid-typescript": "^1.0.9",
 		"jsonwebtoken": "^9.0.2",
 		"jwt-decode": "^4.0.0",
 		"localStorage": "^1.0.4",
+		"stream-browserify": "^3.0.0",
 		"threads": "^1.7.0",
-		"three": "^0.160.0"
+		"three": "^0.160.0",
+		"util": "^0.12.5",
+		"vm-browserify": "^1.1.2"
 	},
 	"files": [
 		"index.js",

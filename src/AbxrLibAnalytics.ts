@@ -7,7 +7,7 @@ import { Base64, CurlHttp, DATEMAXVALUE, Sleep } from './network/types';
 import { crc32 } from './network/utils/crc32';
 import { sha256, SHA256 } from './network/utils/cryptoUtils';
 import { DataObjectBase, DbSet, FieldPropertyFlags, LoadFromJson } from './network/utils/DataObjectBase';
-import { AbxrResult, DateTime, TimeSpan, StringList, AbxrDictStrings, JsonResult } from './network/utils/DotNetishTypes';
+import { AbxrResult, DateTime, TimeSpan, StringList, AbxrDictStrings, JsonSuccess, JsonResult } from './network/utils/DotNetishTypes';
 import { DatabaseResult } from './network/utils/AbxrLibSQLite';
 import { JWTDecode } from './network/utils/JWT';
 
@@ -170,13 +170,13 @@ export class AbxrLibInit
 			var	objAuthTokenResponseFailure:	AuthTokenResponseFailure = new AuthTokenResponseFailure();
 			var	objAuthTokenDecodedJWT:			AuthTokenDecodedJWT = new AuthTokenDecodedJWT();
 
-			eSuccessParse = LoadFromJson(objAuthTokenResponseSuccess, rpResponse.szResponse);
-			eFailureParse = LoadFromJson(objAuthTokenResponseFailure, rpResponse.szResponse);
+			eSuccessParse = LoadFromJson(objAuthTokenResponseSuccess, rpResponse.szResponse, false);
+			eFailureParse = LoadFromJson(objAuthTokenResponseFailure, rpResponse.szResponse, false);
 			if (eSuccessParse === JsonResult.eBadJsonStructure || eFailureParse === JsonResult.eBadJsonStructure)
 			{
 				eRet = AbxrResult.eCorruptJson;
 			}
-			else if (eSuccessParse === JsonResult.eOk)
+			else if (JsonSuccess(eSuccessParse) && objAuthTokenResponseSuccess.IsValid())
 			{
 				var	szJWT: string;
 
@@ -221,8 +221,8 @@ export class AbxrLibInit
 				// --- AbxrLibInit.m_abxrLibAuthentication.m_szApiToken is a JWT token that contains, among other things, an "exp"
 				//		field which is the Unix time of token expiration.
 				szJWT = JWTDecode(AbxrLibInit.m_abxrLibAuthentication.m_szApiToken);
-				eJWTParse = LoadFromJson(objAuthTokenDecodedJWT, szJWT);
-				if (eJWTParse === JsonResult.eOk)
+				eJWTParse = LoadFromJson(objAuthTokenDecodedJWT, szJWT, false);
+				if (JsonSuccess(eJWTParse) && objAuthTokenDecodedJWT.IsValid())
 				{
 					AbxrLibInit.m_abxrLibAuthentication.m_dtTokenExpiration.FromUnixTime(objAuthTokenDecodedJWT.m_utTokenExpiration);
 				}
@@ -755,13 +755,13 @@ export class AbxrLibAnalytics
 							var	objResponseSuccess:	PostObjectsResponseSuccess = new PostObjectsResponseSuccess();
 							var	objResponseFailure:	PostObjectsResponseFailure = new PostObjectsResponseFailure();
 
-							eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse);
-							eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse);
+							eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false);
+							eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
 							if (eSuccessParse === JsonResult.eBadJsonStructure || eFailureParse === JsonResult.eBadJsonStructure)
 							{
 								eTestRet = AbxrResult.eCorruptJson;
 							}
-							else if (eSuccessParse === JsonResult.eOk)
+							else if (JsonSuccess(eSuccessParse) && objResponseSuccess.IsValid())
 							{
 								// Do something with the data?  Haven't seen a success yet.  TODO.
 								eTestRet = AbxrResult.eOk;
@@ -887,13 +887,13 @@ export class AbxrLibAnalytics
 								var	objResponseFailure: PostObjectsResponseFailure = new PostObjectsResponseFailure();
 								var	eTestRet:			AbxrResult = AbxrResult.eOk;
 
-								eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse);
-								eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse);
+								eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false);
+								eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
 								if (eSuccessParse === JsonResult.eBadJsonStructure || eFailureParse === JsonResult.eBadJsonStructure)
 								{
 									eTestRet = AbxrResult.eCorruptJson;
 								}
-								else if (eSuccessParse === JsonResult.eOk)
+								else if (JsonSuccess(eSuccessParse) && objResponseSuccess.IsValid())
 								{
 									// Do something with the data?  Haven't seen a success yet.  TODO.
 									eTestRet = AbxrResult.eOk;

@@ -173,6 +173,7 @@ export function EventStatusToString(eRet: EventStatus): string
 export enum JsonResult
 {
 	eOk,
+	eOutOfBandDataFound,
 	eBadJsonStructure,
 	eMissingField,
 	eExtraneousField,
@@ -203,7 +204,7 @@ export enum JsonResult
 
 export function JsonSuccess(eRet: JsonResult): boolean
 {
-	return (eRet === JsonResult.eOk);
+	return (eRet === JsonResult.eOk || eRet === JsonResult.eOutOfBandDataFound);
 }
 
 export function JsonResultToString(eRet: JsonResult): string
