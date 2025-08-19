@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Device Detection Test - AbxrLib</title>
+  <script src="dist/abxrlib-for-webxr.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .info-box {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    .detected-info {
+      background: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
+    }
+    .error-info {
+      background: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+    .status {
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .log {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      margin: 10px 0;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AbxrLib Device Detection Test</h1>
+    
+    <div class="info-box">
+      <h3>Test Purpose</h3>
+      <p>This test verifies that AbxrLib correctly detects and sets device information (OS version, browser/device model, and IP address) during authentication.</p>
+    </div>
+
+    <div class="status" id="status">Status: Initializing...</div>
+    
+    <div id="deviceInfo" class="info-box" style="display: none;">
+      <h3>Detected Device Information</h3>
+      <p><strong>OS Version:</strong> <span id="osVersion">-</span></p>
+      <p><strong>Device Model (Browser):</strong> <span id="deviceModel">-</span></p>
+      <p><strong>IP Address:</strong> <span id="ipAddress">-</span></p>
+    </div>
+
+    <div id="authInfo" class="info-box" style="display: none;">
+      <h3>Authentication Status</h3>
+      <p><strong>Authenticated:</strong> <span id="authStatus">-</span></p>
+      <p><strong>User ID:</strong> <span id="userId">-</span></p>
+      <p><strong>User Email:</strong> <span id="userEmail">-</span></p>
+    </div>
+
+    <div>
+      <button onclick="testDeviceDetection()">Test Device Detection Only</button>
+      <button onclick="testAuthentication()">Test Full Authentication</button>
+      <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="log" id="logOutput"></div>
+  </div>
+
+  <script>
+    let logOutput = document.getElementById('logOutput');
+    let originalConsoleLog = console.log;
+    let originalConsoleWarn = console.warn;
+    let originalConsoleError = console.error;
+
+    // Intercept console logs to display them on the page
+    function addToLog(message, type = 'log') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = document.createElement('div');
+      logEntry.style.color = type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black';
+      logEntry.textContent = `[${timestamp}] ${message}`;
+      logOutput.appendChild(logEntry);
+      logOutput.scrollTop = logOutput.scrollHeight;
+    }
+
+    console.log = function(...args) {
+      originalConsoleLog.apply(console, args);
+      addToLog(args.join(' '), 'log');
+    };
+
+    console.warn = function(...args) {
+      originalConsoleWarn.apply(console, args);
+      addToLog(args.join(' '), 'warn');
+    };
+
+    console.error = function(...args) {
+      originalConsoleError.apply(console, args);
+      addToLog(args.join(' '), 'error');
+    };
+
+    // Test device detection without authentication
+    async function testDeviceDetection() {
+      document.getElementById('status').textContent = 'Status: Testing device detection...';
+      
+      try {
+        // Import the device detection functions directly
+        // Note: This assumes the functions are exported from the bundle
+        if (typeof AbxrDetectAllDeviceInfo !== 'undefined') {
+          const deviceInfo = await AbxrDetectAllDeviceInfo();
+          
+          document.getElementById('osVersion').textContent = deviceInfo.osVersion;
+          document.getElementById('deviceModel').textContent = deviceInfo.deviceModel;
+          document.getElementById('ipAddress').textContent = deviceInfo.ipAddress;
+          document.getElementById('deviceInfo').style.display = 'block';
+          document.getElementById('deviceInfo').className = 'info-box detected-info';
+          
+          document.getElementById('status').textContent = 'Status: Device detection completed successfully!';
+          console.log('Device detection test completed:', deviceInfo);
+        } else {
+          throw new Error('Device detection functions not available in bundle');
+        }
+      } catch (error) {
+        document.getElementById('status').textContent = 'Status: Device detection failed!';
+        document.getElementById('deviceInfo').style.display = 'block';
+        document.getElementById('deviceInfo').className = 'info-box error-info';
+        console.error('Device detection test failed:', error);
+      }
+    }
+
+    // Test full authentication with device detection
+    function testAuthentication() {
+      document.getElementById('status').textContent = 'Status: Testing authentication with device detection...';
+      
+      // Use test credentials (you may need to update these)
+      const testAppId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
+      
+      // Initialize AbxrLib - this should trigger device detection
+      Abxr_init(testAppId);
+      
+      // Monitor authentication status
+      const checkInterval = setInterval(() => {
+        if (Abxr.isConfigured()) {
+          clearInterval(checkInterval);
+          
+          document.getElementById('status').textContent = 'Status: Authentication completed!';
+          document.getElementById('authStatus').textContent = 'Yes';
+          document.getElementById('userId').textContent = Abxr.getUserId() || 'Not available';
+          document.getElementById('userEmail').textContent = Abxr.getUserEmail() || 'Not available';
+          document.getElementById('authInfo').style.display = 'block';
+          document.getElementById('authInfo').className = 'info-box detected-info';
+          
+          console.log('Authentication test completed successfully');
+          
+          // Try to get the device info that was set during authentication
+          try {
+            const osVersion = AbxrLibInit.get_OsVersion();
+            const deviceModel = AbxrLibInit.get_DeviceModel();
+            const ipAddress = AbxrLibInit.get_IpAddress();
+            
+            document.getElementById('osVersion').textContent = osVersion || 'Not set';
+            document.getElementById('deviceModel').textContent = deviceModel || 'Not set';
+            document.getElementById('ipAddress').textContent = ipAddress || 'Not set';
+            document.getElementById('deviceInfo').style.display = 'block';
+            document.getElementById('deviceInfo').className = 'info-box detected-info';
+            
+            console.log('Device info from authentication:', { osVersion, deviceModel, ipAddress });
+          } catch (error) {
+            console.warn('Could not retrieve device info from AbxrLibInit:', error);
+          }
+          
+        } else if (Abxr.hasAuthenticationFailed()) {
+          clearInterval(checkInterval);
+          
+          document.getElementById('status').textContent = 'Status: Authentication failed!';
+          document.getElementById('authStatus').textContent = 'Failed';
+          document.getElementById('authInfo').style.display = 'block';
+          document.getElementById('authInfo').className = 'info-box error-info';
+          
+          console.error('Authentication test failed:', Abxr.getAuthenticationError());
+        }
+      }, 1000);
+      
+      // Timeout after 30 seconds
+      setTimeout(() => {
+        if (!Abxr.isConfigured() && !Abxr.hasAuthenticationFailed()) {
+          clearInterval(checkInterval);
+          document.getElementById('status').textContent = 'Status: Authentication timed out!';
+          console.error('Authentication test timed out');
+        }
+      }, 30000);
+    }
+
+    function clearLog() {
+      logOutput.innerHTML = '';
+    }
+
+    // Initialize page
+    document.getElementById('status').textContent = 'Status: Ready for testing';
+    console.log('Device Detection Test Page loaded');
+    console.log('User Agent:', navigator.userAgent);
+  </script>
+</body>
+</html>

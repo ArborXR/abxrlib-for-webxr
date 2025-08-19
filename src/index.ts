@@ -9,6 +9,8 @@ import { AbxrBase, AbxrEvent, AbxrLog, AbxrStorage, AbxrTelemetry, AbxrAIProxy, 
 import { Partner } from "./AbxrLibClient";
 // Import XR dialog template
 import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig, XRVirtualKeyboard } from './templates/XRAuthDialog';
+// Import device detection utilities
+import { AbxrDetectAllDeviceInfo, AbxrDetectOsVersion, AbxrDetectDeviceModel, AbxrDetectIpAddress } from './utils/DeviceDetection';
 
 
 // Initialize all static members
@@ -332,12 +334,16 @@ export {
     AbxrStorage,
     AbxrTelemetry,
     AbxrAIProxy,
-    LogLevel,
-    Partner,
+    LogLevel as AbxrLogLevel,
+    Partner as AbxrPartner,
     InteractionType,
     EventStatus,
     hasApiVersion,
-    addApiVersion
+    addApiVersion,
+    AbxrDetectAllDeviceInfo,
+    AbxrDetectOsVersion,
+    AbxrDetectDeviceModel,
+    AbxrDetectIpAddress
 };
 
 // Types for authMechanism notification
@@ -1248,13 +1254,28 @@ if (typeof window !== 'undefined') {
         AbxrTelemetry,
         AbxrAIProxy,
         AbxrDictStrings,
-        LogLevel,
-        Partner,
+        AbxrLogLevel: LogLevel,
+        AbxrPartner: Partner,
         AbxrResult,
+        // Device detection utilities
+        AbxrDetectAllDeviceInfo,
+        AbxrDetectOsVersion,
+        AbxrDetectDeviceModel,
+        AbxrDetectIpAddress,
         Abxr
     };
     // Also expose the global function directly
     (window as any).Abxr_init = Abxr_init;
+    
+    // Expose device detection functions directly for easy testing
+    (window as any).AbxrDetectAllDeviceInfo = AbxrDetectAllDeviceInfo;
+    (window as any).AbxrDetectOsVersion = AbxrDetectOsVersion;
+    (window as any).AbxrDetectDeviceModel = AbxrDetectDeviceModel;
+    (window as any).AbxrDetectIpAddress = AbxrDetectIpAddress;
+    
+    // Expose prefixed versions of LogLevel and Partner
+    (window as any).AbxrLogLevel = LogLevel;
+    (window as any).AbxrPartner = Partner;
     console.log('AbxrLib: Loaded into global scope. Use Abxr for simple API or AbxrLib for advanced features.');
 }
 
@@ -1324,8 +1345,30 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
             // Clear any previous auth errors before attempting authentication
             AbxrLibClient.clearLastAuthError();
             
-            // Attempt initial authentication
-            AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR)
+            // Detect and set device information before authentication
+            console.log('AbxrLib: Detecting device information...');
+            AbxrDetectAllDeviceInfo()
+                .then((deviceInfo) => {
+                    console.log(`AbxrLib: Device detection complete - OS: ${deviceInfo.osVersion}, Browser: ${deviceInfo.deviceModel}, IP: ${deviceInfo.ipAddress}`);
+                    
+                    // Set the detected values in the authentication object
+                    AbxrLibInit.set_OsVersion(deviceInfo.osVersion);
+                    AbxrLibInit.set_DeviceModel(deviceInfo.deviceModel);
+                    AbxrLibInit.set_IpAddress(deviceInfo.ipAddress);
+                    
+                    // Now attempt initial authentication with device info set
+                    return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
+                })
+                .catch((error) => {
+                    console.warn('AbxrLib: Device detection failed, using defaults:', error);
+                    // Set fallback values if detection fails
+                    AbxrLibInit.set_OsVersion('Unknown OS');
+                    AbxrLibInit.set_DeviceModel('Unknown Browser');
+                    AbxrLibInit.set_IpAddress('Unknown IP');
+                    
+                    // Still attempt authentication even if device detection failed
+                    return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
+                })
                 .then(async (result: number) => {
                     if (result === 0) {
                         console.log('AbxrLib: Initial authentication successful');
