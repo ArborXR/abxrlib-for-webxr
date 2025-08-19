@@ -21,12 +21,18 @@ npm install abxrlib-for-webxr
 
 ## Simple Setup
 
+> **⚠️ Security Note:** For production builds distributed to third parties, avoid compiling `orgId` and `authSecret` directly into your application code. Instead, use URL parameters or environment variables to provide these credentials at runtime. Only compile credentials directly into the build when creating custom applications for specific individual clients.
+
 The easiest way to get started is with a single function call:
 
 ```html
 <script src="node_modules/abxrlib-for-webxr/index.js"></script>
 <script>
-    // Initialize and authenticate in one call
+    // RECOMMENDED: Use URL parameters for production builds
+    // URL: https://yourdomain.com/?abxr_orgid=org456&abxr_auth_secret=secret789
+    Abxr_init('app123');
+    
+    // DEVELOPMENT ONLY: Direct initialization with all parameters
     Abxr_init('app123', 'org456', 'secret789');
     
     // Start using the library immediately
@@ -212,7 +218,11 @@ Abxr.Event('item_collected', {
 - `name` (string): The name of the event. Use snake_case for better analytics processing.
 - `meta` (object|string|null): Optional. Additional key-value pairs describing the event. Supports multiple formats: plain objects, JSON strings, URL parameter strings, or AbxrDictStrings objects.
 
-### Event Wrappers (for LMS Compatibility)
+### Analytics Event Wrappers (Essential for All Developers)
+
+**These analytics event functions are essential for ALL developers, not just those integrating with LMS platforms.** They provide standardized tracking for key user interactions and learning outcomes that are crucial for understanding user behavior, measuring engagement, and optimizing XR experiences.
+
+**EventAssessmentStart and EventAssessmentComplete should be considered REQUIRED for proper usage** of the ABXRLib SDK, as they provide critical insights into user performance and completion rates.
 
 #### Assessments
 ```javascript
