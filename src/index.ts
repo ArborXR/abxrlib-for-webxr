@@ -10,7 +10,7 @@ import { Partner } from "./AbxrLibClient";
 // Import XR dialog template
 import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig, XRVirtualKeyboard } from './templates/XRAuthDialog';
 // Import device detection utilities
-import { AbxrDetectAllDeviceInfo, AbxrDetectOsVersion, AbxrDetectDeviceModel, AbxrDetectIpAddress } from './utils/DeviceDetection';
+import { AbxrDetectAllDeviceInfo, AbxrDetectOsVersion, AbxrDetectDeviceModel, AbxrDetectIpAddress } from './utils/AbxrDeviceDetection';
 
 
 // Initialize all static members
