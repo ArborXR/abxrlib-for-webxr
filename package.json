@@ -20,7 +20,9 @@
 		"pretest": "npm run compile",
 		"posttest": "npm run lint",
 		"test": "ts-node src/test.ts",
-		"debug": "node --import ts-node/register/transpile-only --inspect-brk src/test.ts"
+		"debug": "node --import ts-node/register/transpile-only --inspect-brk src/test.ts",
+		"changelog": "node scripts/generate-changelog.js",
+		"changelog:version": "node scripts/generate-changelog.js --version"
 	},
 	"engines": {
 		"node": ">=16.0.0"

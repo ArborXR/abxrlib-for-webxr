@@ -195,6 +195,10 @@ if $do_publish; then
 	cd ..
 
 	echo "Package published successfully!"
+	echo "Published version: $NEW_VERSION"
+	
+	# Write version to a file that can be read by host
+	echo "$NEW_VERSION" > /tmp/published_version.txt
 
 fi
 

@@ -14,6 +14,7 @@ COPY abxr-launch.sh ./
 RUN chmod +x abxr-launch.sh
 COPY src ./src
 COPY testers ./testers
+COPY scripts ./scripts
 
 RUN npm install
 RUN npm install process --save-dev
