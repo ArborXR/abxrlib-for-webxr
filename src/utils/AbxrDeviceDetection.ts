@@ -137,7 +137,7 @@ export function AbxrDetectDeviceModel(): string {
 /**
  * Attempts to get the client's IP address
  * Note: Due to browser security restrictions, this may not always be possible
- * @returns Promise that resolves to IP address string or 'Unknown IP'
+ * @returns Promise that resolves to IP address string or 'NA'
  */
 export async function AbxrDetectIpAddress(): Promise<string> {
     try {
@@ -178,10 +178,10 @@ export async function AbxrDetectIpAddress(): Promise<string> {
             }
         }
         
-        return 'Unknown IP';
+        return 'NA';
     } catch (error) {
         console.warn('AbxrLib: Could not detect IP address:', error);
-        return 'Unknown IP';
+        return 'NA';
     }
 }
 

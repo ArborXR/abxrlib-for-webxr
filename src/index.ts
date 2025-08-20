@@ -1364,7 +1364,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                     // Set fallback values if detection fails
                     AbxrLibInit.set_OsVersion('Unknown OS');
                     AbxrLibInit.set_DeviceModel('Unknown Browser');
-                    AbxrLibInit.set_IpAddress('Unknown IP');
+                    AbxrLibInit.set_IpAddress('NA');
                     
                     // Still attempt authentication even if device detection failed
                     return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
