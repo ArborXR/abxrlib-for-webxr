@@ -303,7 +303,7 @@ export class DataObjectBase
 	// When indicated by ObjectAttribute::eOutOfBandObject, any fields not found in the object
 	// being LoadFromJson()ed, instead of erroring with JsonResult::eMissingField, will get stuffed
 	// into here, and GenerateJson() will render the extra fields.
-	// AbxrDictStrings	m_dictOutOfBandData;
+	public m_dictOutOfBandData:		AbxrDictStrings = new AbxrDictStrings();
 	// ---
 	public static m_mapProperties: FieldPropertiesRecordContainer = new FieldPropertiesRecordContainer(Object.assign({},
 		{m_nLastLoadedSignature: new FieldProperties("last_loaded_signature", FieldPropertyFlags.bfExclude)},
@@ -605,9 +605,10 @@ export function GenerateJsonList(l: DbSet<DataObjectBase>, eDumpCategory: DumpCa
 	return szJSON;
 }
 
-export function LoadFromJson(o: DataObjectBase | null, szJSON: string, bErrorOnOutOfBandData: boolean): JsonResult
+export function LoadFromJson(o: DataObjectBase | null, szJSON: string, bErrorOnOutOfBandData: boolean, sszErrors: Set<string>): JsonResult
 {
 	var objJsonObject:	any = null;
+	var eRet:			JsonResult = JsonResult.eOk;
 
 	try
 	{
@@ -646,15 +647,23 @@ export function LoadFromJson(o: DataObjectBase | null, szJSON: string, bErrorOnO
 
 							if (objChild !== null)
 							{
-								LoadFromJson(objChild, szValue as string, bErrorOnOutOfBandData);
+								eRet = LoadFromJson(objChild, szValue as string, bErrorOnOutOfBandData, sszErrors);
 							}
 						}
 					}
 				}
 				else
 				{
-					// Gracefully ignore unknown fields - this is normal JSON behavior
-					continue;
+					if (bErrorOnOutOfBandData)
+					{
+						eRet = JsonResult.eMissingField;
+						sszErrors.add(`Error:  field ${szField} does not exist in object ${typeof o}`);
+					}
+					else
+					{
+						eRet = JsonResult.eOutOfBandDataFound;
+						o.m_dictOutOfBandData.Add(szField, szValue as string);
+					}
 				}
 			}
 		}
@@ -665,5 +674,5 @@ export function LoadFromJson(o: DataObjectBase | null, szJSON: string, bErrorOnO
 		return JsonResult.eBadJsonStructure;
 	}
 	// ---
-	return JsonResult.eOk;
+	return eRet;
 }

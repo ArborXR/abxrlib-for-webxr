@@ -378,6 +378,7 @@ export class AbxrLibClient
 			var	mbBodyContent:		Buffer = Buffer.from("");
 			var	objResponseSuccess:	PostObjectsResponseSuccess = new PostObjectsResponseSuccess();	// e.g. {"status":"success"}
 			var	objResponseFailure:	PostObjectsResponseFailure = new PostObjectsResponseFailure();	// e.g. {"detail":"Invalid Login - Hash"}
+			var sszErrors:			Set<string> = new Set<string>;
 
 			if (bOneAtATime)
 			{
@@ -421,7 +422,7 @@ export class AbxrLibClient
 			// bailing on the first failure is better but I do not know for sure.
 			if (eCurlRet)
 			{
-				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false);
+				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false, sszErrors);
 				if (JsonSuccess(eJsonRet) && objResponseSuccess.IsValid())
 				{
 					return AbxrResult.eOk;
@@ -429,7 +430,7 @@ export class AbxrLibClient
 				else
 				{
 					// Did not get success, does failure parse?
-					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
+					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false, sszErrors);
 					if (JsonSuccess(eJsonRet) && objResponseFailure.IsValid())
 					{
 						// Failure parses, probably auth error.
@@ -471,6 +472,7 @@ export class AbxrLibClient
 			var	eReauthResult:		AbxrResult;
 			var	rpResponse:			{szResponse: string} = {szResponse: ""};
 			var	objResponseFailure:	PostObjectsResponseFailure = new PostObjectsResponseFailure();	// e.g. {"detail":"Invalid Login - Hash"}
+			var sszErrors:			Set<string> = new Set<string>;
 
 			await AbxrLibAnalytics.SetHeadersFromCurrentState(objRequest, Buffer.from(""), false, true);
 			eCurlRet = await objRequest.Get(AbxrLibAnalytics.FinalUrl(RESTEndpointFromType<T>(tTypeOfT)), vpszQueryParameters, rpResponse);
@@ -495,11 +497,11 @@ export class AbxrLibClient
 				try {
 					if (ptResponse)
 					{
-						eJsonRet = LoadFromJson(ptResponse, rpResponse.szResponse, false);
+						eJsonRet = LoadFromJson(ptResponse, rpResponse.szResponse, false, sszErrors);
 					}
 					else
 					{
-						eJsonRet = LoadFromJson(ptContainedResponse, rpResponse.szResponse, false);
+						eJsonRet = LoadFromJson(ptContainedResponse, rpResponse.szResponse, false, sszErrors);
 					}
 					if (JsonSuccess(eJsonRet))
 					{
@@ -511,7 +513,7 @@ export class AbxrLibClient
 				}
 
 				// Did not get success, does failure parse?
-				eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
+				eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false, sszErrors);
 				if (JsonSuccess(eJsonRet))
 				{
 					// Failure parses, probably auth error.
@@ -553,13 +555,14 @@ export class AbxrLibClient
 			var	eReauthResult:		AbxrResult;
 			var	objResponseSuccess:	PostObjectsResponseSuccess = new PostObjectsResponseSuccess();	// e.g. {"status":"all data reset"}
 			var	objResponseFailure:	PostObjectsResponseFailure = new PostObjectsResponseFailure();	// e.g. {"detail":"Invalid Login - Hash"}
+			var sszErrors:			Set<string> = new Set<string>;
 
 			await AbxrLibAnalytics.SetHeadersFromCurrentState(objRequest, Buffer.from(""), false, true);
 			eCurlRet = await objRequest.Delete(AbxrLibAnalytics.FinalUrl(RESTEndpointFromType<T>(tTypeOfT)), vpszQueryParameters, rpResponse);
 			// OUTPUTDEBUGSTRING(szResponse, "\n");
 			if (eCurlRet)
 			{
-				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false);
+				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false, sszErrors);
 				if (JsonSuccess(eJsonRet) && objResponseSuccess.IsValid())
 				{
 					return AbxrResult.eOk;
@@ -567,7 +570,7 @@ export class AbxrLibClient
 				else
 				{
 					// Did not get success, does failure parse?
-					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
+					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false, sszErrors);
 					if (JsonSuccess(eJsonRet) && objResponseFailure.IsValid())
 					{
 						// Failure parses, probably auth error.

@@ -169,9 +169,10 @@ export class AbxrLibInit
 			var	objAuthTokenResponseSuccess:	AuthTokenResponseSuccess = new AuthTokenResponseSuccess();
 			var	objAuthTokenResponseFailure:	AuthTokenResponseFailure = new AuthTokenResponseFailure();
 			var	objAuthTokenDecodedJWT:			AuthTokenDecodedJWT = new AuthTokenDecodedJWT();
+			var sszErrors:						Set<string> = new Set<string>;
 
-			eSuccessParse = LoadFromJson(objAuthTokenResponseSuccess, rpResponse.szResponse, false);
-			eFailureParse = LoadFromJson(objAuthTokenResponseFailure, rpResponse.szResponse, false);
+			eSuccessParse = LoadFromJson(objAuthTokenResponseSuccess, rpResponse.szResponse, false, sszErrors);
+			eFailureParse = LoadFromJson(objAuthTokenResponseFailure, rpResponse.szResponse, false, sszErrors);
 			if (eSuccessParse === JsonResult.eBadJsonStructure || eFailureParse === JsonResult.eBadJsonStructure)
 			{
 				eRet = AbxrResult.eCorruptJson;
@@ -221,7 +222,7 @@ export class AbxrLibInit
 				// --- AbxrLibInit.m_abxrLibAuthentication.m_szApiToken is a JWT token that contains, among other things, an "exp"
 				//		field which is the Unix time of token expiration.
 				szJWT = JWTDecode(AbxrLibInit.m_abxrLibAuthentication.m_szApiToken);
-				eJWTParse = LoadFromJson(objAuthTokenDecodedJWT, szJWT, false);
+				eJWTParse = LoadFromJson(objAuthTokenDecodedJWT, szJWT, false, sszErrors);
 				if (JsonSuccess(eJWTParse) && objAuthTokenDecodedJWT.IsValid())
 				{
 					AbxrLibInit.m_abxrLibAuthentication.m_dtTokenExpiration.FromUnixTime(objAuthTokenDecodedJWT.m_utTokenExpiration);
@@ -698,6 +699,7 @@ export class AbxrLibAnalytics
 	{
 		var	eRet:		AbxrResult = AbxrResult.eOk,
 			eTestRet:	AbxrResult = AbxrResult.eOk;
+		var sszErrors:	Set<string> = new Set<string>;
 
 		// If we have enough new yet-to-be-pushed-to-REST items, then do that and mark as sent.
 		if (AbxrLibStorage.m_abxrLibConfiguration.RESTConfigured())
@@ -755,8 +757,8 @@ export class AbxrLibAnalytics
 							var	objResponseSuccess:	PostObjectsResponseSuccess = new PostObjectsResponseSuccess();
 							var	objResponseFailure:	PostObjectsResponseFailure = new PostObjectsResponseFailure();
 
-							eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false);
-							eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
+							eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false, sszErrors);
+							eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse, false, sszErrors);
 							if (eSuccessParse === JsonResult.eBadJsonStructure || eFailureParse === JsonResult.eBadJsonStructure)
 							{
 								eTestRet = AbxrResult.eCorruptJson;
@@ -858,7 +860,8 @@ export class AbxrLibAnalytics
 	/// <returns>AbxrResult status code.</returns>
 	private static async AddXXXNoDbTask<T extends AbxrBase>(abxrT: T, tTypeOfT: any, pfnPostABXRXXX: (listpT: DbSet<T>, bOneAtATime: boolean, rpResponse: {szResponse: string}) => Promise<AbxrResult>, bOneAtATime: boolean, bNoCallbackOnSuccess: boolean, pfnStatusCallback: ((abxrXXX: T, eResult: AbxrResult, szExceptionMessage: string) => void) | null): Promise<AbxrResult>
 	{
-		var	eRet:	AbxrResult = AbxrResult.eOk;
+		var	eRet:		AbxrResult = AbxrResult.eOk;
+		var sszErrors:	Set<string> = new Set<string>;
 
 		try
 		{
@@ -887,8 +890,8 @@ export class AbxrLibAnalytics
 								var	objResponseFailure: PostObjectsResponseFailure = new PostObjectsResponseFailure();
 								var	eTestRet:			AbxrResult = AbxrResult.eOk;
 
-								eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false);
-								eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse, false);
+								eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false, sszErrors);
+								eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse, false, sszErrors);
 								if (eSuccessParse === JsonResult.eBadJsonStructure || eFailureParse === JsonResult.eBadJsonStructure)
 								{
 									eTestRet = AbxrResult.eCorruptJson;
