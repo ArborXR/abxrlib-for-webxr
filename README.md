@@ -65,12 +65,12 @@ npm install abxrlib-for-webxr
 
 ## Configuration
 
-### Using with ArborXR Insights Early Access
+### Using with ArborXR Insights
 
-To use the ABXRLib SDK with ArborXR Insights Early Access program:
+To use the ABXRLib SDK with ArborXR Insights:
 
-#### Get Early Access Credentials
-1. Go to the ArborXR Insights Early Access web app and log in (will require [official Early Access sign up](https://arborxr.com/insights-early-access) & onboarding process to access).
+#### Get Your Credentials
+1. Go to the ArborXR Insights web app and log in.
 2. Grab these three values from the **View Data** screen of the specific app you are configuring:
 - App ID
 - Organization ID
@@ -80,15 +80,17 @@ To use the ABXRLib SDK with ArborXR Insights Early Access program:
 
 The ABXRLib SDK now provides a simplified initialization API. The `appId` is required, while `orgId` and `authSecret` are optional and can be provided via URL parameters.
 
+> **⚠️ Security Note:** For production builds distributed to third parties, avoid compiling `orgId` and `authSecret` directly into your application code. Instead, use URL parameters or environment variables to provide these credentials at runtime. Only compile credentials directly into the build when creating custom applications for specific individual clients.
+
 ```typescript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
-// Simple initialization with all parameters
-Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
-
-// Or use URL parameters for orgId and authSecret
+// RECOMMENDED: Use URL parameters for production builds
 // URL: https://yourdomain.com/?abxr_orgid=YOUR_ORG_ID&abxr_auth_secret=YOUR_AUTH_SECRET
 Abxr_init('your-app-id');
+
+// DEVELOPMENT ONLY: Direct initialization with all parameters
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
 
 // With custom app configuration
 const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="https://your-server.com/v1/"/></appSettings></configuration>';
@@ -413,9 +415,13 @@ await Abxr.EventAssessmentStart('Quiz', { startTime: Date.now(), difficulty: 'me
 - `Abxr.EventLevelStart/Complete(..., meta?)`
 - `Abxr.LogDebug/Info/Warn/Error/Critical(message, meta?)`
 
-### Event Wrappers (for LMS Compatibility)
+### Analytics Event Wrappers (Essential for All Developers)
 
-The LMS Event Functions are specialized versions of the Event method, tailored for common scenarios in XR experiences. These functions help enforce consistency in event logging across different parts of the application and are crucial for powering integrations with Learning Management System (LMS) platforms. By using these standardized wrapper functions, developers ensure that key events like starting or completing levels, assessments, or interactions are recorded in a uniform format. This consistency not only simplifies data analysis but also facilitates seamless communication with external educational systems, enhancing the overall learning ecosystem.
+**These analytics event functions are essential for ALL developers, not just those integrating with LMS platforms.** They provide standardized tracking for key user interactions and learning outcomes that are crucial for understanding user behavior, measuring engagement, and optimizing XR experiences.
+
+**EventAssessmentStart and EventAssessmentComplete should be considered REQUIRED for proper usage** of the ABXRLib SDK, as they provide critical insights into user performance and completion rates.
+
+The Analytics Event Functions are specialized versions of the Event method, tailored for common scenarios in XR experiences. These functions help enforce consistency in event logging across different parts of the application and provide valuable data for analytics, user experience optimization, and business intelligence. While they also power integrations with Learning Management System (LMS) platforms, their benefits extend far beyond educational use cases.
 
 #### Assessments
 Assessments are intended to track the overall performance of a learner across multiple Objectives and Interactions. 
