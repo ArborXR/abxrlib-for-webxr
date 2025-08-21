@@ -252,6 +252,27 @@ async function TestEmptyDictMeta()
 	console.log(GenerateJson(abxrEvent, DumpCategory.eDumpingJsonForBackend), "\n");
 }
 
+function TestEscapingAndUnescaping()
+{
+	var dictStrings:	AbxrDictStrings = new AbxrDictStrings();
+	var dictStrings2:	AbxrDictStrings = new AbxrDictStrings();
+	var lszStrings:		StringList = new StringList();
+	var lszStrings2:	StringList = new StringList();
+	var szStringRep:	string = "";
+
+	dictStrings.Add("Utterly", "Prosaic");
+	dictStrings.Add("This has an embedded \"quote\" in it", "Embedded equals = problems if not \"handled\" correctly, not to mention commas and \\backslashes.");
+	szStringRep = dictStrings.ToString();
+	dictStrings2.FromCommaSeparatedList(szStringRep);
+	// ---
+	lszStrings.push("George");
+	lszStrings.push("Watch out for that \"tree\", Fella and Ursula stay in step.");
+	lszStrings.push("Ape call = doodleyabba.");
+	szStringRep = lszStrings.ToString();
+	lszStrings2.FromCommaSeparatedList(szStringRep);
+	szStringRep = "Debug trace placeholder";
+}
+
 async function TestJson(): Promise<void>
 {
 	var objTestData:	TestData = new TestData();
@@ -268,6 +289,7 @@ async function TestJson(): Promise<void>
 	try
 	{
 		// TestEmptyDictMeta();
+		// TestEscapingAndUnescaping();
 		// Sequential.
 		// await PrintStuffEveryThirdOfASecond();
 		// await PrintStuffEveryHalfOfASecond();

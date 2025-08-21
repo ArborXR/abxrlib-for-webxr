@@ -4,6 +4,7 @@
 ///		Co-maintained with the one in AbxrInterop.cs.
 
 import { atol, DATEMAXVALUE, DATEMINVALUE, Regex } from "../types";
+import { escapeForSerialization } from "./StringUtils";
 
 /// <summary>
 /// Main return code for library operations.
@@ -738,9 +739,9 @@ export class AbxrDictStrings extends Dictionary<string, string>
 			{
 				szRet += ',';
 			}
-			szRet += entry[0].escapeForSerialization();
+			szRet += escapeForSerialization(entry[0]);
 			szRet += '=';
-			szRet += entry[1].escapeForSerialization();
+			szRet += escapeForSerialization(entry[1]);
 		}
 		// ---
 		return szRet;
@@ -822,7 +823,7 @@ export class StringList extends Array<string>
 			{
 				szRet += ',';
 			}
-			szRet += sz.escapeForSerialization();
+			szRet += escapeForSerialization(sz);
 		}
 		// ---
 		return szRet;

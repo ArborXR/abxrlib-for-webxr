@@ -13,10 +13,10 @@ export function escapeForSerialization(str: string): string {
                 sOut.push('\\\"');
                 break;
             case ',':
-                sOut.push(',');
+                sOut.push('\\,');
                 break;
             case '=':
-                sOut.push('=');
+                sOut.push('\\=');
                 break;
             default:
                 sOut.push(c);
