@@ -749,24 +749,6 @@ export class AbxrDictStrings extends Dictionary<string, string>
 	private CommaSeparatedStringToDictionary(szDict: string): void
 	{
 		szDict.unescapeAndDeserializeKeyValue((key: string, value: string) => super.Add(key, value))
-		// var	vsz:		Array<string> = new Array<string>;
-		// var	szKey:		string = "",
-		// 	szValue:	string = "";
-
-		// this.clear();
-		// vsz = szDict.split(',');
-		// for (let sz of vsz.values())
-		// {
-		// 	var	vszEquals: Array<string> = new Array<string>;
-
-		// 	vszEquals = sz.split('=');
-		// 	if (vszEquals.length >= 1)
-		// 	{
-		// 		szKey = vszEquals[0].trim();
-		// 		szValue = (vszEquals.length >= 2) ? vszEquals[1].trim() : "";
-		// 		super.Add(szKey, szValue);
-		// 	}
-		// }
 	}
 	private JsonFieldValueToDictionary(szJsonFieldValue: string): void
 	{
@@ -849,19 +831,6 @@ export class StringList extends Array<string>
 	private CommaSeparatedStringToStringList(szStringList: string): void
 	{
 		szStringList.unescapeAndDeserialize((value: string) => this.push(value))
-		// var	vsz: Array<string>;
-
-		// // No doubt better way to do this.
-		// while (this.length > 0)
-		// {
-		// 	this.pop();
-		// }
-		// vsz = szStringList.split(',');
-		// // Probably better way to do this as well, something similar to this.push(vsz.values()) which is unkosher apparently.
-		// for (let sz of vsz.values())
-		// {
-		// 	this.push(sz);
-		// }
 	}
 };
 
