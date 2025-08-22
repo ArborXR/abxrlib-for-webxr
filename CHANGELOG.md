@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.32] - 2025-08-22
+
+### 🐛 Bug Fixes
+
+- AbxrLibForWebXR, KOTLIN_BACKPORTS:  Tested, fixed escaping. ([e8fffff](../../commit/e8fffffd5d79d25cab9e2315da04c3caf7fc9b92))
+
+### ♻️ Refactoring
+
+- files updated to typescript 5 ([de52204](../../commit/de5220437ee90df4f190037940201e2694a52fe2))
+
+### 🔨 Other Changes
+
+- Merge branch 'ts5' ([13418ab](../../commit/13418abc3b59f197022a14aa9e54fa424e9e9440))
+- removed ([26208ab](../../commit/26208ab629c44e0d9cdad5b79ad78356d3764696))
+- Merge branch 'KOTLIN_BACKPORTS' ([9e63c2a](../../commit/9e63c2a34c5062b5cf0674cfcba1505d15514b0d))
+- Squashed commit of the following: ([22e34db](../../commit/22e34dbf77c6cc9d85f13c8670c48dddf02600b8))
+- AbxrLibForWebXR, KOTLIN_BACKPORTS:  Bloody bastard. ([c6cd904](../../commit/c6cd9043c5c4742ed0cc5741c20950c1590d109b))
+- AbxrLibForWebXR, KOTLIN_BACKPORTS: <-- Specifically, DataObjectBase.m_dictOutOfBandData and its use (converted LoadFromJson()s to don't trust the backend).  String escaping/unescaping on StringList and AbxrDictStrings. ([5b5ed7f](../../commit/5b5ed7f87a2bb8a174144f4f7ed244ca2c53b167))
+- AbxrLibForWebXR, KOTLIN_BACKPORTS:  First of the 'do not trust the backend' code.  Initial push to see if creds on github are sorted out. ([4570393](../../commit/4570393b16836c5f6d1fab8d52c03b06b6d5cadc))
+
 ## [1.0.31] - 2025-08-22
 
 ### 🔨 Other Changes
