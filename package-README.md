@@ -301,6 +301,42 @@ Abxr.AIProxy(prompt, pastMessages = "", botId = "")
 Abxr.AIProxy('Provide me a randomized greeting that includes common small talk and ends by asking some form of how can I help');
 ```
 
+## Authentication Completion Callback
+
+Get notified when authentication completes successfully:
+
+```javascript
+// Subscribe to authentication completion events
+Abxr.onAuthCompleted(function(data) {
+    console.log('Authentication completed!', data.success);
+    
+    if (data.success) {
+        if (data.isReauthentication) {
+            console.log('Welcome back!');
+        } else {
+            console.log('Welcome! Setting up your experience...');
+            initializeUserInterface();
+        }
+    }
+});
+
+// Initialize ABXRLib - the callback will fire when auth completes
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
+```
+
+### Authentication Completion Data
+
+```javascript
+interface AuthCompletedData {
+    success: boolean;                    // Whether authentication was successful
+    userData?: any;                      // Additional user data from authentication response
+    userId?: any;                        // User identifier
+    userEmail?: string | null;           // User email address
+    moduleTarget?: string | null;        // Target module from LMS (if applicable)
+    isReauthentication?: boolean;        // Whether this was a reauthentication
+}
+```
+
 ## Module Target Callback (LMS Multi-Module Support)
 
 The **Module Target** feature enables single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application automatically directs the user to that module.
@@ -549,6 +585,12 @@ Abxr.AIProxy('Provide a greeting message', '', 'default');
 - `Abxr.getDebugMode()` - Get current debug mode
 - `Abxr.isConfigured()` - Check if library is authenticated
 - `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
+
+### Authentication Methods
+
+- `Abxr.onAuthCompleted(callback)` - Subscribe to authentication completion notifications
+- `Abxr.removeAuthCompletedCallback(callback)` - Remove an authentication completion callback
+- `Abxr.clearAuthCompletedCallbacks()` - Remove all authentication completion callbacks
 
 ### Module Target Methods
 

@@ -674,6 +674,201 @@ Abxr.EventCritical(label, meta = null)
 
 ---
 
+## Authentication Completion Callback
+
+The **Authentication Completion** callback feature enables developers to get notified when authentication completes successfully. This is particularly useful for initializing UI components, starting background services, or showing welcome messages after the user has been authenticated.
+
+### Why Use onAuthCompleted?
+
+- **Post-Auth Initialization**: Perfect for initializing components that require authentication
+- **User Experience**: Show welcome messages, load user-specific content, or redirect users
+- **Reauthentication Handling**: Distinguish between initial authentication and reauthentication events
+- **Rich Data Access**: Get user information, authentication response data, and more
+- **Reliable Timing**: Callback fires exactly when authentication completes, not before or after
+
+### Setting Up Authentication Completion Callback
+
+```javascript
+// Subscribe to authentication completion events
+Abxr.onAuthCompleted(function(data) {
+    console.log('Authentication completed!', data.success);
+    console.log('User ID:', data.userId);
+    console.log('User Email:', data.userEmail);
+    console.log('Module Target:', data.moduleTarget);
+    console.log('Is Reauthentication:', data.isReauthentication);
+    
+    if (data.success) {
+        // Authentication was successful
+        if (data.isReauthentication) {
+            // User reauthenticated - maybe just refresh data
+            console.log('Welcome back!');
+            refreshUserData();
+        } else {
+            // Initial authentication - full setup
+            console.log('Welcome! Setting up your experience...');
+            initializeUserInterface();
+            loadUserPreferences();
+        }
+        
+        // Access additional user data if available
+        if (data.userData) {
+            console.log('User data:', data.userData);
+            populateUserProfile(data.userData);
+        }
+    }
+});
+
+// Initialize ABXRLib - the callback will fire when auth completes
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
+```
+
+### Authentication Completion Data Structure
+
+The callback receives an `AuthCompletedData` object with the following properties:
+
+```javascript
+interface AuthCompletedData {
+    success: boolean;                    // Whether authentication was successful
+    userData?: any;                      // Additional user data from authentication response
+    userId?: any;                        // User identifier
+    userEmail?: string | null;           // User email address
+    moduleTarget?: string | null;        // Target module from LMS (if applicable)
+    isReauthentication?: boolean;        // Whether this was a reauthentication (vs initial auth)
+}
+```
+
+### Advanced Usage Examples
+
+#### Welcome Screen Implementation
+```javascript
+let welcomeShown = false;
+
+Abxr.onAuthCompleted(function(data) {
+    if (data.success && !data.isReauthentication && !welcomeShown) {
+        // Show welcome screen only on initial authentication
+        showWelcomeScreen(data.userId, data.userEmail);
+        welcomeShown = true;
+    }
+});
+
+function showWelcomeScreen(userId, userEmail) {
+    const welcomeDiv = document.getElementById('welcome');
+    welcomeDiv.innerHTML = `
+        <h2>Welcome${userEmail ? ', ' + userEmail : ''}!</h2>
+        <p>Your session is ready. User ID: ${userId}</p>
+    `;
+    welcomeDiv.style.display = 'block';
+}
+```
+
+#### Service Initialization
+```javascript
+let servicesInitialized = false;
+
+Abxr.onAuthCompleted(function(data) {
+    if (data.success && !servicesInitialized) {
+        // Initialize services that require authentication
+        startBackgroundServices();
+        connectWebSocket();
+        loadUserProgress();
+        servicesInitialized = true;
+        
+        console.log('All services initialized for user:', data.userId);
+    }
+});
+
+function startBackgroundServices() {
+    // Your service initialization code
+    console.log('Starting background services...');
+}
+```
+
+#### Reauthentication Handling
+```javascript
+Abxr.onAuthCompleted(function(data) {
+    if (data.success) {
+        if (data.isReauthentication) {
+            // User session was refreshed
+            console.log('Session refreshed successfully');
+            showToast('Session refreshed');
+            
+            // Maybe just update user data without full reload
+            updateUserData(data);
+        } else {
+            // Fresh authentication
+            console.log('New authentication successful');
+            initializeApplication(data);
+        }
+    }
+});
+```
+
+### Callback Management
+
+```javascript
+// Store callback reference for later removal
+const authCallback = function(data) {
+    console.log('Authentication completed:', data.success);
+    if (data.success) {
+        initializeApp();
+    }
+};
+
+// Subscribe to authentication completion
+Abxr.onAuthCompleted(authCallback);
+
+// Remove callback when no longer needed (e.g., component unmount)
+Abxr.removeAuthCompletedCallback(authCallback);
+
+// Or clear all authentication callbacks
+Abxr.clearAuthCompletedCallbacks();
+```
+
+### Integration with Module Target
+
+The `onAuthCompleted` callback works seamlessly with Module Target functionality:
+
+```javascript
+// Set up both callbacks for complete control
+Abxr.onAuthCompleted(function(authData) {
+    console.log('Authentication completed');
+    
+    if (authData.success) {
+        // Enable UI now that user is authenticated
+        enableUserInterface();
+        
+        // Module target info is also available here
+        if (authData.moduleTarget) {
+            console.log('User should go to module:', authData.moduleTarget);
+        }
+    }
+});
+
+// This fires after authentication when moduleTarget has a value
+Abxr.onModuleTargetAvailable(function(moduleData) {
+    // This is module-specific navigation
+    navigateToModule(moduleData.moduleTarget);
+});
+```
+
+### Best Practices
+
+1. **Set up callback early**: Subscribe to `onAuthCompleted` before calling `Abxr_init()`
+2. **Handle both states**: Check `data.success` and handle both success and failure scenarios
+3. **Distinguish auth types**: Use `data.isReauthentication` to provide different UX for returning users
+4. **Error handling**: Wrap callback logic in try-catch blocks to prevent breaking other callbacks
+5. **Memory management**: Remove callbacks when components are destroyed to prevent memory leaks
+6. **User experience**: Show loading indicators until authentication completes
+
+### Timing and Behavior
+
+- **Immediate notification**: If authentication has already completed when you subscribe, the callback fires immediately
+- **Single authentication**: Callback fires once per authentication cycle
+- **Reauthentication support**: Future reauthentication events will fire the callback again with `isReauthentication: true`
+- **Error safe**: If one callback throws an error, other callbacks still execute
+
+---
+
 ## Module Target Callback (LMS Multi-Module Support)
 
 The **Module Target** feature enables developers to create single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application can automatically direct the user to that module within the application. Individual grades and results are then tracked for that specific assignment in the LMS.
@@ -1119,6 +1314,12 @@ Abxr.Event('legacy_event', meta);
 - `Abxr.getDebugMode()` - Get current debug mode
 - `Abxr.isConfigured()` - Check if library is authenticated
 - `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
+
+### Authentication Methods
+
+- `Abxr.onAuthCompleted(callback)` - Subscribe to authentication completion notifications
+- `Abxr.removeAuthCompletedCallback(callback)` - Remove an authentication completion callback
+- `Abxr.clearAuthCompletedCallbacks()` - Remove all authentication completion callbacks
 
 ### Module Target Methods
 

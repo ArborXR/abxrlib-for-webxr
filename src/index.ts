@@ -388,6 +388,18 @@ export interface ModuleTargetData {
 
 export type ModuleTargetCallback = (data: ModuleTargetData) => void;
 
+// Types for authentication completion notification
+export interface AuthCompletedData {
+    success: boolean;
+    userData?: any;
+    userId?: any;
+    userEmail?: string | null;
+    moduleTarget?: string | null;
+    isReauthentication?: boolean;
+}
+
+export type AuthCompletedCallback = (data: AuthCompletedData) => void;
+
 // Configuration options for built-in browser dialog
 export interface AuthMechanismDialogOptions {
     enabled?: boolean;           // Enable built-in dialog (default: true for browser environments)
@@ -427,6 +439,7 @@ export class Abxr {
     };
     private static currentAuthData: AuthMechanismData | null = null;
     private static moduleTargetCallbacks: ModuleTargetCallback[] = [];
+    private static authCompletedCallbacks: AuthCompletedCallback[] = [];
     
     // Expose commonly used types and enums for easy access
     static readonly EventStatus = EventStatus;
@@ -665,8 +678,13 @@ export class Abxr {
     }
     
     // Internal configuration method
-    static setAuthenticated(authenticated: boolean): void {
+    static setAuthenticated(authenticated: boolean, isReauthentication: boolean = false): void {
         this.isAuthenticated = authenticated;
+        
+        // Notify auth completion subscribers when authentication succeeds
+        if (authenticated) {
+            this.notifyAuthCompletedCallbacks(isReauthentication);
+        }
         
         // Only notify moduleTarget subscribers if there's actually a moduleTarget value
         if (authenticated && this.hasValidModuleTarget()) {
@@ -773,6 +791,66 @@ export class Abxr {
         this.moduleTargetCallbacks = [];
     }
     
+    // AuthCompleted subscription methods
+    /**
+     * Subscribe to authentication completion events
+     * @param callback Function to call when authentication completes successfully
+     * 
+     * @example
+     * // Basic usage
+     * Abxr.onAuthCompleted((data) => {
+     *     console.log('Authentication completed!', data);
+     *     console.log('User ID:', data.userId);
+     *     console.log('User Email:', data.userEmail);
+     *     console.log('Module Target:', data.moduleTarget);
+     * });
+     * 
+     * // Check if it's a reauthentication
+     * Abxr.onAuthCompleted((data) => {
+     *     if (data.isReauthentication) {
+     *         console.log('User reauthenticated successfully');
+     *     } else {
+     *         console.log('Initial authentication completed');
+     *     }
+     * });
+     */
+    static onAuthCompleted(callback: AuthCompletedCallback): void {
+        if (typeof callback !== 'function') {
+            console.warn('AbxrLib: AuthCompleted callback must be a function');
+            return;
+        }
+        
+        this.authCompletedCallbacks.push(callback);
+        
+        // If already authenticated, notify immediately
+        if (this.isAuthenticated) {
+            const authData = this.getAuthCompletedData();
+            try {
+                callback(authData);
+            } catch (error) {
+                console.error('AbxrLib: Error in authCompleted callback:', error);
+            }
+        }
+    }
+    
+    /**
+     * Remove a specific authentication completion callback
+     * @param callback The callback function to remove
+     */
+    static removeAuthCompletedCallback(callback: AuthCompletedCallback): void {
+        const index = this.authCompletedCallbacks.indexOf(callback);
+        if (index > -1) {
+            this.authCompletedCallbacks.splice(index, 1);
+        }
+    }
+    
+    /**
+     * Clear all authentication completion callbacks
+     */
+    static clearAuthCompletedCallbacks(): void {
+        this.authCompletedCallbacks = [];
+    }
+    
     // Helper method to check if moduleTarget has a valid value
     private static hasValidModuleTarget(): boolean {
         const authData = AbxrLibClient.getAuthResponseData();
@@ -788,6 +866,19 @@ export class Abxr {
             userId: authData ? authData.userId : null,
             userEmail: authData ? authData.userEmail : null,
             isAuthenticated: this.isAuthenticated
+        };
+    }
+    
+    // Helper method to get auth completion data
+    private static getAuthCompletedData(isReauthentication: boolean = false): AuthCompletedData {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return {
+            success: this.isAuthenticated,
+            userData: authData ? authData.userData : null,
+            userId: authData ? authData.userId : null,
+            userEmail: authData ? authData.userEmail : null,
+            moduleTarget: authData ? authData.moduleTarget : null,
+            isReauthentication
         };
     }
     
@@ -809,6 +900,23 @@ export class Abxr {
                 callback(moduleTargetData);
             } catch (error) {
                 console.error('AbxrLib: Error in moduleTarget callback:', error);
+            }
+        }
+    }
+    
+    // Internal method to notify all auth completion subscribers
+    private static notifyAuthCompletedCallbacks(isReauthentication: boolean = false): void {
+        if (this.authCompletedCallbacks.length === 0) {
+            return;
+        }
+        
+        const authData = this.getAuthCompletedData(isReauthentication);
+        
+        for (const callback of this.authCompletedCallbacks) {
+            try {
+                callback(authData);
+            } catch (error) {
+                console.error('AbxrLib: Error in authCompleted callback:', error);
             }
         }
     }
@@ -1243,7 +1351,7 @@ export class Abxr {
                                         const result = await AbxrLibInit.FinalAuthenticate();
                             if (result === 0) {
                                 console.log('AbxrLib: Final authentication successful - library ready');
-                                this.setAuthenticated(true);
+                                this.setAuthenticated(true, false);
                                 this.setRequiresFinalAuth(false);
                                 return true;
                             } else {
@@ -1434,7 +1542,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                             }
                         } else {
                             console.log('AbxrLib: Authentication complete - library ready');
-                            Abxr.setAuthenticated(true);
+                            Abxr.setAuthenticated(true, false);
                         }
                     } else {
                         // Try to get detailed error message from AbxrLibClient
