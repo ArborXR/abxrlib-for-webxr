@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.30] - 2025-08-22
+
+### 🔨 Other Changes
+
+- Upgraded deprecated packages and moved os detection into diff utils folder ([a86e93a](../../commit/a86e93a8a1e49719dc09e2f671560853c9a4a4aa))
+- removed unneeded doc text ([ef06f82](../../commit/ef06f826c33a4cef840fea2174a18ea0b49646b9))
+
 ## [1.0.29] - 2025-08-22
 
 ### 🔨 Other Changes
