@@ -126,6 +126,15 @@ The SDK automatically handles device ID generation and persistence:
 - **Browser environments**: Device ID is stored in localStorage and persists across sessions
 - **Non-browser environments**: A new GUID is generated for each initialization
 
+#### Content Security Policy (CSP) Compliance
+
+The SDK is designed to be CSP-compliant out of the box:
+- **No external IP detection**: IP address detection is disabled by default to prevent CSP violations
+- **Safe device detection**: Only uses browser-native APIs for OS and browser detection
+- **No external service calls**: All functionality works without external API dependencies
+
+The library will always report IP address as "NA" to avoid CSP policy violations from external IP detection services. This does not affect any core functionality.
+
 #### Two-Step Authentication (authMechanism)
 
 The SDK supports two-step authentication when the backend requires additional credentials (like a PIN or email). There are multiple approaches to handle this:

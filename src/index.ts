@@ -1604,7 +1604,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
             
             // Detect and set device information before authentication
             console.log('AbxrLib: Detecting device information...');
-            AbxrDetectAllDeviceInfo()
+            AbxrDetectAllDeviceInfo(false) // IP detection disabled to prevent CSP violations
                 .then((deviceInfo) => {
                     console.log(`AbxrLib: Device detection complete - OS: ${deviceInfo.osVersion}, Browser: ${deviceInfo.deviceModel}, IP: ${deviceInfo.ipAddress}`);
                     

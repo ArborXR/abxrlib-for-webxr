@@ -136,12 +136,22 @@ export function AbxrDetectDeviceModel(): string {
 
 /**
  * Attempts to get the client's IP address
- * Note: Due to browser security restrictions, this may not always be possible
+ * Note: IP detection is disabled by default to avoid CSP violations.
+ * External IP detection services violate Content Security Policy in most deployments.
+ * @param enableExternalDetection If true, attempts external IP detection (may cause CSP violations)
  * @returns Promise that resolves to IP address string or 'NA'
  */
-export async function AbxrDetectIpAddress(): Promise<string> {
+export async function AbxrDetectIpAddress(enableExternalDetection: boolean = false): Promise<string> {
+    if (!enableExternalDetection) {
+        // IP address detection is disabled by default to prevent CSP violations
+        // External services like api.ipify.org, ipapi.co, and httpbin.org
+        // are blocked by most CSP policies and cause console errors
+        return 'NA';
+    }
+
     try {
         // Try multiple IP detection services as fallbacks
+        // WARNING: These may violate CSP policies and cause console errors
         const services = [
             'https://api.ipify.org?format=json',
             'https://ipapi.co/json/',
@@ -180,25 +190,25 @@ export async function AbxrDetectIpAddress(): Promise<string> {
         
         return 'NA';
     } catch (error) {
-        console.warn('AbxrLib: Could not detect IP address:', error);
+        // Don't log warning to avoid cluttering console when CSP blocks requests
         return 'NA';
     }
 }
 
 /**
  * Detects all device information at once
+ * @param enableIpDetection If true, attempts external IP detection (may cause CSP violations)
  * @returns Promise that resolves to an object with osVersion, deviceModel, and ipAddress
  */
-export async function AbxrDetectAllDeviceInfo(): Promise<{
+export async function AbxrDetectAllDeviceInfo(enableIpDetection: boolean = false): Promise<{
     osVersion: string;
     deviceModel: string;
     ipAddress: string;
 }> {
-    const [osVersion, deviceModel, ipAddress] = await Promise.all([
-        Promise.resolve(AbxrDetectOsVersion()),
-        Promise.resolve(AbxrDetectDeviceModel()),
-        AbxrDetectIpAddress()
-    ]);
+    // Synchronous detection for OS and browser, IP detection configurable
+    const osVersion = AbxrDetectOsVersion();
+    const deviceModel = AbxrDetectDeviceModel();
+    const ipAddress = await AbxrDetectIpAddress(enableIpDetection);
     
     return {
         osVersion,
