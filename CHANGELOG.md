@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.29] - 2025-08-22
+
+### 🔨 Other Changes
+
+- reduced CSP erros ([8674972](../../commit/86749722a5c0677d5a55c852c109ea47d8bb014a))
+
 ## [1.0.28] - 2025-08-22
 
 ### ✨ Features
