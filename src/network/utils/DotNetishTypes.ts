@@ -4,6 +4,7 @@
 ///		Co-maintained with the one in AbxrInterop.cs.
 
 import { atol, DATEMAXVALUE, DATEMINVALUE, Regex } from "../types";
+import { escapeForSerialization } from "./StringUtils";
 
 /// <summary>
 /// Main return code for library operations.
@@ -173,6 +174,7 @@ export function EventStatusToString(eRet: EventStatus): string
 export enum JsonResult
 {
 	eOk,
+	eOutOfBandDataFound,
 	eBadJsonStructure,
 	eMissingField,
 	eExtraneousField,
@@ -203,7 +205,7 @@ export enum JsonResult
 
 export function JsonSuccess(eRet: JsonResult): boolean
 {
-	return (eRet === JsonResult.eOk);
+	return (eRet === JsonResult.eOk || eRet === JsonResult.eOutOfBandDataFound);
 }
 
 export function JsonResultToString(eRet: JsonResult): string
@@ -727,27 +729,27 @@ export class AbxrDictStrings extends Dictionary<string, string>
 		// ---
 		return this;
 	}
+	public override ToString(): string
+	{
+		var	szRet : string = "";
+
+		for (let entry of this.entries())
+		{
+			if (szRet.length > 0)
+			{
+				szRet += ',';
+			}
+			szRet += escapeForSerialization(entry[0]);
+			szRet += '=';
+			szRet += escapeForSerialization(entry[1]);
+		}
+		// ---
+		return szRet;
+	}
 	// ---
 	private CommaSeparatedStringToDictionary(szDict: string): void
 	{
-		var	vsz:		Array<string> = new Array<string>;
-		var	szKey:		string = "",
-			szValue:	string = "";
-
-		this.clear();
-		vsz = szDict.split(',');
-		for (let sz of vsz.values())
-		{
-			var	vszEquals: Array<string> = new Array<string>;
-
-			vszEquals = sz.split('=');
-			if (vszEquals.length >= 1)
-			{
-				szKey = vszEquals[0].trim();
-				szValue = (vszEquals.length >= 2) ? vszEquals[1].trim() : "";
-				super.Add(szKey, szValue);
-			}
-		}
+		szDict.unescapeAndDeserializeKeyValue((key: string, value: string) => super.Add(key, value))
 	}
 	private JsonFieldValueToDictionary(szJsonFieldValue: string): void
 	{
@@ -815,13 +817,13 @@ export class StringList extends Array<string>
 	{
 		var	szRet: string = "";
 
-		for (let sz of this.entries())
+		for (let [n, sz] of this.entries())
 		{
 			if (szRet.length > 0)
 			{
 				szRet += ',';
 			}
-			szRet += sz;
+			szRet += escapeForSerialization(sz);
 		}
 		// ---
 		return szRet;
@@ -829,19 +831,7 @@ export class StringList extends Array<string>
 	// ---
 	private CommaSeparatedStringToStringList(szStringList: string): void
 	{
-		var	vsz: Array<string>;
-
-		// No doubt better way to do this.
-		while (this.length > 0)
-		{
-			this.pop();
-		}
-		vsz = szStringList.split(',');
-		// Probably better way to do this as well, something similar to this.push(vsz.values()) which is unkosher apparently.
-		for (let sz of vsz.values())
-		{
-			this.push(sz);
-		}
+		szStringList.unescapeAndDeserialize((value: string) => this.push(value))
 	}
 };
 
