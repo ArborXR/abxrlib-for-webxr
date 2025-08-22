@@ -154,6 +154,8 @@ export class AbxrLibInit
 		objAuthTokenRequest.m_szXrdmVersion = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szXrdmVersion;
 		objAuthTokenRequest.m_szAppVersion = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szAppVersion;
 		objAuthTokenRequest.m_szUnityVersion = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szUnityVersion;
+		objAuthTokenRequest.m_abxrLibType = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_abxrLibType;
+		objAuthTokenRequest.m_abxrLibVersion = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_abxrLibVersion;
 		objAuthTokenRequest.m_szDeviceModel = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szDeviceModel;
 		objAuthTokenRequest.m_szUserId = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szUserId;
 		objAuthTokenRequest.m_lszTags = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_lszTags;
@@ -348,6 +350,12 @@ export class AbxrLibInit
 	// ---
 	public static get_UnityVersion(): string { return AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szUnityVersion; }
 	public static set_UnityVersion(szUnityVersion: string): void { AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szUnityVersion = szUnityVersion; }
+	// ---
+	public static get_LibType(): string { return AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_abxrLibType; }
+	public static set_LibType(szLibType: string): void { AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_abxrLibType = szLibType; }
+	// ---
+	public static get_LibVersion(): string { return AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_abxrLibVersion; }
+	public static set_LibVersion(szLibVersion: string): void { AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_abxrLibVersion = szLibVersion; }
 	// ---
 	public static get_DeviceModel(): string { return AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szDeviceModel; }
 	public static set_DeviceModel(szDeviceModel: string) { AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szDeviceModel = szDeviceModel; }

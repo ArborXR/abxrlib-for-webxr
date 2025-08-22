@@ -11,6 +11,8 @@ import { Partner } from "./AbxrLibClient";
 import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig, XRVirtualKeyboard } from './templates/XRAuthDialog';
 // Import device detection utilities
 import { AbxrDetectAllDeviceInfo, AbxrDetectOsVersion, AbxrDetectDeviceModel, AbxrDetectIpAddress } from './utils/AbxrDeviceDetection';
+// Import package.json for version
+import * as packageJson from '../package.json';
 
 
 // Initialize all static members
@@ -1355,6 +1357,9 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                     AbxrLibInit.set_OsVersion(deviceInfo.osVersion);
                     AbxrLibInit.set_DeviceModel(deviceInfo.deviceModel);
                     AbxrLibInit.set_IpAddress(deviceInfo.ipAddress);
+                    // Set library type and version
+                    AbxrLibInit.set_LibType('webxr');
+                    AbxrLibInit.set_LibVersion(packageJson.version);
                     
                     // Now attempt initial authentication with device info set
                     return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
@@ -1365,6 +1370,9 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                     AbxrLibInit.set_OsVersion('Unknown OS');
                     AbxrLibInit.set_DeviceModel('Unknown Browser');
                     AbxrLibInit.set_IpAddress('NA');
+                    // Set library type and version even when device detection fails
+                    AbxrLibInit.set_LibType('webxr');
+                    AbxrLibInit.set_LibVersion(packageJson.version);
                     
                     // Still attempt authentication even if device detection failed
                     return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);

@@ -68,6 +68,8 @@ export class AuthTokenRequest extends DataObjectBase
 	m_szXrdmVersion:		string = "";
 	m_szAppVersion:			string = "";
 	m_szUnityVersion:		string = "";
+	m_abxrLibType:			string = "";
+	m_abxrLibVersion:		string = "";
 	m_szDeviceModel:		string = "";
 	m_szUserId:				string = "";
 	m_lszTags:				StringList;
