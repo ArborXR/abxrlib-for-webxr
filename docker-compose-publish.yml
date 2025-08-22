@@ -9,6 +9,8 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      - NEXT_VERSION=${NEXT_VERSION}
     command: ["--publish"]
     volumes:
       # Mount temp directory for version exchange (optional, fallback method)

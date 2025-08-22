@@ -55,7 +55,7 @@ echo "🐳 Running Docker build and publish..."
 docker-compose down 2>/dev/null || true
 
 # Run the publish with volume mount to get the version back
-docker-compose -f docker-compose-publish.yml up --build
+NEXT_VERSION=$NEXT_VERSION docker-compose -f docker-compose-publish.yml up --build
 
 # Check if Docker publish was successful by looking for the version file
 PUBLISHED_VERSION=""
