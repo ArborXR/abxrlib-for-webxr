@@ -33,6 +33,7 @@ function generateGuid(): string {
 function getPackageVersion(): string {
     try {
         // Use dynamic require to avoid TypeScript import issues
+        // Webpack will replace this with actual package.json content at build time
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const pkg = eval('require("../package.json")');
         return pkg.version || '1.0.0';

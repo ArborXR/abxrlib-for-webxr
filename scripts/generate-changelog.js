@@ -230,7 +230,7 @@ class ChangelogGenerator {
     console.log(`Updating changelog for version ${version}...`);
     
     const tags = this.getTags();
-    const currentDate = new Date().toISOString().split('T')[0);
+    const currentDate = new Date().toISOString().split('T')[0];
     
     // Find the previous tag
     const versionTag = `v${version}`;

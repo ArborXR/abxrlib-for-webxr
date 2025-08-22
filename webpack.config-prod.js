@@ -54,5 +54,9 @@ module.exports = {
 		new webpack.ProvidePlugin({
 			process: 'process/browser',
 		}),
+		// Replace the package version dynamically
+		new webpack.DefinePlugin({
+			'eval(\'require("../package.json")\')': JSON.stringify(require('./package.json')),
+		}),
 	],
 };
