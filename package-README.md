@@ -163,16 +163,6 @@ Abxr.Event('test_event');
 Abxr.LogDebug('test message');
 ```
 
-### CSP Compliance
-
-The library is designed to be Content Security Policy (CSP) compliant:
-
-- **No external IP detection**: IP address detection is disabled by default to prevent CSP violations
-- **Safe device detection**: Only uses browser-native APIs for OS and browser detection  
-- **No external service calls**: Core functionality works without external API dependencies
-
-The library reports IP address as "NA" to avoid CSP violations. This doesn't affect functionality.
-
 ### Configuration Methods
 
 - `Abxr.setDebugMode(enabled)` - Enable/disable debug logging
