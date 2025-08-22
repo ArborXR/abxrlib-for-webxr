@@ -2,23 +2,12 @@
 /// All the partners of which we are aware (for authentication purposes).
 ///		Comaintain with AbxrAnalytics.cs.
 
+import { Buffer } from 'buffer';
 import { AbxrLibAnalytics, AbxrLibInit } from "./AbxrLibAnalytics";
 import { AbxrAIProxy, AbxrBase, AbxrEvent, AbxrLibConfiguration, AbxrLog, AbxrStorage, AbxrTelemetry, AbxrXXXContainer, RESTEndpointFromType } from "./AbxrLibCoreModel";
 import { CurlHttp, EnsureSingleEndingCharacter, JsonScalarArrayElement, SUID, time_t } from "./network/types";
 import { DataObjectBase, DbSet, DumpCategory, FieldProperties, FieldPropertiesRecordContainer, FieldPropertyFlags, GenerateJson, GenerateJsonAlternate, GenerateJsonList, LoadFromJson } from "./network/utils/DataObjectBase";
 import { AbxrResult, JsonResult, AbxrDictStrings, StringList } from "./network/utils/DotNetishTypes";
-
-// Buffer type definition for browser environments
-declare global {
-    interface Buffer extends Uint8Array {
-        toString(encoding?: string): string;
-        from(data: string | ArrayBuffer | ArrayBufferView, encoding?: string): Buffer;
-    }
-    var Buffer: {
-        new(data: string | ArrayBuffer | ArrayBufferView): Buffer;
-        from(data: string | ArrayBuffer | ArrayBufferView, encoding?: string): Buffer;
-    };
-}
 
 /// </summary>
 export enum Partner
