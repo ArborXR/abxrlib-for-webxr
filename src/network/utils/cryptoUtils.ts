@@ -4,7 +4,7 @@ export async function sha256(message: string): Promise<string>
 	{
 		// Browser environment.
 		const msgBuffer:	Uint8Array = new TextEncoder().encode(message);
-		const hashBuffer:	ArrayBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer);
+		const hashBuffer:	ArrayBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer as BufferSource);
 		const hashArray:	number[] = Array.from(new Uint8Array(hashBuffer));
 
 		return btoa(String.fromCharCode.apply(null, hashArray));
@@ -28,7 +28,7 @@ export async function SHA256(message: string): Promise<Buffer>
     {
         // Browser environment.
         const msgBuffer:	Uint8Array = new TextEncoder().encode(message);
-        const hashBuffer:	ArrayBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashBuffer:	ArrayBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer as BufferSource);
         const hashArray:	Buffer = Buffer.from(new Uint8Array(hashBuffer));
 
         return hashArray;

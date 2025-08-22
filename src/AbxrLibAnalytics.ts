@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer';
 import { InitAllStatics, AbxrInitAllStatics } from './AbxrLibGlobal';
 import { AbxrLibAsync } from './AbxrLibAsync';
 import { AuthTokenDecodedJWT, AuthTokenRequest, AuthTokenResponseFailure, AuthTokenResponseSuccess, AbxrLibClient, Partner, PartnerToString, PostObjectsResponseFailure, PostObjectsResponseSuccess } from './AbxrLibClient';
@@ -10,18 +11,6 @@ import { DataObjectBase, DbSet, FieldPropertyFlags, LoadFromJson } from './netwo
 import { AbxrResult, DateTime, TimeSpan, StringList, AbxrDictStrings, JsonSuccess, JsonResult } from './network/utils/DotNetishTypes';
 import { DatabaseResult } from './network/utils/AbxrLibSQLite';
 import { JWTDecode } from './network/utils/JWT';
-
-// Buffer type definition for browser environments
-declare global {
-    interface Buffer extends Uint8Array {
-        toString(encoding?: string): string;
-        from(data: string | ArrayBuffer | ArrayBufferView, encoding?: string): Buffer;
-    }
-    var Buffer: {
-        new(data: string | ArrayBuffer | ArrayBufferView): Buffer;
-        from(data: string | ArrayBuffer | ArrayBufferView, encoding?: string): Buffer;
-    };
-}
 
 /// <summary>
 /// Object for authenticating with Abxr webservice.
