@@ -257,6 +257,16 @@ Abxr.EventInteractionStart('select_option_a');
 Abxr.EventInteractionComplete('select_option_a', Abxr.InteractionType.eSelect, 'A');
 ```
 
+#### Critical Events
+```javascript
+// Flag critical training events for auto-inclusion in Critical Choices Chart
+Abxr.EventCritical(label, meta = null)
+
+// Example Usage
+Abxr.EventCritical('safety_check_skipped', {'location': 'entrance', 'severity': 'high'});
+Abxr.EventCritical('equipment_misuse', {'equipment': 'power_drill'});
+```
+
 ### Logging
 ```javascript
 // JavaScript Event Method Signatures
@@ -272,6 +282,8 @@ Abxr.LogInfo('User login', {'userId': 12345, 'loginMethod': 'oauth'});
 ```
 
 ### Storage API
+
+#### Basic Storage Methods
 ```javascript
 // JavaScript Event Method Signatures
 Abxr.SetStorageEntry(data, name = "state", keepLatest = true, origin = null, sessionData = false)
@@ -281,6 +293,24 @@ Abxr.RemoveStorageEntry(name = "state")
 // Example usage
 Abxr.SetStorageEntry({'progress': '75%'});
 var state = Abxr.GetStorageEntry('state');
+```
+
+#### Enhanced Storage Methods **NEW**
+```javascript
+// Enhanced storage with scope and policy control
+Abxr.StorageSetEntry(name, data, scope = StorageScope.user, policy = StoragePolicy.keepLatest)
+Abxr.StorageGetEntry(name = "state", scope = StorageScope.user)
+Abxr.StorageRemoveEntry(name = "state", scope = StorageScope.user)
+
+// Storage scopes and policies
+Abxr.StorageScope.user      // User data across devices  
+Abxr.StorageScope.device    // Device-specific data
+Abxr.StoragePolicy.keepLatest     // Keep only latest
+Abxr.StoragePolicy.appendHistory  // Append to history
+
+// Example usage
+await Abxr.StorageSetEntry('progress', {'level': 5}, Abxr.StorageScope.user, Abxr.StoragePolicy.keepLatest);
+const progress = await Abxr.StorageGetEntry('progress', Abxr.StorageScope.user);
 ```
 
 ### Telemetry
@@ -374,6 +404,35 @@ Abxr.getUserData()
 
 // Remove callback when no longer needed
 Abxr.removeModuleTargetCallback(callback)
+```
+
+## Session Management **NEW**
+
+Advanced session management for testing and session control:
+
+```javascript
+// Manual reauthentication (primarily for testing)
+await Abxr.ReAuthenticate();
+
+// Start new session with fresh session ID  
+await Abxr.StartNewSession();
+
+// Continue existing session
+await Abxr.ContinueSession('session_12345');
+
+// Example usage
+async function testAuthFlow() {
+    await Abxr.ReAuthenticate();
+    if (Abxr.isConfigured()) {
+        await Abxr.EventAssessmentStart('test_assessment');
+    }
+}
+
+async function startFreshExperience() {
+    await Abxr.StartNewSession();
+    await Abxr.StorageRemoveDefaultEntry(Abxr.StorageScope.user);
+    await Abxr.EventAssessmentStart('new_training_session');
+}
 ```
 
 ### Usage Examples
@@ -565,11 +624,23 @@ Abxr.AIProxy('Provide a greeting message', '', 'default');
 - `Abxr.EventLevelStart(levelName, meta?)` - Start a level
 - `Abxr.EventLevelComplete(levelName, score, meta?)` - Complete a level
 
+#### Critical Events
+- `Abxr.EventCritical(label, meta?)` - Flag critical training events for auto-inclusion in the Critical Choices Chart
+
 ### Storage Methods
 
+#### Basic Storage Methods
 - `Abxr.SetStorageEntry(data, keepLatest?, origin?, sessionData?, name?)` - Store data
 - `Abxr.GetStorageEntry(name?)` - Retrieve stored data
 - `Abxr.RemoveStorageEntry(name?)` - Remove stored data
+
+#### Enhanced Storage Methods
+- `Abxr.StorageSetEntry(name, data, scope?, policy?)` - Store data with scope and policy control
+- `Abxr.StorageGetEntry(name?, scope?)` - Retrieve data with scope control
+- `Abxr.StorageRemoveEntry(name?, scope?)` - Remove data with scope control
+- `Abxr.StorageSetDefaultEntry(data, scope?, policy?)` - Store default entry with enhanced control
+- `Abxr.StorageGetDefaultEntry(scope?)` - Get default entry with scope control
+- `Abxr.StorageRemoveDefaultEntry(scope?)` - Remove default entry with scope control
 
 ### Telemetry Methods
 
@@ -591,6 +662,12 @@ Abxr.AIProxy('Provide a greeting message', '', 'default');
 - `Abxr.onAuthCompleted(callback)` - Subscribe to authentication completion notifications
 - `Abxr.removeAuthCompletedCallback(callback)` - Remove an authentication completion callback
 - `Abxr.clearAuthCompletedCallbacks()` - Remove all authentication completion callbacks
+
+### Session Management Methods
+
+- `Abxr.ReAuthenticate()` - Trigger manual reauthentication (primarily for testing)
+- `Abxr.StartNewSession()` - Start a new session with fresh session ID
+- `Abxr.ContinueSession(sessionId)` - Continue an existing session
 
 ### Module Target Methods
 

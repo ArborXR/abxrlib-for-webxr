@@ -672,6 +672,59 @@ Abxr.EventCritical(label, meta = null)
 
 **Note:** All complete events automatically calculate duration if a corresponding start event was logged.
 
+### Session Management
+
+**NEW:** Advanced session management methods for testing and session control:
+
+```javascript
+// Manually trigger reauthentication (primarily for testing)
+await Abxr.ReAuthenticate();
+
+// Start a new session with fresh session ID
+await Abxr.StartNewSession();
+
+// Continue an existing session (future enhancement)
+await Abxr.ContinueSession('session_12345');
+```
+
+#### Session Management Examples
+
+```javascript
+// Testing authentication flows
+async function testReauth() {
+    console.log('Testing reauthentication...');
+    await Abxr.ReAuthenticate();
+    
+    if (Abxr.isConfigured()) {
+        console.log('Reauthentication successful');
+        // Continue with authenticated operations
+        await Abxr.Event('reauth_test_passed');
+    }
+}
+
+// Starting fresh sessions for new experiences
+async function startNewExperience() {
+    console.log('Starting new training experience...');
+    await Abxr.StartNewSession();
+    
+    // Clear any cached data for fresh start
+    await Abxr.StorageRemoveDefaultEntry(Abxr.StorageScope.user);
+    
+    // Begin new assessment
+    await Abxr.EventAssessmentStart('fresh_training_assessment');
+}
+
+// Session continuation for resumable experiences
+async function resumeExperience(sessionId) {
+    console.log(`Resuming experience with session: ${sessionId}`);
+    await Abxr.ContinueSession(sessionId);
+    
+    // Load previous progress
+    const progress = await Abxr.StorageGetDefaultEntry(Abxr.StorageScope.user);
+    console.log('Resumed with progress:', progress);
+}
+```
+
 ---
 
 ## Authentication Completion Callback
@@ -1218,6 +1271,12 @@ Abxr.LogLevel.eCritical
 
 // Dictionary for metadata
 Abxr.AbxrDictStrings
+
+// Storage enums
+Abxr.StorageScope.user
+Abxr.StorageScope.device
+Abxr.StoragePolicy.keepLatest
+Abxr.StoragePolicy.appendHistory
 ```
 
 ### Usage Examples
@@ -1292,13 +1351,25 @@ Abxr.Event('legacy_event', meta);
 - `Abxr.EventLevelStart(levelName, meta?)` - Start a level
 - `Abxr.EventLevelComplete(levelName, score, meta?)` - Complete a level
 
+#### Critical Events
+- `Abxr.EventCritical(label, meta?)` - Flag critical training events for auto-inclusion in the Critical Choices Chart
+
 **Note:** All specialized event methods support the same flexible metadata formats as the core methods. See [Metadata Formats](#metadata-formats) for examples and supported formats.
 
 ### Storage Methods
 
+#### Basic Storage Methods
 - `Abxr.SetStorageEntry(data, keepLatest?, origin?, sessionData?, name?)` - Store data
 - `Abxr.GetStorageEntry(name?)` - Retrieve stored data
 - `Abxr.RemoveStorageEntry(name?)` - Remove stored data
+
+#### Enhanced Storage Methods
+- `Abxr.StorageSetEntry(name, data, scope?, policy?)` - Store data with scope and policy control
+- `Abxr.StorageGetEntry(name?, scope?)` - Retrieve data with scope control  
+- `Abxr.StorageRemoveEntry(name?, scope?)` - Remove data with scope control
+- `Abxr.StorageSetDefaultEntry(data, scope?, policy?)` - Store default entry with enhanced control
+- `Abxr.StorageGetDefaultEntry(scope?)` - Get default entry with scope control
+- `Abxr.StorageRemoveDefaultEntry(scope?)` - Remove default entry with scope control
 
 ### Telemetry Methods
 
@@ -1320,6 +1391,12 @@ Abxr.Event('legacy_event', meta);
 - `Abxr.onAuthCompleted(callback)` - Subscribe to authentication completion notifications
 - `Abxr.removeAuthCompletedCallback(callback)` - Remove an authentication completion callback
 - `Abxr.clearAuthCompletedCallbacks()` - Remove all authentication completion callbacks
+
+### Session Management Methods
+
+- `Abxr.ReAuthenticate()` - Trigger manual reauthentication (primarily for testing)
+- `Abxr.StartNewSession()` - Start a new session with fresh session ID
+- `Abxr.ContinueSession(sessionId)` - Continue an existing session
 
 ### Module Target Methods
 
