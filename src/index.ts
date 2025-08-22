@@ -11,8 +11,6 @@ import { Partner } from "./AbxrLibClient";
 import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig, XRVirtualKeyboard } from './templates/XRAuthDialog';
 // Import device detection utilities
 import { AbxrDetectAllDeviceInfo, AbxrDetectOsVersion, AbxrDetectDeviceModel, AbxrDetectIpAddress } from './utils/AbxrDeviceDetection';
-// Import package.json for version
-import * as packageJson from '../package.json';
 
 
 // Initialize all static members
@@ -29,6 +27,19 @@ function generateGuid(): string {
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
+}
+
+// Utility function to get package version safely
+function getPackageVersion(): string {
+    try {
+        // Use dynamic require to avoid TypeScript import issues
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const pkg = eval('require("../package.json")');
+        return pkg.version || '1.0.0';
+    } catch (error) {
+        // Fallback version if package.json can't be read (e.g., in browser environment)
+        return '1.0.0';
+    }
 }
 
 // Utility function to get URL parameters
@@ -1359,7 +1370,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                     AbxrLibInit.set_IpAddress(deviceInfo.ipAddress);
                     // Set library type and version
                     AbxrLibInit.set_LibType('webxr');
-                    AbxrLibInit.set_LibVersion(packageJson.version);
+                    AbxrLibInit.set_LibVersion(getPackageVersion());
                     
                     // Now attempt initial authentication with device info set
                     return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
@@ -1372,7 +1383,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                     AbxrLibInit.set_IpAddress('NA');
                     // Set library type and version even when device detection fails
                     AbxrLibInit.set_LibType('webxr');
-                    AbxrLibInit.set_LibVersion(packageJson.version);
+                    AbxrLibInit.set_LibVersion(getPackageVersion());
                     
                     // Still attempt authentication even if device detection failed
                     return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
