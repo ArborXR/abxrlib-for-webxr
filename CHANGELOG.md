@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.31] - 2025-08-22
+
+### 🔨 Other Changes
+
+- removed package-lock.json from repo ([3979f5a](../../commit/3979f5a1666cfce769a9fcc089d02d97181a7162))
+- should not be in github ([03ec0ce](../../commit/03ec0ced6ad7eff64e0c70deb7db73c264dc2082))
+
 ## [1.0.30] - 2025-08-22
 
 ### 🔨 Other Changes
