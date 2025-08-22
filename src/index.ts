@@ -29,16 +29,23 @@ function generateGuid(): string {
     });
 }
 
+// TypeScript declaration for webpack-injected global
+declare const __ABXR_PACKAGE_VERSION__: string;
+
 // Utility function to get package version safely
 function getPackageVersion(): string {
+    // Webpack replaces __ABXR_PACKAGE_VERSION__ with actual version at build time
+    if (typeof __ABXR_PACKAGE_VERSION__ !== 'undefined') {
+        return __ABXR_PACKAGE_VERSION__;
+    }
+    
+    // Fallback: try to read from package.json in Node.js environment
     try {
-        // Use dynamic require to avoid TypeScript import issues
-        // Webpack will replace this with actual package.json content at build time
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const pkg = eval('require("../package.json")');
         return pkg.version || '1.0.0';
     } catch (error) {
-        // Fallback version if package.json can't be read (e.g., in browser environment)
+        // Final fallback version
         return '1.0.0';
     }
 }

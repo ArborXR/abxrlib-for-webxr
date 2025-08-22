@@ -56,7 +56,7 @@ module.exports = {
 		}),
 		// Replace the package version dynamically
 		new webpack.DefinePlugin({
-			'eval(\'require("../package.json")\')': JSON.stringify(require('./package.json')),
+			'__ABXR_PACKAGE_VERSION__': JSON.stringify(require('./package.json').version),
 		}),
 	],
 };
