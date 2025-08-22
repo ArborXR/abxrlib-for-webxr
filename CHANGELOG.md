@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.27] - 2025-08-22
+
+### 🐛 Bug Fixes
+
+- maybe last version fix ([aa22bf2](../../commit/aa22bf2ebf4cb60c502b3f384273b094c3726430))
+
 ## [1.0.26] - 2025-08-22
 
 ### 🔨 Other Changes
