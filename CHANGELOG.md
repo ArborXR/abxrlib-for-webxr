@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.28] - 2025-08-22
+
+### ✨ Features
+
+- synced up to add support for EventCritical, some storage options and reauth ([f256887](../../commit/f256887107a5bbbeb26806ae12292ffba7fbb512))
+
+### 🐛 Bug Fixes
+
+- several fixes ([d19b604](../../commit/d19b604b39ee0519c52f99b3d9947eeb093912b3))
+
 ## [1.0.27] - 2025-08-22
 
 ### 🐛 Bug Fixes
