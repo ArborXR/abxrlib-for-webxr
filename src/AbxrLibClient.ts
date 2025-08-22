@@ -90,6 +90,8 @@ export class AuthTokenRequest extends DataObjectBase
 	 	{m_szXrdmVersion: new FieldProperties("xrdmVersion", FieldPropertyFlags.bfStringOnly)},
 	 	{m_szAppVersion: new FieldProperties("appVersion", FieldPropertyFlags.bfStringOnly)},
 	 	{m_szUnityVersion: new FieldProperties("unityVersion", FieldPropertyFlags.bfStringOnly)},
+		{m_abxrLibType: new FieldProperties("abxrLibType")},
+		{m_abxrLibVersion: new FieldProperties("abxrLibVersion")},
 	 	{m_szDeviceModel: new FieldProperties("deviceModel")},
 	 	{m_szUserId: new FieldProperties("userId")},
 	 	{m_lszTags: new FieldProperties("tags")},
