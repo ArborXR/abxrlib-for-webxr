@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.26] - 2025-08-22
+
+### 🔨 Other Changes
+
+- another version attempt ([bf86a36](../../commit/bf86a36fab74dfff85a6721a447f81c4973cd7b1))
+
 ## [1.0.25] - 2025-08-22
 
 ### 🐛 Bug Fixes
