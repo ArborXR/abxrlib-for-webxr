@@ -13,6 +13,7 @@ services:
     volumes:
       # Mount temp directory for version exchange (optional, fallback method)
       - /tmp:/tmp
-    #  - ./build:/opt/arborxr/build
-    #  - ./dist:/opt/arborxr/dist
+      - ./build:/opt/arborxr/build
+      - ./dist:/opt/arborxr/dist
+      - ./testers:/opt/arborxr/testers    
     #  - ./abxrlib-for-webxr:/opt/arborxr/abxrlib-for-webxr
