@@ -10,7 +10,7 @@ import { Partner } from "./AbxrLibClient";
 // Import XR dialog template
 import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig, XRVirtualKeyboard } from './templates/XRAuthDialog';
 // Import device detection utilities
-import { AbxrDetectAllDeviceInfo, AbxrDetectOsVersion, AbxrDetectDeviceModel, AbxrDetectIpAddress } from './utils/AbxrDeviceDetection';
+import { AbxrDetectAllDeviceInfo, AbxrDetectOsVersion, AbxrDetectDeviceModel, AbxrDetectIpAddress } from './network/utils/AbxrDeviceDetection';
 
 
 // Initialize all static members
@@ -1606,8 +1606,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
             console.log('AbxrLib: Detecting device information...');
             AbxrDetectAllDeviceInfo(false) // IP detection disabled to prevent CSP violations
                 .then((deviceInfo) => {
-                    console.log(`AbxrLib: Device detection complete - OS: ${deviceInfo.osVersion}, Browser: ${deviceInfo.deviceModel}, IP: ${deviceInfo.ipAddress}`);
-                    
+                    //console.log(`AbxrLib: Device detection complete - OS: ${deviceInfo.osVersion}, Browser: ${deviceInfo.deviceModel}, IP: ${deviceInfo.ipAddress}`);
                     // Set the detected values in the authentication object
                     AbxrLibInit.set_OsVersion(deviceInfo.osVersion);
                     AbxrLibInit.set_DeviceModel(deviceInfo.deviceModel);
