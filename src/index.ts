@@ -478,6 +478,25 @@ export class Abxr {
         return { ...this.authParams };
     }
     
+    // ===== Mixpanel Compatibility Methods =====
+    /**
+     * Mixpanel compatibility method - tracks an event with optional properties
+     * This method provides compatibility with Mixpanel Unity SDK for easier migration
+     * Internally calls the AbxrLib Event method
+     * @param eventName Name of the event to track
+     * @param properties Optional properties to send with the event (compatible with Mixpanel Value format)
+     * 
+     * @example
+     * // Basic event tracking (matches: Mixpanel.Track("Sent Message"))
+     * await Abxr.Track("Sent Message");
+     * 
+     * // Event tracking with properties (matches: Mixpanel.Track("Plan Selected", props))
+     * await Abxr.Track("Plan Selected", { Plan: "Premium", UserID: 12345 });
+     */
+    static async Track(eventName: string, properties?: any): Promise<number> {
+        return await this.Event(eventName, properties);
+    }
+    
     // Event methods
     static async Event(name: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
