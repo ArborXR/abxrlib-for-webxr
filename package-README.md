@@ -811,8 +811,37 @@ Abxr.onAuthCompleted(function(data) {
     }
 });
 
-// Initialize ABXRLib - the callback will fire when auth completes
+// Multiple callbacks are supported
+Abxr.onAuthCompleted(handleUserSetup);
+Abxr.onAuthCompleted(handleAnalyticsInit);
+
+// Initialize ABXRLib - callbacks will fire when auth completes
 Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
+```
+
+#### Callback Management
+
+The authentication system supports multiple subscribers for flexible integration:
+
+```javascript
+// Store callback reference for later management
+const authCallback = function(data) {
+    if (data.success) {
+        initializeUserInterface();
+        if (data.moduleTarget) {
+            navigateToModule(data.moduleTarget);
+        }
+    }
+};
+
+// Subscribe to authentication events
+Abxr.onAuthCompleted(authCallback);
+
+// Remove specific callback when no longer needed
+Abxr.removeAuthCompletedCallback(authCallback);
+
+// Clear all authentication callbacks
+Abxr.clearAuthCompletedCallbacks();
 ```
 
 #### Authentication Data Structure
@@ -941,6 +970,21 @@ Abxr_init('your-app-id');
 if (process.env.NODE_ENV === 'development') {
     Abxr.setDebugMode(true);
 }
+
+// Clean up callbacks when components are destroyed (React example)
+useEffect(() => {
+    const handleAuth = (authData) => {
+        if (authData.success) {
+            setIsAuthenticated(true);
+        }
+    };
+    
+    Abxr.onAuthCompleted(handleAuth);
+    
+    return () => {
+        Abxr.removeAuthCompletedCallback(handleAuth);
+    };
+}, []);
 ```
 
 **Getting Help:**
