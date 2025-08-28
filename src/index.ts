@@ -492,21 +492,6 @@ export class Abxr {
      * @param message Log message to send
      * @param meta Optional metadata with additional context
      * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic debug log
-     * await Abxr.LogDebug('Component initialized successfully');
-     * 
-     * // Debug log with context metadata
-     * await Abxr.LogDebug('User authentication flow started', {
-     *     userId: 'user_123',
-     *     timestamp: Date.now(),
-     *     authMethod: 'oauth',
-     *     deviceType: 'VR'
-     * });
-     * 
-     * // Debug log with URL parameter metadata
-     * await Abxr.LogDebug('Search executed', 'query=virtual+reality&category=education&results=25');
      */
     static async LogDebug(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -520,27 +505,12 @@ export class Abxr {
         return await AbxrLibSend.AddLog(log);
     }
     
-    /**
-     * Send an info-level log message with optional metadata  
+        /**
+     * Send an info-level log message with optional metadata
      * Info logs are used for general application events and user actions
      * @param message Log message to send
      * @param meta Optional metadata with additional context
      * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic info log
-     * await Abxr.LogInfo('User logged in successfully');
-     * 
-     * // Info log with user context
-     * await Abxr.LogInfo('Training session completed', {
-     *     userId: 'user_456', 
-     *     sessionDuration: 1800,
-     *     modulesCompleted: 3,
-     *     score: 89
-     * });
-     * 
-     * // Info log with JSON metadata
-     * await Abxr.LogInfo('API request completed', '{"endpoint": "/api/progress", "status": 200, "latency": 120}');
      */
     static async LogInfo(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -560,21 +530,6 @@ export class Abxr {
      * @param message Log message to send
      * @param meta Optional metadata with additional context  
      * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic warning log
-     * await Abxr.LogWarn('Battery level is low');
-     * 
-     * // Warning with system context
-     * await Abxr.LogWarn('Frame rate dropped below threshold', {
-     *     currentFPS: 45,
-     *     targetFPS: 60,
-     *     timestamp: Date.now(),
-     *     deviceModel: 'Quest 3'
-     * });
-     * 
-     * // Performance warning
-     * await Abxr.LogWarn('Memory usage high', 'usage=85%&threshold=80%&available=2GB');
      */
     static async LogWarn(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -594,22 +549,6 @@ export class Abxr {
      * @param message Log message to send
      * @param meta Optional metadata with error details
      * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic error log
-     * await Abxr.LogError('Failed to connect to server');
-     * 
-     * // Error with detailed context
-     * await Abxr.LogError('API request failed', {
-     *     endpoint: '/api/authentication',
-     *     statusCode: 500,
-     *     errorMessage: 'Internal server error',
-     *     retryCount: 3,
-     *     timestamp: Date.now()
-     * });
-     * 
-     * // Network error with JSON details
-     * await Abxr.LogError('WebXR session failed', '{"error": "device_not_found", "deviceType": "VR", "browserSupport": false}');
      */
     static async LogError(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -629,22 +568,6 @@ export class Abxr {
      * @param message Log message to send  
      * @param meta Optional metadata with critical error details
      * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic critical log
-     * await Abxr.LogCritical('Application crash detected');
-     * 
-     * // Critical error with crash details
-     * await Abxr.LogCritical('Unhandled exception in XR render loop', {
-     *     exception: 'NullReferenceException',
-     *     stack: 'at RenderFrame.Update() line 42',
-     *     lastAction: 'user_grabbed_object',
-     *     memoryUsage: '512MB',
-     *     frameRate: 0
-     * });
-     * 
-     * // Security critical event
-     * await Abxr.LogCritical('Authentication bypass attempt', 'userId=unknown&ipAddress=192.168.1.100&attempts=5&blocked=true');
      */
     static async LogCritical(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -664,23 +587,6 @@ export class Abxr {
      * @param name The name of the event (use snake_case for better analytics processing)
      * @param meta Optional metadata - supports objects, JSON strings, URL parameters, or primitives
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic event
-     * await Abxr.Event('button_pressed');
-     * 
-     * // Event with object metadata
-     * await Abxr.Event('item_collected', {
-     *     item_type: 'coin',
-     *     item_value: 100,
-     *     location: 'treasure_room'
-     * });
-     * 
-     * // Event with JSON string metadata
-     * await Abxr.Event('api_response', '{"status": 200, "latency_ms": 45}');
-     * 
-     * // Event with URL parameter metadata
-     * await Abxr.Event('form_submit', 'name=John&email=john@example.com&age=25');
      */
     // Event methods
     static async Event(name: string, meta?: any): Promise<number> {
@@ -732,25 +638,6 @@ export class Abxr {
      * Call Event() or any other event method later with the same name to include duration
      * Works with all event methods since they use Event() internally
      * @param eventName Name of the event to start timing (must match later event name exactly)
-     * 
-     * @example
-     * // Start timing a puzzle activity
-     * Abxr.StartTimedEvent("Table puzzle");
-     * 
-     * // User performs activity for 20 seconds...
-     * 
-     * // Event automatically includes duration: 20 seconds
-     * await Abxr.Event("Table puzzle");
-     * 
-     * // Works with all event methods
-     * Abxr.StartTimedEvent("Assessment");
-     * // ... later ...
-     * await Abxr.EventAssessmentComplete("Assessment", "95", Abxr.EventStatus.ePass);
-     * 
-     * // Also works with Mixpanel compatibility methods
-     * Abxr.StartTimedEvent("User Session");
-     * // ... later ...
-     * await Abxr.Track("User Session"); // Duration automatically included
      */
     static StartTimedEvent(eventName: string): void {
         AbxrEvent.m_dictTimedEventStartTimes.set(eventName, new DateTime().FromUnixTime(DateTime.Now()));
@@ -763,18 +650,6 @@ export class Abxr {
      * @param assessmentName Name of the assessment to start
      * @param meta Optional metadata with assessment details
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic assessment start
-     * await Abxr.EventAssessmentStart('final_exam');
-     * 
-     * // Assessment with configuration metadata
-     * await Abxr.EventAssessmentStart('safety_training', {
-     *     difficulty: 'intermediate',
-     *     timeLimit: 1800,
-     *     attempts: 3,
-     *     passingScore: 80
-     * });
      */
     // Assessment Events
     static async EventAssessmentStart(assessmentName: string, meta?: any): Promise<number> {
@@ -795,26 +670,6 @@ export class Abxr {
      * @param eventStatus Result status of the assessment (ePass, eFail, eComplete, etc.)
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic assessment completion
-     * await Abxr.EventAssessmentComplete('final_exam', '85', Abxr.EventStatus.ePass);
-     * 
-     * // Detailed assessment completion
-     * await Abxr.EventAssessmentComplete('safety_training', '92', Abxr.EventStatus.ePass, {
-     *     timeSpent: 1650,
-     *     questionsCorrect: 23,
-     *     questionsTotal: 25,
-     *     hintsUsed: 2,
-     *     retakeNumber: 1
-     * });
-     * 
-     * // Failed assessment
-     * await Abxr.EventAssessmentComplete('final_exam', '65', Abxr.EventStatus.eFail, {
-     *     timeSpent: 1200,
-     *     questionsCorrect: 13,
-     *     questionsTotal: 20
-     * });
      */
     static async EventAssessmentComplete(assessmentName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -832,18 +687,6 @@ export class Abxr {
      * @param objectiveName Name of the objective to start
      * @param meta Optional metadata with objective details
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic objective start
-     * await Abxr.EventObjectiveStart('open_valve');
-     * 
-     * // Objective with context metadata
-     * await Abxr.EventObjectiveStart('safety_check_procedure', {
-     *     location: 'engine_room',
-     *     equipment: 'pressure_gauge',
-     *     difficulty: 'intermediate',
-     *     maxAttempts: 3
-     * });
      */
     // Objective Events
     static async EventObjectiveStart(objectiveName: string, meta?: any): Promise<number> {
@@ -864,26 +707,6 @@ export class Abxr {
      * @param eventStatus Result status (eComplete, ePass, eFail, etc.)
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic objective completion
-     * await Abxr.EventObjectiveComplete('open_valve', '100', Abxr.EventStatus.eComplete);
-     * 
-     * // Detailed objective completion
-     * await Abxr.EventObjectiveComplete('safety_check_procedure', '85', Abxr.EventStatus.eComplete, {
-     *     attempts: 2,
-     *     timeSpent: 45,
-     *     hintsUsed: 1,
-     *     errors: 1,
-     *     tool: 'wrench'
-     * });
-     * 
-     * // Failed objective with error details
-     * await Abxr.EventObjectiveComplete('valve_operation', '40', Abxr.EventStatus.eFail, {
-     *     attempts: 3,
-     *     errors: ['wrong_direction', 'too_much_force'],
-     *     timeSpent: 120
-     * });
      */
     static async EventObjectiveComplete(objectiveName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -901,18 +724,6 @@ export class Abxr {
      * @param interactionName Name of the interaction to start
      * @param meta Optional metadata with interaction context
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic interaction start
-     * await Abxr.EventInteractionStart('select_option_a');
-     * 
-     * // Interaction with detailed context
-     * await Abxr.EventInteractionStart('multiple_choice_question', {
-     *     questionId: 'q_001',
-     *     options: ['A', 'B', 'C', 'D'],
-     *     timeLimit: 30,
-     *     questionText: 'What is the correct safety procedure?'
-     * });
      */
     // Interaction Events
     static async EventInteractionStart(interactionName: string, meta?: any): Promise<number> {
@@ -933,32 +744,6 @@ export class Abxr {
      * @param response User's response or result (e.g., "A", "correct", "blue_button")
      * @param meta Optional metadata with interaction details
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic interaction completion
-     * await Abxr.EventInteractionComplete('select_option_a', Abxr.InteractionType.eSelect, 'A');
-     * 
-     * // Multiple choice with details
-     * await Abxr.EventInteractionComplete('multiple_choice_question', Abxr.InteractionType.eSelect, 'B', {
-     *     correct: true,
-     *     timeSpent: 15,
-     *     confidence: 'high',
-     *     hesitation: false
-     * });
-     * 
-     * // Text input interaction
-     * await Abxr.EventInteractionComplete('password_entry', Abxr.InteractionType.eType, 'user_input', {
-     *     attempts: 1,
-     *     inputLength: 12,
-     *     valid: true
-     * });
-     * 
-     * // XR spatial interaction
-     * await Abxr.EventInteractionComplete('grab_tool', Abxr.InteractionType.eDrag, 'wrench', {
-     *     grabPosition: [1.2, 0.8, 2.1],
-     *     grabForce: 0.8,
-     *     successful: true
-     * });
      */
     static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, response: string = "", meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -976,18 +761,6 @@ export class Abxr {
      * @param levelName Name of the level to start
      * @param meta Optional metadata with level details
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic level start
-     * await Abxr.EventLevelStart('level_1');
-     * 
-     * // Level with configuration
-     * await Abxr.EventLevelStart('training_module_3', {
-     *     difficulty: 'intermediate',
-     *     expectedDuration: 600,
-     *     prerequisites: ['module_1', 'module_2'],
-     *     environment: 'factory_floor'
-     * });
      */
     // Level Events
     static async EventLevelStart(levelName: string, meta?: any): Promise<number> {
@@ -1007,28 +780,6 @@ export class Abxr {
      * @param score Numerical score achieved for this level
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic level completion
-     * await Abxr.EventLevelComplete('level_1', '95');
-     * 
-     * // Detailed level completion
-     * await Abxr.EventLevelComplete('training_module_3', '87', {
-     *     timeSpent: 580,
-     *     objectivesCompleted: 8,
-     *     objectivesTotal: 10,
-     *     hintsUsed: 2,
-     *     retries: 1,
-     *     perfectSections: 3,
-     *     errors: ['safety_procedure_missed']
-     * });
-     * 
-     * // Level with minimal score
-     * await Abxr.EventLevelComplete('bonus_challenge', '45', {
-     *     completed: false,
-     *     reason: 'time_limit_exceeded',
-     *     progress: 0.75
-     * });
      */
     static async EventLevelComplete(levelName: string, score: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
@@ -1045,14 +796,6 @@ export class Abxr {
      * Super properties persist across browser sessions and are stored in localStorage
      * @param key Property name
      * @param value Property value
-     * 
-     * @example
-     * // Register user type as a super property
-     * Abxr.Register("user_type", "premium");
-     * 
-     * // All subsequent events will include user_type: "premium"
-     * await Abxr.Event("button_click"); // Includes user_type automatically
-     * await Abxr.Track("page_view");    // Also includes user_type automatically
      */
     static Register(key: string, value: string): void {
         this.superProperties.set(key, value);
@@ -1065,19 +808,6 @@ export class Abxr {
      * Super properties persist across browser sessions and are stored in localStorage
      * @param key Property name
      * @param value Property value (only set if key doesn't already exist)
-     * 
-     * @example
-     * // Set default user type, but don't overwrite if already set
-     * Abxr.RegisterOnce("user_type", "free");
-     * Abxr.RegisterOnce("user_type", "premium"); // Ignored - won't overwrite "free"
-     * 
-     * // Initialize defaults without overriding user preferences
-     * Abxr.RegisterOnce("difficulty", "beginner");
-     * Abxr.RegisterOnce("language", "en");
-     * Abxr.RegisterOnce("tutorial_completed", "false");
-     * 
-     * // Later, if user makes changes, they will persist:
-     * Abxr.Register("difficulty", "expert"); // This will override the default
      */
     static RegisterOnce(key: string, value: string): void {
         if (!this.superProperties.has(key)) {
@@ -1090,18 +820,6 @@ export class Abxr {
      * Remove a super property from all future events
      * Also removes the property from persistent storage (localStorage)
      * @param key Property name to remove
-     * 
-     * @example
-     * // Remove a specific super property
-     * Abxr.Unregister("user_type");
-     * 
-     * // Remove device-specific properties when user logs out
-     * Abxr.Unregister("device_id");
-     * Abxr.Unregister("session_type");
-     * 
-     * // Remove temporary properties that are no longer relevant
-     * Abxr.Unregister("experiment_group"); // A/B test ended
-     * Abxr.Unregister("beta_feature_enabled"); // Feature went to production
      */
     static Unregister(key: string): void {
         this.superProperties.delete(key);
@@ -1111,27 +829,6 @@ export class Abxr {
     /**
      * Clear all super properties from current session and persistent storage  
      * Equivalent to mixpanel.reset() - useful for user logout or data reset scenarios
-     * 
-     * @example
-     * // Clear all super properties when user logs out
-     * Abxr.Reset();
-     * console.log('All user-specific properties cleared');
-     * 
-     * // Reset for a new user session
-     * function startNewUserSession() {
-     *     Abxr.Reset(); // Clear previous user's properties
-     *     
-     *     // Set new properties
-     *     Abxr.Register("user_type", "new");
-     *     Abxr.Register("session_start", Date.now().toString());
-     * }
-     * 
-     * // Complete data reset for privacy compliance  
-     * function handleDataDeletion() {
-     *     Abxr.Reset(); // Clear all super properties
-     *     // Also clear storage entries if needed
-     *     await Abxr.RemoveStorageEntry('user_data');
-     * }
      */
     static Reset(): void {
         this.superProperties.clear();
@@ -1142,34 +839,6 @@ export class Abxr {
      * Get a copy of all current super properties as a JavaScript object
      * Useful for debugging, backup, or inspecting current global event properties
      * @returns Object containing all super properties as key-value pairs
-     * 
-     * @example
-     * // Inspect current super properties
-     * const props = Abxr.GetSuperProperties();
-     * console.log('Current super properties:', props);
-     * // Output: { user_type: "premium", app_version: "1.2.3", device_type: "quest3" }
-     * 
-     * // Backup super properties before reset
-     * const backup = Abxr.GetSuperProperties();
-     * Abxr.Reset(); // Clear all properties
-     * // ... later, restore if needed ...
-     * Object.entries(backup).forEach(([key, value]) => {
-     *     Abxr.Register(key, value);
-     * });
-     * 
-     * // Check if specific properties exist
-     * const props = Abxr.GetSuperProperties();
-     * if (props.user_type) {
-     *     console.log('User type is set:', props.user_type);
-     * } else {
-     *     console.log('User type not configured');
-     * }
-     * 
-     * // Debug event properties
-     * function debugEventProperties() {
-     *     const superProps = Abxr.GetSuperProperties();
-     *     console.log('Properties that will be included in all events:', superProps);
-     * }
      */
     static GetSuperProperties(): { [key: string]: string } {
         const result: { [key: string]: string } = {};
@@ -1223,24 +892,6 @@ export class Abxr {
      * @param sessionData If true, data is specific to current session; if false, persists across sessions
      * @param name Identifier for this storage entry (default: "state") 
      * @returns Promise<number> Storage entry ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic progress storage
-     * await Abxr.SetStorageEntry({ progress: '75%', currentLevel: 3 });
-     * 
-     * // Detailed game state with configuration
-     * await Abxr.SetStorageEntry({
-     *     progress: '75%',
-     *     level: 'intermediate',
-     *     score: 1250,
-     *     inventory: ['key', 'potion', 'map'],
-     *     checkpoint: 'boss_defeated'
-     * }, true, 'game', false, 'user_progress');
-     * 
-     * // Session-specific data that doesn't persist
-     * await Abxr.SetStorageEntry({
-     *     tempSettings: { volume: 0.8, brightness: 0.6 }
-     * }, true, 'web', true, 'session_prefs');
      */
     // Storage methods
     static async SetStorageEntry(data: any, keepLatest: boolean = true, origin: string = "web", sessionData: boolean = false, name: string = "state"): Promise<number> {
@@ -1258,26 +909,6 @@ export class Abxr {
      * Allows users to continue from where they left off on any device  
      * @param name Identifier of the storage entry to retrieve (default: "state")
      * @returns Promise<string> Retrieved storage data as string, or empty string if not found/authenticated
-     * 
-     * @example
-     * // Retrieve basic progress data
-     * const state = await Abxr.GetStorageEntry('state');
-     * const progress = JSON.parse(state);
-     * console.log('User progress:', progress.progress); // "75%"
-     * 
-     * // Retrieve specific named entry
-     * const userProgress = await Abxr.GetStorageEntry('user_progress');
-     * const gameData = JSON.parse(userProgress);
-     * console.log('Current level:', gameData.currentLevel); // 3
-     * 
-     * // Handle case where no data exists
-     * const settings = await Abxr.GetStorageEntry('user_settings');
-     * if (settings) {
-     *     const config = JSON.parse(settings);
-     *     applyUserSettings(config);
-     * } else {
-     *     console.log('No saved settings found, using defaults');
-     * }
      */
     static async GetStorageEntry(name: string = "state"): Promise<string> {
         if (!this.isAuthenticated) {
@@ -1294,24 +925,6 @@ export class Abxr {
      * Useful for clearing save data, resetting progress, or cleaning up temporary data
      * @param name Identifier of the storage entry to remove (default: "state") 
      * @returns Promise<number> Operation result code or 0 if not authenticated
-     * 
-     * @example
-     * // Remove default progress data
-     * await Abxr.RemoveStorageEntry('state');
-     * console.log('Progress data cleared');
-     * 
-     * // Remove specific named entry
-     * await Abxr.RemoveStorageEntry('user_progress');
-     * console.log('User progress reset');
-     * 
-     * // Clear temporary session data
-     * await Abxr.RemoveStorageEntry('temp_settings');
-     * 
-     * // Reset game completely by removing all save data
-     * await Abxr.RemoveStorageEntry('game_save');
-     * await Abxr.RemoveStorageEntry('achievements');
-     * await Abxr.RemoveStorageEntry('user_preferences');
-     * console.log('Game data completely reset');
      */
     static async RemoveStorageEntry(name: string = "state"): Promise<number> {
         if (!this.isAuthenticated) {
@@ -1329,40 +942,6 @@ export class Abxr {
      * @param name Type of telemetry data (e.g., "headset_position", "frame_rate", "battery_level")
      * @param data Key-value pairs of telemetry measurements
      * @returns Promise<number> Telemetry entry ID or 0 if not authenticated
-     * 
-     * @example
-     * // XR spatial telemetry
-     * await Abxr.Telemetry('headset_position', {
-     *     x: 1.23,
-     *     y: 4.56, 
-     *     z: 7.89,
-     *     timestamp: Date.now()
-     * });
-     * 
-     * // Controller movement tracking
-     * await Abxr.Telemetry('controller_left', {
-     *     position: [0.5, 1.2, 0.8],
-     *     rotation: [0, 45, 0],
-     *     velocity: 0.3,
-     *     buttonPressed: 'trigger'
-     * });
-     * 
-     * // System performance metrics
-     * await Abxr.Telemetry('performance_metrics', {
-     *     fps: 72,
-     *     frameDrops: 2,
-     *     memoryUsage: '256MB',
-     *     batteryLevel: 85,
-     *     temperature: 42
-     * });
-     * 
-     * // Custom object tracking
-     * await Abxr.Telemetry('training_object_valve', {
-     *     position: [2.1, 0.9, 1.5],
-     *     rotation: 90,
-     *     interactionCount: 3,
-     *     lastInteraction: Date.now()
-     * });
      */
     // Telemetry methods
     static async Telemetry(name: string, data: any): Promise<number> {
@@ -1384,32 +963,6 @@ export class Abxr {
      * @param pastMessages Optional previous conversation history for context
      * @param botId Optional identifier for a specific pre-configured chatbot
      * @returns Promise<number> AI request ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic AI prompt
-     * await Abxr.AIProxy('Provide a randomized greeting for a VR training session');
-     * 
-     * // AI with conversation context
-     * await Abxr.AIProxy(
-     *     'How should I improve my safety procedure performance?',
-     *     'User: I just completed the safety training. Assistant: Great! How did it go? User: I made some mistakes with the valve procedures.',
-     *     'safety_trainer_bot'
-     * );
-     * 
-     * // AI for personalized feedback
-     * await Abxr.AIProxy(
-     *     'Generate personalized feedback based on my training results',
-     *     JSON.stringify({
-     *         score: 85,
-     *         timeSpent: 1200,
-     *         errorsCount: 3,
-     *         strongAreas: ['communication', 'tool_usage'],
-     *         improvementAreas: ['speed', 'accuracy']
-     *     })
-     * );
-     * 
-     * // AI for dynamic content generation
-     * await Abxr.AIProxy('Create a new training scenario for fire safety procedures');
      */
     // AI Proxy methods
     static async AIProxy(prompt: string, pastMessages?: string, botId?: string): Promise<number> {
@@ -1432,26 +985,6 @@ export class Abxr {
      * @param eventName Name of the event to track
      * @param properties Optional properties to send with the event (supports all ABXR metadata formats)
      * @returns Promise<number> Event ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic event tracking (drop-in replacement for mixpanel.track("Sent Message"))
-     * await Abxr.Track("Sent Message");
-     * 
-     * // Event with properties (drop-in replacement for mixpanel.track("Plan Selected", props))
-     * await Abxr.Track("Plan Selected", { Plan: "Premium", UserID: 12345 });
-     * 
-     * // Timed event tracking (works just like Mixpanel)
-     * Abxr.StartTimedEvent("Table puzzle");
-     * // ... later ...
-     * await Abxr.Track("Table puzzle"); // Duration automatically included
-     * 
-     * // Enhanced XR tracking (beyond Mixpanel capabilities)
-     * await Abxr.Track("xr_interaction", {
-     *     device: "Quest 3",
-     *     position: [1.23, 4.56, 7.89],
-     *     interaction_type: "grab",
-     *     success: true
-     * });
      */
     static async Track(eventName: string, properties?: any): Promise<number> {
         // Add AbxrMethod tag to track Mixpanel compatibility usage
@@ -1559,70 +1092,6 @@ export class Abxr {
      * Enables automatic navigation to specific modules when user enters from LMS
      * Each module can be a separate assignment with individual grades and tracking
      * @param callback Function to call when module target becomes available
-     * 
-     * @example
-     * // Basic module target handling
-     * Abxr.onModuleTargetAvailable((data) => {
-     *     console.log('Module target:', data.moduleTarget);
-     *     console.log('User ID:', data.userId);
-     *     console.log('Is authenticated:', data.isAuthenticated);
-     *     
-     *     // Navigate to specific module
-     *     if (data.moduleTarget) {
-     *         navigateToModule(data.moduleTarget);
-     *     } else {
-     *         showModuleSelectionMenu();
-     *     }
-     * });
-     * 
-     * // Advanced module handling with assessment tracking
-     * Abxr.onModuleTargetAvailable((data) => {
-     *     if (!data.isAuthenticated) {
-     *         console.log('User not authenticated yet');
-     *         return;
-     *     }
-     *     
-     *     const moduleTarget = data.moduleTarget;
-     *     
-     *     switch(moduleTarget) {
-     *         case 'module_1_basics':
-     *             loadBasicsModule();
-     *             Abxr.EventAssessmentStart('basics_assessment');
-     *             break;
-     *         case 'module_2_advanced':
-     *             loadAdvancedModule();
-     *             Abxr.EventAssessmentStart('advanced_assessment');
-     *             break;
-     *         case 'module_3_final':
-     *             loadFinalExam();
-     *             Abxr.EventAssessmentStart('final_exam');
-     *             break;
-     *         default:
-     *             showModuleSelectionMenu();
-     *     }
-     * });
-     * 
-     * // Multi-module application setup
-     * function setupMultiModuleApp() {
-     *     Abxr.onModuleTargetAvailable((data) => {
-     *         if (data.moduleTarget) {
-     *             console.log(`Loading module: ${data.moduleTarget}`);
-     *             
-     *             // Track module entry
-     *             Abxr.Event('module_entered', {
-     *                 module_id: data.moduleTarget,
-     *                 user_id: data.userId,
-     *                 entry_method: 'lms_direct'
-     *             });
-     *             
-     *             // Start module-specific assessment
-     *             Abxr.EventAssessmentStart(data.moduleTarget, {
-     *                 user_id: data.userId,
-     *                 entry_timestamp: Date.now()
-     *             });
-     *         }
-     *     });
-     * }
      */
     // ModuleTarget subscription methods
     static onModuleTargetAvailable(callback: ModuleTargetCallback): void {
@@ -1661,43 +1130,6 @@ export class Abxr {
      * Perfect for initializing UI components, loading user data, or showing welcome messages
      * Callback fires immediately if authentication has already completed
      * @param callback Function to call when authentication completes successfully
-     * 
-     * @example
-     * // Basic post-authentication setup
-     * Abxr.onAuthCompleted((data) => {
-     *     console.log('Authentication completed!', data.success);
-     *     if (data.success) {
-     *         console.log('User ID:', data.userId);
-     *         console.log('User Email:', data.userEmail);
-     *         console.log('Module Target:', data.moduleTarget);
-     *         
-     *         // Initialize your application
-     *         initializeUserInterface();
-     *         loadUserPreferences();
-     *     }
-     * });
-     * 
-     * // Handle both initial authentication and reauthentication
-     * Abxr.onAuthCompleted((data) => {
-     *     if (data.success) {
-     *         if (data.isReauthentication) {
-     *             console.log('Session refreshed successfully');
-     *             updateUserData(data);
-     *         } else {
-     *             console.log('Welcome! Setting up your experience...');
-     *             showWelcomeScreen(data.userId, data.userEmail);
-     *         }
-     *     }
-     * });
-     * 
-     * // Service initialization example
-     * Abxr.onAuthCompleted((data) => {
-     *     if (data.success) {
-     *         startBackgroundServices();
-     *         connectWebSocket();
-     *         enableUserInterface();
-     *     }
-     * });
      */
     static onAuthCompleted(callback: AuthCompletedCallback): void {
         if (typeof callback !== 'function') {
@@ -1742,28 +1174,6 @@ export class Abxr {
      * Trigger manual reauthentication with existing stored parameters
      * Primarily useful for testing authentication flows or recovering from auth issues
      * Resets authentication state and attempts to re-authenticate with stored credentials
-     * 
-     * @example
-     * // Test reauthentication flow
-     * async function testReauth() {
-     *     console.log('Testing reauthentication...');
-     *     await Abxr.ReAuthenticate();
-     *     
-     *     if (Abxr.isConfigured()) {
-     *         console.log('Reauthentication successful');
-     *         await Abxr.Event('reauth_test_passed');
-     *     } else {
-     *         console.log('Reauthentication failed or requires additional steps');
-     *     }
-     * }
-     * 
-     * // Handle authentication recovery
-     * function handleAuthRecovery() {
-     *     if (Abxr.hasAuthenticationFailed()) {
-     *         console.log('Previous authentication failed, attempting recovery...');
-     *         Abxr.ReAuthenticate();
-     *     }
-     * }
      */
     static async ReAuthenticate(): Promise<void> {
         if (this.enableDebug) {
@@ -1797,40 +1207,6 @@ export class Abxr {
      * Start a new session with a fresh session identifier
      * Generates a new session ID and performs fresh authentication
      * Useful for starting new training experiences or resetting user context
-     * 
-     * @example
-     * // Start a new training experience
-     * async function startNewExperience() {
-     *     console.log('Starting new training experience...');
-     *     await Abxr.StartNewSession();
-     *     
-     *     if (Abxr.isConfigured()) {
-     *         // Clear any cached progress for fresh start
-     *         await Abxr.RemoveStorageEntry('progress');
-     *         
-     *         // Begin new assessment
-     *         await Abxr.EventAssessmentStart('fresh_training_session');
-     *         console.log('New session started successfully');
-     *     }
-     * }
-     * 
-     * // Reset for different user on same device
-     * async function switchUser() {
-     *     console.log('Switching to new user session...');
-     *     await Abxr.StartNewSession();
-     *     
-     *     // Clear previous user's super properties
-     *     Abxr.Reset();
-     *     
-     *     // Set up for new user
-     *     Abxr.Register('session_type', 'new_user');
-     * }
-     * 
-     * // Fresh session for repeated training
-     * async function restartTraining() {
-     *     await Abxr.StartNewSession();
-     *     console.log('Training session restarted with fresh session ID');
-     * }
      */
     static async StartNewSession(): Promise<void> {
         if (this.enableDebug) {
@@ -1875,47 +1251,6 @@ export class Abxr {
      * Continue an existing session using a specific session identifier
      * Allows resuming previous sessions for continuity across devices or time
      * @param sessionId The session ID to continue (must be a valid existing session)
-     * 
-     * @example
-     * // Resume a previous training session
-     * async function resumeTraining(sessionId) {
-     *     console.log(`Resuming training with session: ${sessionId}`);
-     *     await Abxr.ContinueSession(sessionId);
-     *     
-     *     if (Abxr.isConfigured()) {
-     *         // Load previous progress
-     *         const progress = await Abxr.GetStorageEntry('progress');
-     *         if (progress) {
-     *             const progressData = JSON.parse(progress);
-     *             console.log('Resumed with progress:', progressData);
-     *             restoreUserProgress(progressData);
-     *         }
-     *     }
-     * }
-     * 
-     * // Continue session from URL parameter
-     * function handleSessionFromURL() {
-     *     const urlParams = new URLSearchParams(window.location.search);
-     *     const sessionId = urlParams.get('sessionId');
-     *     
-     *     if (sessionId) {
-     *         console.log('Found session ID in URL, continuing session');
-     *         Abxr.ContinueSession(sessionId);
-     *     } else {
-     *         console.log('No session ID provided, starting new session');
-     *         Abxr.StartNewSession();
-     *     }
-     * }
-     * 
-     * // Multi-device session continuity
-     * async function continueOnNewDevice(storedSessionId) {
-     *     console.log('Continuing session from different device');
-     *     await Abxr.ContinueSession(storedSessionId);
-     *     
-     *     // Sync progress across devices
-     *     const cloudProgress = await Abxr.GetStorageEntry('user_progress');
-     *     syncProgressToLocalDevice(cloudProgress);
-     * }
      */
     static async ContinueSession(sessionId: string): Promise<void> {
         if (!sessionId) {
