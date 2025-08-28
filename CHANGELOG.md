@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.33] - 2025-08-28
+
+### ✨ Features
+
+- Added support for SuperProperties / Register() method and related methods ([83cd033](../../commit/83cd03365478822c5c6a8eba3bd1bead703d5934))
+- Added support for StartTimedEvent ([40f6360](../../commit/40f63600ac48670459045c238990da0fb3c5125c))
+- Added Mixpanel conversion wrapper function ([111329d](../../commit/111329df8035910439c6e1f8e2f9a1f88c795034))
+
+### ♻️ Refactoring
+
+- updated mixpanel docs ([b1e037d](../../commit/b1e037de167fa1159cbf746bf300dd296e8f3271))
+- Updated Track method to be tagged ([f5b84ae](../../commit/f5b84ae816fa21ca4db8bd06246e4403b4bfc4c0))
+
 ## [1.0.32] - 2025-08-22
 
 ### 🐛 Bug Fixes
