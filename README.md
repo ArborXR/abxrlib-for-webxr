@@ -1087,32 +1087,40 @@ The ABXRLib SDK for WebXR provides full compatibility with Mixpanel's JavaScript
 - **Open Source**: No vendor lock-in, deploy to any backend service
 - **WebXR Optimized**: Built specifically for web-based VR/AR applications
 
-### Migration Guide
+### 3-Step Migration:
 
-#### Before (Mixpanel JavaScript):
+#### Step 1: Replace Import
 ```javascript
-// Basic event tracking
-mixpanel.track("Sent Message");
+// Before (Mixpanel)
+import mixpanel from 'mixpanel-browser';
 
-// Event tracking with properties
-mixpanel.track("Plan Selected", {
-    "Plan": "Premium",
-    "UserID": 12345,
-    "source": "web_app"
-});
+// After (ABXRLib SDK)
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 ```
 
-#### After (ABXRLib SDK):
+#### Step 2: Comment out Mixpanel config  
 ```javascript
-// Track with event-name
-await Abxr.Track("Sent Message");
+// Comment out or remove these lines:
+// mixpanel.init('YOUR_PROJECT_TOKEN');
+// mixpanel.identify('user123');
+// Any other mixpanel configuration...
 
-// Track with event-name and properties
-await Abxr.Track("Plan Selected", {
-    "Plan": "Premium", 
-    "UserID": 12345,
-    "source": "web_app"
-});
+// Add ABXRLib initialization instead:
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
+```
+
+#### Step 3: Simple String Replace
+```javascript
+// Find and replace throughout your codebase:
+// mixpanel.track  ->  Abxr.Track
+
+// Before
+mixpanel.track("Sent Message");
+mixpanel.track("Plan Selected", { "Plan": "Premium" });
+
+// After (just string replace!)
+Abxr.Track("Sent Message");
+Abxr.Track("Plan Selected", { "Plan": "Premium" });
 ```
 
 ### Mixpanel Compatibility Methods
@@ -1154,18 +1162,23 @@ await Abxr.Track("form_submitted", {
 | **WebXR Optimization** | ❌ | ✅ (VR/AR specific features) |
 | **Open Source** | ❌ | ✅ |
 
-### Migration Steps
+### Migration Summary
 
-1. **Install ABXRLib SDK** following the [Installation](#installation) guide
-2. **Initialize with your credentials** from [Configuration](#configuration)  
-3. **Replace Mixpanel calls** with `Abxr.Track()` - add `await` for async support
-4. **Optional: Enhanced Features** - Add XR-specific tracking beyond Mixpanel's capabilities:
-   ```javascript
-   // Enhanced XR tracking beyond Mixpanel capabilities
-   await Abxr.EventAssessmentStart("safety_training");     // LMS-compatible assessments
-   await Abxr.EventInteractionStart("button_click");       // XR interaction tracking
-   await Abxr.StorageSetDefaultEntry({progress: "75%"});   // Cross-device state persistence
-   ```
+**Migration Time: ~5 minutes for most projects**
+
+1. **Install ABXRLib SDK** - `npm install abxrlib-for-webxr`
+2. **Replace import** - Change Mixpanel import to ABXRLib import
+3. **Replace config** - Comment out Mixpanel config, add `Abxr_init()` 
+4. **String replace** - `mixpanel.track` → `Abxr.Track` throughout your code
+5. **Done!** - All your existing tracking calls now work with ABXR
+
+**Optional:** Add XR-specific features beyond Mixpanel's capabilities:
+```javascript
+// Enhanced XR tracking beyond Mixpanel capabilities
+await Abxr.EventAssessmentStart("safety_training");     // LMS-compatible assessments  
+await Abxr.EventInteractionStart("button_click");       // XR interaction tracking
+await Abxr.StorageSetDefaultEntry({progress: "75%"});   // Cross-device state persistence
+```
 
 ### Property Format Compatibility
 
@@ -1214,7 +1227,8 @@ ABXRLib SDK provides built-in user authentication that Mixpanel lacks:
 
 ```javascript
 // Initialize with authentication
-Abxr_init('your-app-id', 'org-id', 'auth-secret');
+Abxr_init('your-app-id');
+//Abxr_init('your-app-id', 'org-id', 'auth-secret'); // for testing include org-id & auth-secret
 
 // Events automatically include authenticated user context
 await Abxr.Track("authenticated_action", { feature: "premium" });
