@@ -637,19 +637,19 @@ export class AbxrEvent extends AbxrMetaDataObject
 {
 	// static std.recursive_mutex				m_csDictProtect;
 	// MJPQ:  This is a massive pain if I have to do this in the constructor to avoid that "cannot read property of undefined" error.
+	public static m_dictTimedEventStartTimes:	Dictionary<string, DateTime>;
 	public static m_dictAssessmentStartTimes:	Dictionary<string, DateTime>;
 	public static m_dictObjectiveStartTimes:	Dictionary<string, DateTime>;
 	public static m_dictInteractionStartTimes:	Dictionary<string, DateTime>;
 	public static m_dictLevelStartTimes:		Dictionary<string, DateTime>;
-	public static m_dictTimedEventStartTimes:	Dictionary<string, DateTime>;
 	// ---
 	public static InitStatics(): void
 	{
+		AbxrEvent.m_dictTimedEventStartTimes = new Dictionary<string, DateTime>();
 		AbxrEvent.m_dictAssessmentStartTimes = new Dictionary<string, DateTime>();
 		AbxrEvent.m_dictObjectiveStartTimes = new Dictionary<string, DateTime>();
 		AbxrEvent.m_dictInteractionStartTimes = new Dictionary<string, DateTime>();
 		AbxrEvent.m_dictLevelStartTimes = new Dictionary<string, DateTime>();
-		AbxrEvent.m_dictTimedEventStartTimes = new Dictionary<string, DateTime>();
 	}
 	// ---
 	m_szName:			string;

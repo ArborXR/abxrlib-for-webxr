@@ -296,6 +296,8 @@ await Abxr.Track("User Session"); // Duration automatically included
 
 **Note:** The timer automatically adds a `duration` field (in seconds) to any subsequent event with the same name. The timer is automatically removed after the first matching event.
 
+
+
 ### Logging
 ```javascript
 // JavaScript Event Method Signatures
@@ -614,6 +616,53 @@ Abxr_init('app123', 'org456', 'secret789');
 Abxr.AIProxy('Provide a greeting message', '', 'default');
 ```
 
+## Super Properties
+
+Super Properties are global event properties that are automatically included in all events. They persist across browser sessions and are perfect for setting user attributes, application state, or any data you want included in every event.
+
+```javascript
+// JavaScript Super Properties Method Signatures
+Abxr.Register(key, value)
+Abxr.RegisterOnce(key, value)
+Abxr.Unregister(key)
+Abxr.Reset()
+Abxr.GetSuperProperties()
+
+// Example Usage
+// Set user properties that will be included in all events
+Abxr.Register("user_type", "premium");
+Abxr.Register("app_version", "1.2.3");
+Abxr.Register("device_type", "quest3");
+
+// All subsequent events automatically include these properties
+await Abxr.Event("button_click"); // Includes user_type, app_version, device_type
+await Abxr.EventAssessmentStart("quiz"); // Also includes all super properties
+await Abxr.Track("purchase"); // Mixpanel compatibility method also gets super properties
+
+// Set default values that won't overwrite existing super properties
+Abxr.RegisterOnce("user_tier", "free"); // Only sets if not already set
+Abxr.RegisterOnce("user_tier", "premium"); // Ignored - "free" remains
+
+// Manage super properties
+Abxr.Unregister("device_type"); // Remove specific super property
+const props = Abxr.GetSuperProperties(); // Get all current super properties
+Abxr.Reset(); // Remove all super properties (matches mixpanel.reset())
+```
+
+**Key Features:**
+- **Automatic Inclusion**: Super properties are automatically added to every event
+- **Persistent Storage**: Super properties persist across browser sessions using localStorage
+- **No Overwriting**: Super properties don't overwrite event-specific properties with the same name
+- **Universal**: Works with all event methods (Event, Track, EventAssessmentStart, etc.)
+
+**Use Cases:**
+- User attributes (subscription type, user level, demographics)
+- Application state (app version, build number, feature flags)
+- Device information (device type, browser, screen size)
+- Session context (session ID, experiment groups, A/B test variants)
+
+---
+
 ## Mixpanel Migration & Compatibility
 
 **Migrating from Mixpanel?** Super easy! Just replace imports and do simple string replacements.
@@ -670,9 +719,17 @@ Abxr.StartTimedEvent("Image Upload");
 Abxr.Track("Image Upload"); // Duration automatically included
 // OR
 Abxr.Event("Image Upload"); // Also works with Event() - duration included!
+
+// Super Properties (global properties included in all events) 
+Abxr.Register("user_type", "premium"); // Same as mixpanel.register()
+Abxr.RegisterOnce("device", "quest3");  // Same as mixpanel.register_once()
+// All events now include user_type and device automatically!
 ```
 
 **That's it! Your existing tracking calls will work immediately.**
+
+**Additional Core Features Beyond Mixpanel:**
+ABXRLib also includes core [Super Properties](#super-properties) functionality (`Register`, `RegisterOnce`) that works identically to Mixpanel, plus advanced [Timed Events](#timed-events) that work universally across all event types.
 
 ### Why Migrate from Mixpanel?
 

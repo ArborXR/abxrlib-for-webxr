@@ -452,6 +452,13 @@ export class Abxr {
     private static currentAuthData: AuthMechanismData | null = null;
     private static moduleTargetCallbacks: ModuleTargetCallback[] = [];
     private static authCompletedCallbacks: AuthCompletedCallback[] = [];
+    private static superProperties: Map<string, string> = new Map();
+    private static readonly SUPER_PROPERTIES_KEY = 'abxr_super_properties';
+    
+    // Static initialization
+    static {
+        Abxr.loadSuperProperties();
+    }
     
     // Expose commonly used types and enums for easy access
     static readonly EventStatus = EventStatus;
@@ -496,6 +503,108 @@ export class Abxr {
      */
     static StartTimedEvent(eventName: string): void {
         AbxrEvent.m_dictTimedEventStartTimes.set(eventName, new DateTime().FromUnixTime(DateTime.Now()));
+    }
+    
+    /**
+     * Register a super property that will be automatically included in all events
+     * Super properties persist across browser sessions and are stored in localStorage
+     * @param key Property name
+     * @param value Property value
+     * 
+     * @example
+     * // Register user type as a super property
+     * Abxr.Register("user_type", "premium");
+     * 
+     * // All subsequent events will include user_type: "premium"
+     * await Abxr.Event("button_click"); // Includes user_type automatically
+     * await Abxr.Track("page_view");    // Also includes user_type automatically
+     */
+    static Register(key: string, value: string): void {
+        this.superProperties.set(key, value);
+        this.saveSuperProperties();
+    }
+    
+    /**
+     * Register a super property only if it doesn't already exist
+     * Will not overwrite existing super properties with the same key
+     * @param key Property name
+     * @param value Property value
+     * 
+     * @example
+     * // Set default user type, but don't overwrite if already set
+     * Abxr.RegisterOnce("user_type", "free");
+     * Abxr.RegisterOnce("user_type", "premium"); // Ignored - won't overwrite "free"
+     */
+    static RegisterOnce(key: string, value: string): void {
+        if (!this.superProperties.has(key)) {
+            this.superProperties.set(key, value);
+            this.saveSuperProperties();
+        }
+    }
+    
+    /**
+     * Remove a super property
+     * @param key Property name to remove
+     */
+    static Unregister(key: string): void {
+        this.superProperties.delete(key);
+        this.saveSuperProperties();
+    }
+    
+    /**
+     * Clear all super properties
+     * Clears all superProperties from persistent storage (matches mixpanel.reset())
+     */
+    static Reset(): void {
+        this.superProperties.clear();
+        this.saveSuperProperties();
+    }
+    
+    /**
+     * Get a copy of all current super properties
+     * @returns Object containing all super properties
+     */
+    static GetSuperProperties(): { [key: string]: string } {
+        const result: { [key: string]: string } = {};
+        this.superProperties.forEach((value, key) => {
+            result[key] = value;
+        });
+        return result;
+    }
+    
+    private static loadSuperProperties(): void {
+        if (typeof localStorage === 'undefined') return;
+        
+        try {
+            const stored = localStorage.getItem(this.SUPER_PROPERTIES_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                this.superProperties.clear();
+                Object.entries(parsed).forEach(([key, value]) => {
+                    this.superProperties.set(key, value as string);
+                });
+            }
+        } catch (error) {
+            if (this.enableDebug) {
+                console.warn('AbxrLib: Failed to load super properties:', error);
+            }
+        }
+    }
+    
+    private static saveSuperProperties(): void {
+        if (typeof localStorage === 'undefined') return;
+        
+        try {
+            const obj: { [key: string]: string } = {};
+            this.superProperties.forEach((value, key) => {
+                obj[key] = value;
+            });
+            localStorage.setItem(this.SUPER_PROPERTIES_KEY, JSON.stringify(obj));
+        } catch (error) {
+            if (this.enableDebug) {
+                console.warn('AbxrLib: Failed to save super properties:', error);
+            }
+        }
     }
     
     // ===== Mixpanel Compatibility Methods =====
@@ -546,6 +655,38 @@ export class Abxr {
             }
             return 0; // Return success even when not authenticated
         }
+        
+        // Add super properties to all events
+        if (this.superProperties.size > 0) {
+            if (!meta) {
+                // If no meta provided, create object with super properties
+                meta = {};
+                this.superProperties.forEach((value, key) => {
+                    meta[key] = value;
+                });
+            } else if (typeof meta === 'object' && meta !== null && !Array.isArray(meta)) {
+                // If meta is an object, add super properties (don't overwrite event-specific properties)
+                const combined = { ...meta }; // Start with event-specific properties
+                this.superProperties.forEach((value, key) => {
+                    if (!(key in combined)) { // Only add if not already present
+                        combined[key] = value;
+                    }
+                });
+                meta = combined;
+            } else {
+                // If meta is a string, JSON, URL params, etc., convert and merge
+                const convertedMeta = this.convertToAbxrDictStrings(meta);
+                this.superProperties.forEach((value, key) => {
+                    if (!convertedMeta.has(key)) {
+                        convertedMeta.Add(key, value);
+                    }
+                });
+                const event = new AbxrEvent();
+                event.Construct(name, convertedMeta);
+                return await AbxrLibSend.EventCore(event);
+            }
+        }
+        
         const event = new AbxrEvent();
         event.Construct(name, this.convertToAbxrDictStrings(meta));
         return await AbxrLibSend.EventCore(event);
