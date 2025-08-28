@@ -494,7 +494,21 @@ export class Abxr {
      * await Abxr.Track("Plan Selected", { Plan: "Premium", UserID: 12345 });
      */
     static async Track(eventName: string, properties?: any): Promise<number> {
-        return await this.Event(eventName, properties);
+        // Add AbxrMethod tag to track Mixpanel compatibility usage
+        let trackProperties: any;
+        
+        if (!properties) {
+            // No properties provided, create object with just the tag
+            trackProperties = { AbxrMethod: "Track" };
+        } else if (typeof properties === 'object' && properties !== null && !Array.isArray(properties)) {
+            // Properties is an object, add the tag to it
+            trackProperties = { ...properties, AbxrMethod: "Track" };
+        } else {
+            // Properties is a string, primitive, or other type - create wrapper object
+            trackProperties = { AbxrMethod: "Track", originalProperties: properties };
+        }
+        
+        return await this.Event(eventName, trackProperties);
     }
     
     // Event methods
