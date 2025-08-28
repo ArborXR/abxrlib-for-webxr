@@ -1286,24 +1286,23 @@ export class Abxr {
         }
     }
     
-    // Helper method to check if moduleTarget has a valid value
-    private static hasValidModuleTarget(): boolean {
-        const authData = AbxrLibClient.getAuthResponseData();
-        return authData && authData.moduleTarget !== null && authData.moduleTarget !== undefined && authData.moduleTarget !== '';
+    // Internal method to notify all auth completion subscribers
+    private static notifyAuthCompletedCallbacks(isReauthentication: boolean = false): void {
+        if (this.authCompletedCallbacks.length === 0) {
+            return;
+        }
+        
+        const authData = this.getAuthCompletedData(isReauthentication);
+        
+        for (const callback of this.authCompletedCallbacks) {
+            try {
+                callback(authData);
+            } catch (error) {
+                console.error('AbxrLib: Error in authCompleted callback:', error);
+            }
+        }
     }
-    
-    // Helper method to get all moduleTarget-related data
-    private static getModuleTargetData(): ModuleTargetData {
-        const authData = AbxrLibClient.getAuthResponseData();
-        return {
-            moduleTarget: authData ? authData.moduleTarget : null,
-            userData: authData ? authData.userData : null,
-            userId: authData ? authData.userId : null,
-            userEmail: authData ? authData.userEmail : null,
-            isAuthenticated: this.isAuthenticated
-        };
-    }
-    
+       
     // Helper method to get auth completion data
     private static getAuthCompletedData(isReauthentication: boolean = false): AuthCompletedData {
         const authData = AbxrLibClient.getAuthResponseData();
@@ -1339,21 +1338,22 @@ export class Abxr {
         }
     }
     
-    // Internal method to notify all auth completion subscribers
-    private static notifyAuthCompletedCallbacks(isReauthentication: boolean = false): void {
-        if (this.authCompletedCallbacks.length === 0) {
-            return;
-        }
-        
-        const authData = this.getAuthCompletedData(isReauthentication);
-        
-        for (const callback of this.authCompletedCallbacks) {
-            try {
-                callback(authData);
-            } catch (error) {
-                console.error('AbxrLib: Error in authCompleted callback:', error);
-            }
-        }
+    // Helper method to check if moduleTarget has a valid value
+    private static hasValidModuleTarget(): boolean {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return authData && authData.moduleTarget !== null && authData.moduleTarget !== undefined && authData.moduleTarget !== '';
+    }
+    
+    // Helper method to get all moduleTarget-related data
+    private static getModuleTargetData(): ModuleTargetData {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return {
+            moduleTarget: authData ? authData.moduleTarget : null,
+            userData: authData ? authData.userData : null,
+            userId: authData ? authData.userId : null,
+            userEmail: authData ? authData.userEmail : null,
+            isAuthenticated: this.isAuthenticated
+        };
     }
 
     // Helper method to convert various metadata formats to AbxrDictStrings
