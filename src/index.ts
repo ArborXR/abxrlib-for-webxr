@@ -485,7 +485,179 @@ export class Abxr {
     static getAuthParams(): any {
         return { ...this.authParams };
     }
+
+    /**
+     * Send a debug-level log message with optional metadata
+     * Debug logs are typically used for development and troubleshooting
+     * @param message Log message to send
+     * @param meta Optional metadata with additional context
+     * @returns Promise<number> Log ID or 0 if not authenticated
+     * 
+     * @example
+     * // Basic debug log
+     * await Abxr.LogDebug('Component initialized successfully');
+     * 
+     * // Debug log with context metadata
+     * await Abxr.LogDebug('User authentication flow started', {
+     *     userId: 'user_123',
+     *     timestamp: Date.now(),
+     *     authMethod: 'oauth',
+     *     deviceType: 'VR'
+     * });
+     * 
+     * // Debug log with URL parameter metadata
+     * await Abxr.LogDebug('Search executed', 'query=virtual+reality&category=education&results=25');
+     */
+    static async LogDebug(message: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eDebug, message, this.convertToAbxrDictStrings(meta));
+        return await AbxrLibSend.AddLog(log);
+    }
     
+    /**
+     * Send an info-level log message with optional metadata  
+     * Info logs are used for general application events and user actions
+     * @param message Log message to send
+     * @param meta Optional metadata with additional context
+     * @returns Promise<number> Log ID or 0 if not authenticated
+     * 
+     * @example
+     * // Basic info log
+     * await Abxr.LogInfo('User logged in successfully');
+     * 
+     * // Info log with user context
+     * await Abxr.LogInfo('Training session completed', {
+     *     userId: 'user_456', 
+     *     sessionDuration: 1800,
+     *     modulesCompleted: 3,
+     *     score: 89
+     * });
+     * 
+     * // Info log with JSON metadata
+     * await Abxr.LogInfo('API request completed', '{"endpoint": "/api/progress", "status": 200, "latency": 120}');
+     */
+    static async LogInfo(message: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eInfo, message, this.convertToAbxrDictStrings(meta));
+        return await AbxrLibSend.AddLog(log);
+    }
+    
+    /**
+     * Send a warning-level log message with optional metadata
+     * Warning logs indicate potential issues that don't prevent operation
+     * @param message Log message to send
+     * @param meta Optional metadata with additional context  
+     * @returns Promise<number> Log ID or 0 if not authenticated
+     * 
+     * @example
+     * // Basic warning log
+     * await Abxr.LogWarn('Battery level is low');
+     * 
+     * // Warning with system context
+     * await Abxr.LogWarn('Frame rate dropped below threshold', {
+     *     currentFPS: 45,
+     *     targetFPS: 60,
+     *     timestamp: Date.now(),
+     *     deviceModel: 'Quest 3'
+     * });
+     * 
+     * // Performance warning
+     * await Abxr.LogWarn('Memory usage high', 'usage=85%&threshold=80%&available=2GB');
+     */
+    static async LogWarn(message: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eWarn, message, this.convertToAbxrDictStrings(meta));
+        return await AbxrLibSend.AddLog(log);
+    }
+    
+    /**
+     * Send an error-level log message with optional metadata
+     * Error logs indicate problems that may impact application functionality  
+     * @param message Log message to send
+     * @param meta Optional metadata with error details
+     * @returns Promise<number> Log ID or 0 if not authenticated
+     * 
+     * @example
+     * // Basic error log
+     * await Abxr.LogError('Failed to connect to server');
+     * 
+     * // Error with detailed context
+     * await Abxr.LogError('API request failed', {
+     *     endpoint: '/api/authentication',
+     *     statusCode: 500,
+     *     errorMessage: 'Internal server error',
+     *     retryCount: 3,
+     *     timestamp: Date.now()
+     * });
+     * 
+     * // Network error with JSON details
+     * await Abxr.LogError('WebXR session failed', '{"error": "device_not_found", "deviceType": "VR", "browserSupport": false}');
+     */
+    static async LogError(message: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eError, message, this.convertToAbxrDictStrings(meta));
+        return await AbxrLibSend.AddLog(log);
+    }
+    
+    /**
+     * Send a critical-level log message with optional metadata
+     * Critical logs indicate severe problems that may cause application failure
+     * @param message Log message to send  
+     * @param meta Optional metadata with critical error details
+     * @returns Promise<number> Log ID or 0 if not authenticated
+     * 
+     * @example
+     * // Basic critical log
+     * await Abxr.LogCritical('Application crash detected');
+     * 
+     * // Critical error with crash details
+     * await Abxr.LogCritical('Unhandled exception in XR render loop', {
+     *     exception: 'NullReferenceException',
+     *     stack: 'at RenderFrame.Update() line 42',
+     *     lastAction: 'user_grabbed_object',
+     *     memoryUsage: '512MB',
+     *     frameRate: 0
+     * });
+     * 
+     * // Security critical event
+     * await Abxr.LogCritical('Authentication bypass attempt', 'userId=unknown&ipAddress=192.168.1.100&attempts=5&blocked=true');
+     */
+    static async LogCritical(message: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        const log = new AbxrLog();
+        log.Construct(LogLevel.eCritical, message, this.convertToAbxrDictStrings(meta));
+        return await AbxrLibSend.AddLog(log);
+    }
+        
     /**
      * Log a named event with optional metadata
      * Timestamps and spatial context are automatically added
@@ -1042,179 +1214,6 @@ export class Abxr {
         }
     }
 
-
-    /**
-     * Send a debug-level log message with optional metadata
-     * Debug logs are typically used for development and troubleshooting
-     * @param message Log message to send
-     * @param meta Optional metadata with additional context
-     * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic debug log
-     * await Abxr.LogDebug('Component initialized successfully');
-     * 
-     * // Debug log with context metadata
-     * await Abxr.LogDebug('User authentication flow started', {
-     *     userId: 'user_123',
-     *     timestamp: Date.now(),
-     *     authMethod: 'oauth',
-     *     deviceType: 'VR'
-     * });
-     * 
-     * // Debug log with URL parameter metadata
-     * await Abxr.LogDebug('Search executed', 'query=virtual+reality&category=education&results=25');
-     */
-    static async LogDebug(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eDebug, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
-    }
-    
-    /**
-     * Send an info-level log message with optional metadata  
-     * Info logs are used for general application events and user actions
-     * @param message Log message to send
-     * @param meta Optional metadata with additional context
-     * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic info log
-     * await Abxr.LogInfo('User logged in successfully');
-     * 
-     * // Info log with user context
-     * await Abxr.LogInfo('Training session completed', {
-     *     userId: 'user_456', 
-     *     sessionDuration: 1800,
-     *     modulesCompleted: 3,
-     *     score: 89
-     * });
-     * 
-     * // Info log with JSON metadata
-     * await Abxr.LogInfo('API request completed', '{"endpoint": "/api/progress", "status": 200, "latency": 120}');
-     */
-    static async LogInfo(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eInfo, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
-    }
-    
-    /**
-     * Send a warning-level log message with optional metadata
-     * Warning logs indicate potential issues that don't prevent operation
-     * @param message Log message to send
-     * @param meta Optional metadata with additional context  
-     * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic warning log
-     * await Abxr.LogWarn('Battery level is low');
-     * 
-     * // Warning with system context
-     * await Abxr.LogWarn('Frame rate dropped below threshold', {
-     *     currentFPS: 45,
-     *     targetFPS: 60,
-     *     timestamp: Date.now(),
-     *     deviceModel: 'Quest 3'
-     * });
-     * 
-     * // Performance warning
-     * await Abxr.LogWarn('Memory usage high', 'usage=85%&threshold=80%&available=2GB');
-     */
-    static async LogWarn(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eWarn, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
-    }
-    
-    /**
-     * Send an error-level log message with optional metadata
-     * Error logs indicate problems that may impact application functionality  
-     * @param message Log message to send
-     * @param meta Optional metadata with error details
-     * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic error log
-     * await Abxr.LogError('Failed to connect to server');
-     * 
-     * // Error with detailed context
-     * await Abxr.LogError('API request failed', {
-     *     endpoint: '/api/authentication',
-     *     statusCode: 500,
-     *     errorMessage: 'Internal server error',
-     *     retryCount: 3,
-     *     timestamp: Date.now()
-     * });
-     * 
-     * // Network error with JSON details
-     * await Abxr.LogError('WebXR session failed', '{"error": "device_not_found", "deviceType": "VR", "browserSupport": false}');
-     */
-    static async LogError(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eError, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
-    }
-    
-    /**
-     * Send a critical-level log message with optional metadata
-     * Critical logs indicate severe problems that may cause application failure
-     * @param message Log message to send  
-     * @param meta Optional metadata with critical error details
-     * @returns Promise<number> Log ID or 0 if not authenticated
-     * 
-     * @example
-     * // Basic critical log
-     * await Abxr.LogCritical('Application crash detected');
-     * 
-     * // Critical error with crash details
-     * await Abxr.LogCritical('Unhandled exception in XR render loop', {
-     *     exception: 'NullReferenceException',
-     *     stack: 'at RenderFrame.Update() line 42',
-     *     lastAction: 'user_grabbed_object',
-     *     memoryUsage: '512MB',
-     *     frameRate: 0
-     * });
-     * 
-     * // Security critical event
-     * await Abxr.LogCritical('Authentication bypass attempt', 'userId=unknown&ipAddress=192.168.1.100&attempts=5&blocked=true');
-     */
-    static async LogCritical(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eCritical, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
-    }
-    
     /**
      * Store user progress and application state for cross-device continuity
      * Enables resumable training and long-form content across headsets
