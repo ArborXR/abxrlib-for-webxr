@@ -486,6 +486,51 @@ export class Abxr {
         return { ...this.authParams };
     }
     
+    // Event methods
+    static async Event(name: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Event not sent - not authenticated');
+            }
+            return 0; // Return success even when not authenticated
+        }
+        
+        // Add super properties to all events
+        if (this.superProperties.size > 0) {
+            if (!meta) {
+                // If no meta provided, create object with super properties
+                meta = {};
+                this.superProperties.forEach((value, key) => {
+                    meta[key] = value;
+                });
+            } else if (typeof meta === 'object' && meta !== null && !Array.isArray(meta)) {
+                // If meta is an object, add super properties (don't overwrite event-specific properties)
+                const combined = { ...meta }; // Start with event-specific properties
+                this.superProperties.forEach((value, key) => {
+                    if (!(key in combined)) { // Only add if not already present
+                        combined[key] = value;
+                    }
+                });
+                meta = combined;
+            } else {
+                // If meta is a string, JSON, URL params, etc., convert and merge
+                const convertedMeta = this.convertToAbxrDictStrings(meta);
+                this.superProperties.forEach((value, key) => {
+                    if (!convertedMeta.has(key)) {
+                        convertedMeta.Add(key, value);
+                    }
+                });
+                const event = new AbxrEvent();
+                event.Construct(name, convertedMeta);
+                return await AbxrLibSend.EventCore(event);
+            }
+        }
+        
+        const event = new AbxrEvent();
+        event.Construct(name, this.convertToAbxrDictStrings(meta));
+        return await AbxrLibSend.EventCore(event);
+    }
+    
     /**
      * Start timing an event
      * Call Event() later with the same event name to automatically include duration
@@ -494,15 +539,97 @@ export class Abxr {
      * 
      * @example
      * // Start timing an upload
-     * Abxr.StartTimedEvent("Image Upload");
+     * Abxr.StartTimedEvent("Table puzzle");
      * 
      * // 20 seconds later - works with Event() or Track()
-     * await Abxr.Event("Image Upload"); // Automatically includes duration: 20 seconds
-     * // OR
-     * await Abxr.Track("Image Upload"); // Also includes duration: 20 seconds
+     * await Abxr.Event("Table puzzle"); // Automatically includes duration: 20 seconds
      */
     static StartTimedEvent(eventName: string): void {
         AbxrEvent.m_dictTimedEventStartTimes.set(eventName, new DateTime().FromUnixTime(DateTime.Now()));
+    }
+
+    // Assessment Events
+    static async EventAssessmentStart(assessmentName: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Assessment start event not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibSend.EventAssessmentStart(assessmentName, this.convertToAbxrDictStrings(meta));
+    }
+    
+    static async EventAssessmentComplete(assessmentName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Assessment complete event not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibSend.EventAssessmentComplete(assessmentName, score, eventStatus, this.convertToAbxrDictStrings(meta));
+    }
+    
+    // Objective Events
+    static async EventObjectiveStart(objectiveName: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Objective start event not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibSend.EventObjectiveStart(objectiveName, this.convertToAbxrDictStrings(meta));
+    }
+    
+    static async EventObjectiveComplete(objectiveName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Objective complete event not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibSend.EventObjectiveComplete(objectiveName, score, eventStatus, this.convertToAbxrDictStrings(meta));
+    }
+    
+    // Interaction Events
+    static async EventInteractionStart(interactionName: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Interaction start event not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibSend.EventInteractionStart(interactionName, this.convertToAbxrDictStrings(meta));
+    }
+    
+    static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, response: string = "", meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Interaction complete event not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibSend.EventInteractionComplete(interactionName, interactionType, response, this.convertToAbxrDictStrings(meta));
+    }
+    
+    // Level Events
+    static async EventLevelStart(levelName: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Level start event not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibSend.EventLevelStart(levelName, this.convertToAbxrDictStrings(meta));
+    }
+    
+    static async EventLevelComplete(levelName: string, score: string, meta?: any): Promise<number> {
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Level complete event not sent - not authenticated');
+            }
+            return 0;
+        }
+        return await AbxrLibSend.EventLevelComplete(levelName, score, this.convertToAbxrDictStrings(meta));
     }
     
     /**
@@ -606,176 +733,8 @@ export class Abxr {
             }
         }
     }
-    
-    // ===== Mixpanel Compatibility Methods =====
-    
-    /**
-     * Mixpanel compatibility method - tracks an event with optional properties
-     * This method provides compatibility with Mixpanel JavaScript SDK for easier migration
-     * Internally calls the AbxrLib Event method
-     * If StartTimedEvent() was called with this event name, duration will be added automatically
-     * @param eventName Name of the event to track
-     * @param properties Optional properties to send with the event (compatible with Mixpanel Value format)
-     * 
-     * @example
-     * // Basic event tracking (matches: mixpanel.track("Sent Message"))
-     * await Abxr.Track("Sent Message");
-     * 
-     * // Event tracking with properties (matches: mixpanel.track("Plan Selected", props))
-     * await Abxr.Track("Plan Selected", { Plan: "Premium", UserID: 12345 });
-     * 
-     * // Timed event tracking
-     * Abxr.StartTimedEvent("Image Upload");
-     * // ... later ...
-     * await Abxr.Track("Image Upload"); // Duration automatically included
-     */
-    static async Track(eventName: string, properties?: any): Promise<number> {
-        // Add AbxrMethod tag to track Mixpanel compatibility usage
-        let trackProperties: any;
-        
-        if (!properties) {
-            // No properties provided, create object with just the tag
-            trackProperties = { AbxrMethod: "Track" };
-        } else if (typeof properties === 'object' && properties !== null && !Array.isArray(properties)) {
-            // Properties is an object, add the tag to it
-            trackProperties = { ...properties, AbxrMethod: "Track" };
-        } else {
-            // Properties is a string, primitive, or other type - create wrapper object
-            trackProperties = { AbxrMethod: "Track", originalProperties: properties };
-        }
-        
-        return await this.Event(eventName, trackProperties);
-    }
-    
-    // Event methods
-    static async Event(name: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Event not sent - not authenticated');
-            }
-            return 0; // Return success even when not authenticated
-        }
-        
-        // Add super properties to all events
-        if (this.superProperties.size > 0) {
-            if (!meta) {
-                // If no meta provided, create object with super properties
-                meta = {};
-                this.superProperties.forEach((value, key) => {
-                    meta[key] = value;
-                });
-            } else if (typeof meta === 'object' && meta !== null && !Array.isArray(meta)) {
-                // If meta is an object, add super properties (don't overwrite event-specific properties)
-                const combined = { ...meta }; // Start with event-specific properties
-                this.superProperties.forEach((value, key) => {
-                    if (!(key in combined)) { // Only add if not already present
-                        combined[key] = value;
-                    }
-                });
-                meta = combined;
-            } else {
-                // If meta is a string, JSON, URL params, etc., convert and merge
-                const convertedMeta = this.convertToAbxrDictStrings(meta);
-                this.superProperties.forEach((value, key) => {
-                    if (!convertedMeta.has(key)) {
-                        convertedMeta.Add(key, value);
-                    }
-                });
-                const event = new AbxrEvent();
-                event.Construct(name, convertedMeta);
-                return await AbxrLibSend.EventCore(event);
-            }
-        }
-        
-        const event = new AbxrEvent();
-        event.Construct(name, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.EventCore(event);
-    }
-    
-    // Assessment Events
-    static async EventAssessmentStart(assessmentName: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Assessment start event not sent - not authenticated');
-            }
-            return 0;
-        }
-        return await AbxrLibSend.EventAssessmentStart(assessmentName, this.convertToAbxrDictStrings(meta));
-    }
-    
-    static async EventAssessmentComplete(assessmentName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Assessment complete event not sent - not authenticated');
-            }
-            return 0;
-        }
-        return await AbxrLibSend.EventAssessmentComplete(assessmentName, score, eventStatus, this.convertToAbxrDictStrings(meta));
-    }
-    
-    // Objective Events
-    static async EventObjectiveStart(objectiveName: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Objective start event not sent - not authenticated');
-            }
-            return 0;
-        }
-        return await AbxrLibSend.EventObjectiveStart(objectiveName, this.convertToAbxrDictStrings(meta));
-    }
-    
-    static async EventObjectiveComplete(objectiveName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Objective complete event not sent - not authenticated');
-            }
-            return 0;
-        }
-        return await AbxrLibSend.EventObjectiveComplete(objectiveName, score, eventStatus, this.convertToAbxrDictStrings(meta));
-    }
-    
-    // Interaction Events
-    static async EventInteractionStart(interactionName: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Interaction start event not sent - not authenticated');
-            }
-            return 0;
-        }
-        return await AbxrLibSend.EventInteractionStart(interactionName, this.convertToAbxrDictStrings(meta));
-    }
-    
-    static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, response: string = "", meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Interaction complete event not sent - not authenticated');
-            }
-            return 0;
-        }
-        return await AbxrLibSend.EventInteractionComplete(interactionName, interactionType, response, this.convertToAbxrDictStrings(meta));
-    }
-    
-    // Level Events
-    static async EventLevelStart(levelName: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Level start event not sent - not authenticated');
-            }
-            return 0;
-        }
-        return await AbxrLibSend.EventLevelStart(levelName, this.convertToAbxrDictStrings(meta));
-    }
-    
-    static async EventLevelComplete(levelName: string, score: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Level complete event not sent - not authenticated');
-            }
-            return 0;
-        }
-        return await AbxrLibSend.EventLevelComplete(levelName, score, this.convertToAbxrDictStrings(meta));
-    }
-    
+
+
     static async LogDebug(message: string, meta?: any): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
@@ -889,6 +848,46 @@ export class Abxr {
             return 0;
         }
         return await AbxrLibAnalytics.AddAIProxy(new AbxrAIProxy().Construct0(prompt, pastMessages || "", botId || "default"));
+    }
+
+    // ===== Mixpanel Compatibility Methods =====
+    
+    /**
+     * Mixpanel compatibility method - tracks an event with optional properties
+     * This method provides compatibility with Mixpanel JavaScript SDK for easier migration
+     * Internally calls the AbxrLib Event method
+     * If StartTimedEvent() was called with this event name, duration will be added automatically
+     * @param eventName Name of the event to track
+     * @param properties Optional properties to send with the event (compatible with Mixpanel Value format)
+     * 
+     * @example
+     * // Basic event tracking (matches: mixpanel.track("Sent Message"))
+     * await Abxr.Track("Sent Message");
+     * 
+     * // Event tracking with properties (matches: mixpanel.track("Plan Selected", props))
+     * await Abxr.Track("Plan Selected", { Plan: "Premium", UserID: 12345 });
+     * 
+     * // Timed event tracking
+     * Abxr.StartTimedEvent("Table puzzle");
+     * // ... later ...
+     * await Abxr.Track("Table puzzle"); // Duration automatically included
+     */
+    static async Track(eventName: string, properties?: any): Promise<number> {
+        // Add AbxrMethod tag to track Mixpanel compatibility usage
+        let trackProperties: any;
+        
+        if (!properties) {
+            // No properties provided, create object with just the tag
+            trackProperties = { AbxrMethod: "Track" };
+        } else if (typeof properties === 'object' && properties !== null && !Array.isArray(properties)) {
+            // Properties is an object, add the tag to it
+            trackProperties = { ...properties, AbxrMethod: "Track" };
+        } else {
+            // Properties is a string, primitive, or other type - create wrapper object
+            trackProperties = { AbxrMethod: "Track", originalProperties: properties };
+        }
+        
+        return await this.Event(eventName, trackProperties);
     }
     
     // Internal configuration method
