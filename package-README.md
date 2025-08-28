@@ -267,6 +267,35 @@ Abxr.EventCritical('safety_check_skipped', {'location': 'entrance', 'severity': 
 Abxr.EventCritical('equipment_misuse', {'equipment': 'power_drill'});
 ```
 
+### Timed Events
+
+The ABXRLib SDK includes a built-in timing system that allows you to measure the duration of any event. This is useful for tracking how long users spend on specific activities.
+
+```javascript
+// JavaScript Timed Event Method Signature
+Abxr.StartTimedEvent(eventName)
+
+// Example Usage
+Abxr.StartTimedEvent("Image Upload");
+// ... user performs upload activity for 20 seconds ...
+await Abxr.Event("Image Upload"); // Duration automatically included: 20 seconds
+
+// Works with all event methods
+Abxr.StartTimedEvent("Assessment");
+// ... later ...
+await Abxr.EventAssessmentComplete("Assessment", "95", Abxr.EventStatus.ePass); // Duration included
+
+// Also works with Mixpanel compatibility methods
+Abxr.StartTimedEvent("User Session");
+// ... later ...
+await Abxr.Track("User Session"); // Duration automatically included
+```
+
+**Parameters:**
+- `eventName` (string): The name of the event to start timing. Must match the event name used later.
+
+**Note:** The timer automatically adds a `duration` field (in seconds) to any subsequent event with the same name. The timer is automatically removed after the first matching event.
+
 ### Logging
 ```javascript
 // JavaScript Event Method Signatures
@@ -623,6 +652,24 @@ mixpanel.track("Plan Selected", { "Plan": "Premium" });
 // After (just string replace!)
 Abxr.Track("Sent Message");  
 Abxr.Track("Plan Selected", { "Plan": "Premium" });
+```
+
+#### Bonus: Timed Events Work Too!
+```javascript
+// Mixpanel timed events work identically:
+// Replace: mixpanel.time_event -> Abxr.StartTimedEvent
+
+// Before (Mixpanel)
+mixpanel.time_event("Image Upload");
+// ... later ...
+mixpanel.track("Image Upload");
+
+// After (ABXR - identical functionality!)
+Abxr.StartTimedEvent("Image Upload");
+// ... later ...  
+Abxr.Track("Image Upload"); // Duration automatically included
+// OR
+Abxr.Event("Image Upload"); // Also works with Event() - duration included!
 ```
 
 **That's it! Your existing tracking calls will work immediately.**

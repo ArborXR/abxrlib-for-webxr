@@ -444,6 +444,7 @@ export class Abxr {
         orgId?: string;
         authSecret?: string;
     } = {};
+
     private static authMechanismCallback: AuthMechanismCallback | null = null;
     private static dialogOptions: AuthMechanismDialogOptions = { 
         enabled: true
@@ -478,20 +479,46 @@ export class Abxr {
         return { ...this.authParams };
     }
     
+    /**
+     * Start timing an event
+     * Call Event() later with the same event name to automatically include duration
+     * Works with all event methods since they use Event() internally
+     * @param eventName Name of the event to start timing
+     * 
+     * @example
+     * // Start timing an upload
+     * Abxr.StartTimedEvent("Image Upload");
+     * 
+     * // 20 seconds later - works with Event() or Track()
+     * await Abxr.Event("Image Upload"); // Automatically includes duration: 20 seconds
+     * // OR
+     * await Abxr.Track("Image Upload"); // Also includes duration: 20 seconds
+     */
+    static StartTimedEvent(eventName: string): void {
+        AbxrEvent.m_dictTimedEventStartTimes.set(eventName, new DateTime().FromUnixTime(DateTime.Now()));
+    }
+    
     // ===== Mixpanel Compatibility Methods =====
+    
     /**
      * Mixpanel compatibility method - tracks an event with optional properties
-     * This method provides compatibility with Mixpanel Unity SDK for easier migration
+     * This method provides compatibility with Mixpanel JavaScript SDK for easier migration
      * Internally calls the AbxrLib Event method
+     * If StartTimedEvent() was called with this event name, duration will be added automatically
      * @param eventName Name of the event to track
      * @param properties Optional properties to send with the event (compatible with Mixpanel Value format)
      * 
      * @example
-     * // Basic event tracking (matches: Mixpanel.Track("Sent Message"))
+     * // Basic event tracking (matches: mixpanel.track("Sent Message"))
      * await Abxr.Track("Sent Message");
      * 
-     * // Event tracking with properties (matches: Mixpanel.Track("Plan Selected", props))
+     * // Event tracking with properties (matches: mixpanel.track("Plan Selected", props))
      * await Abxr.Track("Plan Selected", { Plan: "Premium", UserID: 12345 });
+     * 
+     * // Timed event tracking
+     * Abxr.StartTimedEvent("Image Upload");
+     * // ... later ...
+     * await Abxr.Track("Image Upload"); // Duration automatically included
      */
     static async Track(eventName: string, properties?: any): Promise<number> {
         // Add AbxrMethod tag to track Mixpanel compatibility usage

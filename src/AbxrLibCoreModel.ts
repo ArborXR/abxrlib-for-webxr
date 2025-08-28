@@ -641,6 +641,7 @@ export class AbxrEvent extends AbxrMetaDataObject
 	public static m_dictObjectiveStartTimes:	Dictionary<string, DateTime>;
 	public static m_dictInteractionStartTimes:	Dictionary<string, DateTime>;
 	public static m_dictLevelStartTimes:		Dictionary<string, DateTime>;
+	public static m_dictTimedEventStartTimes:	Dictionary<string, DateTime>;
 	// ---
 	public static InitStatics(): void
 	{
@@ -648,6 +649,7 @@ export class AbxrEvent extends AbxrMetaDataObject
 		AbxrEvent.m_dictObjectiveStartTimes = new Dictionary<string, DateTime>();
 		AbxrEvent.m_dictInteractionStartTimes = new Dictionary<string, DateTime>();
 		AbxrEvent.m_dictLevelStartTimes = new Dictionary<string, DateTime>();
+		AbxrEvent.m_dictTimedEventStartTimes = new Dictionary<string, DateTime>();
 	}
 	// ---
 	m_szName:			string;

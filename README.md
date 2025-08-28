@@ -499,6 +499,34 @@ Abxr.EventInteractionComplete('select_option_a', Abxr.InteractionType.eSelect, '
     'confidence': 'high'
 });
 ```
+### Timed Events
+
+The ABXRLib SDK includes a built-in timing system that allows you to measure the duration of any event. This is useful for tracking how long users spend on specific activities.
+
+```javascript
+// JavaScript Timed Event Method Signature
+Abxr.StartTimedEvent(eventName)
+
+// Example Usage
+Abxr.StartTimedEvent("Image Upload");
+// ... user performs upload activity for 20 seconds ...
+await Abxr.Event("Image Upload"); // Duration automatically included: 20 seconds
+
+// Works with all event methods
+Abxr.StartTimedEvent("Assessment");
+// ... later ...
+await Abxr.EventAssessmentComplete("Assessment", "95", Abxr.EventStatus.ePass); // Duration included
+
+// Also works with Mixpanel compatibility methods
+Abxr.StartTimedEvent("User Session");
+// ... later ...
+await Abxr.Track("User Session"); // Duration automatically included
+```
+
+**Parameters:**
+- `eventName` (string): The name of the event to start timing. Must match the event name used later.
+
+**Note:** The timer automatically adds a `duration` field (in seconds) to any subsequent event with the same name. The timer is automatically removed after the first matching event.
 
 ### Logging
 The Log Methods provide straightforward logging functionality, similar to syslogs. These functions are available to developers by default, even across enterprise users, allowing for consistent and accessible logging across different deployment scenarios.
@@ -1125,10 +1153,11 @@ Abxr.Track("Plan Selected", { "Plan": "Premium" });
 
 ### Mixpanel Compatibility Methods
 
-The ABXRLib SDK includes `Track` methods that match Mixpanel's API exactly:
+The ABXRLib SDK includes `Track` methods and `StartTimedEvent` that match Mixpanel's API exactly:
 
 ```javascript
-// TypeScript/JavaScript Track Method Signature
+// TypeScript/JavaScript Method Signatures
+Abxr.StartTimedEvent(eventName: string): void
 Abxr.Track(eventName: string, properties?: any): Promise<number>
 
 // Example Usage - Drop-in Replacement
@@ -1138,6 +1167,13 @@ await Abxr.Track("purchase_completed", {
     currency: "USD",
     plan: "premium"
 });
+
+// Timed Events (matches Mixpanel exactly!)
+Abxr.StartTimedEvent("Image Upload");
+// ... 20 seconds later ...
+await Abxr.Track("Image Upload"); // Duration automatically added: 20 seconds
+// OR
+await Abxr.Event("Image Upload"); // Also works with Event() - duration added automatically!
 
 // Works with all property formats
 await Abxr.Track("form_submitted", {

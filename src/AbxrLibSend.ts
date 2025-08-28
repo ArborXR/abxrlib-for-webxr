@@ -72,6 +72,20 @@ export class AbxrLibSend
 	// --- API (C++ dll and C# dll) versions of AbxrLibSend.Event().
 	public static async Event(szName: string, dictMeta: AbxrDictStrings): Promise<AbxrResult>
 	{
+		// Add duration if this was a timed event (StartTimedEvent functionality)
+		var	rpStartTime:	{vRet: DateTime} = {vRet: new DateTime()};
+		var	bGotValue:		boolean;
+		
+		bGotValue = AbxrEvent.m_dictTimedEventStartTimes.TryGetValue(szName, rpStartTime);
+		if (bGotValue)
+		{
+			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
+			
+			dictMeta.set("duration", tsDuration.ToString());
+			// Remove the start time since this event is now complete
+			AbxrEvent.m_dictTimedEventStartTimes.Remove(szName);
+		}
+		
 		var	abxrEvent: AbxrEvent = new AbxrEvent().Construct(szName, dictMeta);
 
 		return await AbxrLibSend.EventCore(abxrEvent);
