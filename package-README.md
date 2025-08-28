@@ -13,13 +13,41 @@ The **ABXRLib SDK for WebXR** is an open-source analytics and data collection li
 - **Secure & scalable**—ready for enterprise use cases  
 - **Pluggable with ArborXR Insights**—seamless access to LMS/BI integrations, session replays, AI diagnostics, and more
 
+## Table of Contents
+1. [Installation](#installation)
+2. [Configuration](#configuration)
+3. [Sending Data](#sending-data)
+   - [Events](#events)
+   - [Analytics Event Wrappers](#analytics-event-wrappers-essential-for-all-developers)
+   - [Timed Events](#timed-events)
+   - [Super Properties](#super-properties)
+   - [Logging](#logging)
+   - [Storage](#storage)
+   - [Telemetry](#telemetry)
+   - [AI Integration](#ai-integration)
+   - [Exit Polls](#exit-polls)
+   - [Metadata Formats](#metadata-formats)
+4. [Advanced Setup](#advanced-setup)
+   - [TypeScript/ES6 Modules](#typescriptes6-modules)
+   - [Browser (UMD)](#browser-umd)
+5. [Mixpanel Migration & Compatibility](#mixpanel-migration--compatibility)
+6. [Advanced Features](#advanced-features)
+   - [Module Targets](#module-targets)
+   - [Authentication](#authentication)
+   - [Session Management](#session-management)
+   - [Mixpanel Compatibility](#mixpanel-compatibility)
+7. [Support](#support)
+   - [Resources](#resources)
+   - [FAQ](#faq)
+   - [Troubleshooting](#troubleshooting)
+
 ## Installation
 
 ```bash
 npm install abxrlib-for-webxr
 ```
 
-## Simple Setup
+## Configuration
 
 > **⚠️ Security Note:** For production builds distributed to third parties, avoid compiling `orgId` and `authSecret` directly into your application code. Instead, use URL parameters or environment variables to provide these credentials at runtime. Only compile credentials directly into the build when creating custom applications for specific individual clients.
 
@@ -198,7 +226,7 @@ Abxr.AbxrDictStrings
 
 ## Sending Data
 
-### Event Methods
+### Events
 ```javascript
 // JavaScript Event Method Signatures
 Abxr.Event(name)
@@ -296,7 +324,50 @@ await Abxr.Track("User Session"); // Duration automatically included
 
 **Note:** The timer automatically adds a `duration` field (in seconds) to any subsequent event with the same name. The timer is automatically removed after the first matching event.
 
+### Super Properties
 
+Super Properties are global event properties that are automatically included in all events. They persist across browser sessions and are perfect for setting user attributes, application state, or any data you want included in every event.
+
+```javascript
+// JavaScript Super Properties Method Signatures
+Abxr.Register(key, value)
+Abxr.RegisterOnce(key, value)
+Abxr.Unregister(key)
+Abxr.Reset()
+Abxr.GetSuperProperties()
+
+// Example Usage
+// Set user properties that will be included in all events
+Abxr.Register("user_type", "premium");
+Abxr.Register("app_version", "1.2.3");
+Abxr.Register("device_type", "quest3");
+
+// All subsequent events automatically include these properties
+await Abxr.Event("button_click"); // Includes user_type, app_version, device_type
+await Abxr.EventAssessmentStart("quiz"); // Also includes all super properties
+await Abxr.Track("purchase"); // Mixpanel compatibility method also gets super properties
+
+// Set default values that won't overwrite existing super properties
+Abxr.RegisterOnce("user_tier", "free"); // Only sets if not already set
+Abxr.RegisterOnce("user_tier", "premium"); // Ignored - "free" remains
+
+// Manage super properties
+Abxr.Unregister("device_type"); // Remove specific super property
+const props = Abxr.GetSuperProperties(); // Get all current super properties
+Abxr.Reset(); // Remove all super properties (matches mixpanel.reset())
+```
+
+**Key Features:**
+- **Automatic Inclusion**: Super properties are automatically added to every event
+- **Persistent Storage**: Super properties persist across browser sessions using localStorage
+- **No Overwriting**: Super properties don't overwrite event-specific properties with the same name
+- **Universal**: Works with all event methods (Event, Track, EventAssessmentStart, etc.)
+
+**Use Cases:**
+- User attributes (subscription type, user level, demographics)
+- Application state (app version, build number, feature flags)
+- Device information (device type, browser, screen size)
+- Session context (session ID, experiment groups, A/B test variants)
 
 ### Logging
 ```javascript
@@ -312,7 +383,7 @@ Abxr.LogError('Critical error in assessment phase');
 Abxr.LogInfo('User login', {'userId': 12345, 'loginMethod': 'oauth'});
 ```
 
-### Storage API
+### Storage
 
 #### Basic Storage Methods
 ```javascript
@@ -362,109 +433,126 @@ Abxr.AIProxy(prompt, pastMessages = "", botId = "")
 Abxr.AIProxy('Provide me a randomized greeting that includes common small talk and ends by asking some form of how can I help');
 ```
 
-## Authentication Completion Callback
+### Exit Polls
 
-Get notified when authentication completes successfully:
-
-```javascript
-// Subscribe to authentication completion events
-Abxr.onAuthCompleted(function(data) {
-    console.log('Authentication completed!', data.success);
-    
-    if (data.success) {
-        if (data.isReauthentication) {
-            console.log('Welcome back!');
-        } else {
-            console.log('Welcome! Setting up your experience...');
-            initializeUserInterface();
-        }
-    }
-});
-
-// Initialize ABXRLib - the callback will fire when auth completes
-Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
-```
-
-### Authentication Completion Data
+Deliver questionnaires to users to gather feedback about their XR experience:
 
 ```javascript
-interface AuthCompletedData {
-    success: boolean;                    // Whether authentication was successful
-    userData?: any;                      // Additional user data from authentication response
-    userId?: any;                        // User identifier
-    userEmail?: string | null;           // User email address
-    moduleTarget?: string | null;        // Target module from LMS (if applicable)
-    isReauthentication?: boolean;        // Whether this was a reauthentication
-}
-```
+// JavaScript Event Method Signatures
+Abxr.PollUser(prompt, pollType, responses = null, callback = null)
 
-## Module Target Callback (LMS Multi-Module Support)
+// Example Usage - Thumbs Up/Down Poll  
+Abxr.PollUser("How would you rate this training experience?", Abxr.PollType.Thumbs);
 
-The **Module Target** feature enables single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application automatically directs the user to that module.
+// Example Usage - Rating Poll (1-5 stars)
+Abxr.PollUser("Rate the difficulty of this module", Abxr.PollType.Rating);
 
-### Quick Setup
+// Example Usage - Multiple Choice Poll
+Abxr.PollUser("What was the most challenging aspect?", 
+    Abxr.PollType.MultipleChoice, 
+    ["Navigation", "Controls", "Content", "Technical Issues"]);
 
-```javascript
-// Initialize ABXRLib SDK
-Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
-
-// Subscribe to moduleTarget availability
-Abxr.onModuleTargetAvailable(function(data) {
-    console.log('ModuleTarget received:', data.moduleTarget);
-    
-    // Direct user to specific module
-    if (data.moduleTarget) {
-        loadModule(data.moduleTarget);
-        Abxr.EventAssessmentStart(data.moduleTarget);
-    } else {
-        showMainMenu();
-    }
+// Example Usage - With Callback
+Abxr.PollUser("Overall satisfaction?", Abxr.PollType.Rating, null, function(response) {
+    console.log("User rated:", response);
+    // Handle response (e.g., adjust difficulty, show follow-up content)
 });
 ```
 
-### Available Methods
+**Poll Types:**
+- `Abxr.PollType.Thumbs`: Thumbs up/thumbs down interface
+- `Abxr.PollType.Rating`: 1-5 star rating interface  
+- `Abxr.PollType.MultipleChoice`: Select from custom response options
 
+### Metadata Formats
+
+The ABXRLib SDK supports multiple flexible formats for the `meta` parameter in all event and log methods. You can use whatever format is most convenient for your application:
+
+#### 1. Plain JavaScript Objects (Recommended)
 ```javascript
-// Subscribe to module target notifications
-Abxr.onModuleTargetAvailable(callback)
+// Simple and intuitive - works with any object
+Abxr.Event('user_action', { 
+    action: 'click', 
+    timestamp: new Date().toISOString(),
+    userId: 12345,
+    completed: true
+});
 
-// Get module target directly (after authentication)
-Abxr.getModuleTarget()
-Abxr.getUserId()
-Abxr.getUserData()
-
-// Remove callback when no longer needed
-Abxr.removeModuleTargetCallback(callback)
+Abxr.LogInfo('User login', {
+    username: 'john_doe',
+    loginMethod: 'oauth',
+    deviceType: 'mobile'
+});
 ```
 
-## Session Management **NEW**
+#### 2. JSON Strings
+```javascript
+// Perfect for APIs or stored JSON data
+Abxr.EventAssessmentStart('Math Quiz', '{"difficulty": "hard", "timeLimit": 300, "attempts": 1}');
 
-Advanced session management for testing and session control:
+Abxr.LogError('API Error', '{"endpoint": "/api/users", "status": 500, "message": "Database timeout"}');
+```
+
+#### 3. URL Parameter Strings
+```javascript
+// Great for form data or query parameters
+Abxr.Event('form_submit', 'name=John%20Doe&email=john@example.com&age=25');
+
+Abxr.LogDebug('Search query', 'query=virtual+reality&category=education&page=2');
+
+// Handles complex values with = signs
+Abxr.Event('equation_solved', 'formula=x=y+5&result=10&method=substitution');
+```
+
+#### 4. AbxrDictStrings Objects (Advanced)
+```javascript
+// For advanced users who need precise control
+const meta = new Abxr.AbxrDictStrings();
+meta.Add('custom_field', 'value');
+meta.Add('timestamp', Date.now().toString());
+Abxr.Event('custom_event', meta);
+```
+
+#### 5. Primitive Values
+```javascript
+// For simple single-value metadata
+Abxr.Event('score_update', 1500);  // Number
+Abxr.LogInfo('Feature enabled', true);  // Boolean
+Abxr.Event('user_message', 'Hello World');  // String
+```
+
+#### 6. No Metadata
+```javascript
+// Events and logs work fine without metadata
+Abxr.Event('app_started');
+Abxr.LogInfo('Application initialized');
+```
+
+#### Automatic Conversion Examples
+
+The SDK automatically handles conversion and URL decoding:
 
 ```javascript
-// Manual reauthentication (primarily for testing)
-await Abxr.ReAuthenticate();
+// URL parameters with encoding
+'user=John%20Doe&message=Hello%20World'
+// Becomes: { user: "John Doe", message: "Hello World" }
 
-// Start new session with fresh session ID  
-await Abxr.StartNewSession();
+// JSON with nested data
+'{"user": {"name": "John", "age": 30}, "scores": [95, 87, 92]}'
+// Becomes: { user: "John,30", scores: "95,87,92" }
 
-// Continue existing session
-await Abxr.ContinueSession('session_12345');
-
-// Example usage
-async function testAuthFlow() {
-    await Abxr.ReAuthenticate();
-    if (Abxr.isConfigured()) {
-        await Abxr.EventAssessmentStart('test_assessment');
-    }
-}
-
-async function startFreshExperience() {
-    await Abxr.StartNewSession();
-    await Abxr.StorageRemoveDefaultEntry(Abxr.StorageScope.user);
-    await Abxr.EventAssessmentStart('new_training_session');
-}
+// Mixed formats work seamlessly
+Abxr.EventLevelComplete('Level 1', '85', 'score=85&attempts=3&bonus=true');
+Abxr.EventAssessmentStart('Quiz', { startTime: Date.now(), difficulty: 'medium' });
 ```
+
+**All event and log methods support these flexible metadata formats:**
+- `Abxr.Event(name, meta?)`
+- `Abxr.EventAssessmentStart/Complete(..., meta?)`
+- `Abxr.EventObjectiveStart/Complete(..., meta?)`
+- `Abxr.EventInteractionStart/Complete(..., meta?)`
+- `Abxr.EventLevelStart/Complete(..., meta?)`
+- `Abxr.LogDebug/Info/Warn/Error/Critical(message, meta?)`
 
 ### Usage Examples
 
@@ -616,53 +704,6 @@ Abxr_init('app123', 'org456', 'secret789');
 Abxr.AIProxy('Provide a greeting message', '', 'default');
 ```
 
-## Super Properties
-
-Super Properties are global event properties that are automatically included in all events. They persist across browser sessions and are perfect for setting user attributes, application state, or any data you want included in every event.
-
-```javascript
-// JavaScript Super Properties Method Signatures
-Abxr.Register(key, value)
-Abxr.RegisterOnce(key, value)
-Abxr.Unregister(key)
-Abxr.Reset()
-Abxr.GetSuperProperties()
-
-// Example Usage
-// Set user properties that will be included in all events
-Abxr.Register("user_type", "premium");
-Abxr.Register("app_version", "1.2.3");
-Abxr.Register("device_type", "quest3");
-
-// All subsequent events automatically include these properties
-await Abxr.Event("button_click"); // Includes user_type, app_version, device_type
-await Abxr.EventAssessmentStart("quiz"); // Also includes all super properties
-await Abxr.Track("purchase"); // Mixpanel compatibility method also gets super properties
-
-// Set default values that won't overwrite existing super properties
-Abxr.RegisterOnce("user_tier", "free"); // Only sets if not already set
-Abxr.RegisterOnce("user_tier", "premium"); // Ignored - "free" remains
-
-// Manage super properties
-Abxr.Unregister("device_type"); // Remove specific super property
-const props = Abxr.GetSuperProperties(); // Get all current super properties
-Abxr.Reset(); // Remove all super properties (matches mixpanel.reset())
-```
-
-**Key Features:**
-- **Automatic Inclusion**: Super properties are automatically added to every event
-- **Persistent Storage**: Super properties persist across browser sessions using localStorage
-- **No Overwriting**: Super properties don't overwrite event-specific properties with the same name
-- **Universal**: Works with all event methods (Event, Track, EventAssessmentStart, etc.)
-
-**Use Cases:**
-- User attributes (subscription type, user level, demographics)
-- Application state (app version, build number, feature flags)
-- Device information (device type, browser, screen size)
-- Session context (session ID, experiment groups, A/B test variants)
-
----
-
 ## Mixpanel Migration & Compatibility
 
 **Migrating from Mixpanel?** Super easy! Just replace imports and do simple string replacements.
@@ -738,149 +779,172 @@ ABXRLib also includes core [Super Properties](#super-properties) functionality (
 - ✅ **Open Source** - Deploy anywhere, no vendor lock-in
 - ✅ **WebXR Optimized** - Perfect for VR/AR web applications
 
-## API Reference
+## Advanced Features
 
-### Initialization
+### Module Targets
 
-- `Abxr_init(appId, orgId?, authSecret?, appConfig?, dialogOptions?, authMechanismCallback?)` - Initialize and authenticate the library
-  - `appId` (required): Your application ID
-  - `orgId` (optional): Your organization ID (can also be provided via URL parameter `abxr_orgid`)
-  - `authSecret` (optional): Your authentication secret (can also be provided via URL parameter `abxr_auth_secret`)
-  - `appConfig` (optional): Custom XML configuration string
-  - `authMechanismCallback` (optional): Callback function to handle two-step authentication requirements
-  - `dialogOptions` (optional): Configuration for built-in XR/HTML dialog system (see examples above)
+The **Module Target** feature enables developers to create single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application can automatically direct the user to that module within the application. Individual grades and results are then tracked for that specific assignment in the LMS.
 
-### Core Methods
+### Authentication
 
-- `Abxr.Event(name, meta?)` - Send a custom event
-- `Abxr.LogDebug(message)` - Send a debug log message
-- `Abxr.LogInfo(message)` - Send an info log message
-- `Abxr.LogWarn(message)` - Send a warning log message
-- `Abxr.LogError(message)` - Send an error log message
-- `Abxr.LogCritical(message)` - Send a critical log message
-
-### Specialized Event Methods
-
-#### Assessment Events
-- `Abxr.EventAssessmentStart(assessmentName, meta?)` - Start an assessment
-- `Abxr.EventAssessmentComplete(assessmentName, score, eventStatus, meta?)` - Complete an assessment
-
-#### Objective Events
-- `Abxr.EventObjectiveStart(objectiveName, meta?)` - Start an objective
-- `Abxr.EventObjectiveComplete(objectiveName, score, eventStatus, meta?)` - Complete an objective
-
-#### Interaction Events
-- `Abxr.EventInteractionStart(interactionName, meta?)` - Start an interaction
-- `Abxr.EventInteractionComplete(interactionName, result, resultDetails, interactionType, meta?)` - Complete an interaction
-
-#### Level Events
-- `Abxr.EventLevelStart(levelName, meta?)` - Start a level
-- `Abxr.EventLevelComplete(levelName, score, meta?)` - Complete a level
-
-#### Critical Events
-- `Abxr.EventCritical(label, meta?)` - Flag critical training events for auto-inclusion in the Critical Choices Chart
-
-### Storage Methods
-
-#### Basic Storage Methods
-- `Abxr.SetStorageEntry(data, keepLatest?, origin?, sessionData?, name?)` - Store data
-- `Abxr.GetStorageEntry(name?)` - Retrieve stored data
-- `Abxr.RemoveStorageEntry(name?)` - Remove stored data
-
-#### Enhanced Storage Methods
-- `Abxr.StorageSetEntry(name, data, scope?, policy?)` - Store data with scope and policy control
-- `Abxr.StorageGetEntry(name?, scope?)` - Retrieve data with scope control
-- `Abxr.StorageRemoveEntry(name?, scope?)` - Remove data with scope control
-- `Abxr.StorageSetDefaultEntry(data, scope?, policy?)` - Store default entry with enhanced control
-- `Abxr.StorageGetDefaultEntry(scope?)` - Get default entry with scope control
-- `Abxr.StorageRemoveDefaultEntry(scope?)` - Remove default entry with scope control
-
-### Telemetry Methods
-
-- `Abxr.Telemetry(name, data)` - Send telemetry data
-
-### AI Integration Methods
-
-- `Abxr.AIProxy(prompt, pastMessages?, botId?)` - Send AI proxy request
-
-### Configuration Methods
-
-- `Abxr.setDebugMode(enabled)` - Enable/disable debug logging
-- `Abxr.getDebugMode()` - Get current debug mode
-- `Abxr.isConfigured()` - Check if library is authenticated
-- `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
-
-### Authentication Methods
-
-- `Abxr.onAuthCompleted(callback)` - Subscribe to authentication completion notifications
-- `Abxr.removeAuthCompletedCallback(callback)` - Remove an authentication completion callback
-- `Abxr.clearAuthCompletedCallbacks()` - Remove all authentication completion callbacks
-
-### Session Management Methods
-
-- `Abxr.ReAuthenticate()` - Trigger manual reauthentication (primarily for testing)
-- `Abxr.StartNewSession()` - Start a new session with fresh session ID
-- `Abxr.ContinueSession(sessionId)` - Continue an existing session
-
-### Module Target Methods
-
-- `Abxr.onModuleTargetAvailable(callback)` - Subscribe to module target availability notifications
-- `Abxr.removeModuleTargetCallback(callback)` - Remove a module target callback
-- `Abxr.getModuleTarget()` - Get the current module target identifier
-- `Abxr.getUserId()` - Get the current user ID
-- `Abxr.getUserData()` - Get the current user data
-
-### AuthMechanism Methods
-
-- `Abxr.getRequiresFinalAuth()` - Check if additional authentication is required
-- `Abxr.extractAuthMechanismData()` - Get structured authentication requirements
-- `Abxr.formatAuthDataForSubmission(input, type, domain?)` - Format user input for authentication
-- `Abxr.completeFinalAuth(authData)` - Submit final authentication credentials
-- `Abxr.setAuthMechanismCallback(callback)` - Set callback for authentication requirements
-
-### Available Types and Enums
-
-The `Abxr` class exposes commonly used types and enums for easy access:
+The **Authentication Completion** callback feature enables developers to get notified when authentication completes successfully. This is particularly useful for initializing UI components, starting background services, or showing welcome messages after the user has been authenticated.
 
 ```javascript
-// Result options for assessments and objectives
-Abxr.EventStatus.ePass
-Abxr.EventStatus.eFail
-Abxr.EventStatus.eIncomplete
+// Subscribe to authentication completion events
+Abxr.onAuthCompleted(function(data) {
+    console.log('Authentication completed!', data.success);
+    
+    if (data.success) {
+        if (data.isReauthentication) {
+            console.log('Welcome back!');
+            refreshUserData();
+        } else {
+            console.log('Welcome! Setting up your experience...');
+            initializeUserInterface();
+            loadUserPreferences();
+        }
+        
+        // Check if we have a module target from auth
+        if (data.moduleTarget) {
+            navigateToModule(data.moduleTarget);
+        }
+    }
+});
 
-// Interaction types
-Abxr.InteractionType.eClick
-Abxr.InteractionType.eDrag
-Abxr.InteractionType.eType
-
-// Log levels
-Abxr.LogLevel.eDebug
-Abxr.LogLevel.eInfo
-Abxr.LogLevel.eWarn
-Abxr.LogLevel.eError
-Abxr.LogLevel.eCritical
-
-// Dictionary for metadata
-Abxr.AbxrDictStrings
+// Initialize ABXRLib - the callback will fire when auth completes
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
 ```
 
-### Usage Examples
+#### Authentication Data Structure
+
+The callback receives an `AuthCompletedData` object with the following properties:
 
 ```javascript
-// Initialize
-Abxr_init('app123', 'org456', 'secret789');
-
-// Simple debug mode setting
-Abxr.debugMode = true;
-
-// Assessment with result options
-Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { time_spent: '30min' });
-
-// Interaction with interaction type
-Abxr.EventInteractionComplete('button_click', 'success', 'User clicked submit', Abxr.InteractionType.eClick);
-
-// Create metadata dictionary
-const meta = new Abxr.AbxrDictStrings();
-meta.set('custom_field', 'value');
-Abxr.Event('custom_event', meta);
+interface AuthCompletedData {
+    success: boolean;                    // Whether authentication was successful
+    userData?: any;                      // Additional user data from authentication response
+    userId?: any;                        // User identifier
+    userEmail?: string | null;           // User email address
+    moduleTarget?: string | null;        // Target module from LMS (if applicable)
+    isReauthentication?: boolean;        // Whether this was a reauthentication (vs initial auth)
+}
 ```
+
+#### Session Management
+
+Advanced session management for testing and session control:
+
+```javascript
+// Manual reauthentication (primarily for testing)
+await Abxr.ReAuthenticate();
+
+// Start new session with fresh session ID  
+await Abxr.StartNewSession();
+
+// Continue existing session
+await Abxr.ContinueSession('session_12345');
+
+// Example usage
+async function testAuthFlow() {
+    await Abxr.ReAuthenticate();
+    if (Abxr.isConfigured()) {
+        await Abxr.EventAssessmentStart('test_assessment');
+    }
+}
+
+async function startFreshExperience() {
+    await Abxr.StartNewSession();
+    await Abxr.StorageRemoveDefaultEntry(Abxr.StorageScope.user);
+    await Abxr.EventAssessmentStart('new_training_session');
+}
+```
+
+### Mixpanel Compatibility
+
+## Support
+
+### Resources
+
+- **Docs:** [https://help.arborxr.com/](https://help.arborxr.com/)
+- **GitHub:** [https://github.com/ArborXR/abxrlib-for-webxr](https://github.com/ArborXR/abxrlib-for-webxr)
+
+### FAQ
+
+#### How do I retrieve my Application ID and Authorization Secret?
+Your Application ID can be found in the Web Dashboard under the application details. For the Authorization Secret, navigate to Settings > Organization Codes on the same dashboard.
+
+#### How do I enable object tracking?
+Object tracking can be enabled by adding the Track Object component to any GameObject in your scene via the Unity Inspector.
+
+### Troubleshooting
+
+#### Authentication Issues
+
+**Problem: Library fails to authenticate**
+- **Solution**: Verify your App ID, Org ID, and Auth Secret are correct
+- **Check**: Ensure URL parameters `abxr_orgid` and `abxr_auth_secret` are properly formatted
+- **Debug**: Enable debug mode with `Abxr.setDebugMode(true)` to see detailed error messages
+
+**Problem: Two-step authentication not triggering**
+- **Solution**: Check that your callback is properly set before calling `Abxr_init()`
+- **Check**: Verify the `authMechanism` data is being returned by the server
+- **Debug**: Use `Abxr.extractAuthMechanismData()` to inspect authentication requirements
+
+#### CORS and Network Issues
+
+**Problem: CORS errors or network failures**
+- **Solution**: The library automatically attempts version fallback for common CORS issues
+- **Check**: Ensure your REST URL is correct and accessible
+- **Manual Fix**: Try adding `/v1/` to your REST URL manually
+
+**Problem: Library doesn't work in development vs production**
+- **Solution**: Use URL parameters for credentials in production builds
+- **Check**: Avoid hardcoding `orgId` and `authSecret` in distributed applications
+
+#### Event and Data Issues
+
+**Problem: Events not being sent**
+- **Solution**: Check authentication status with `Abxr.isConfigured()`
+- **Debug**: Enable debug logging to see why events are being blocked
+- **Check**: Verify your event names use snake_case format for best processing
+
+**Problem: Super Properties not persisting**
+- **Solution**: Check that localStorage is available in your browser
+- **Debug**: Use `Abxr.GetSuperProperties()` to inspect current super properties
+- **Fix**: Ensure you're calling `Abxr.Register()` after authentication completes
+
+#### Session Management Issues
+
+**Problem: Sessions not resuming properly**
+- **Solution**: Check that the session ID is valid and not expired
+- **Debug**: Use session management callbacks to track session state changes
+- **Check**: Verify authentication credentials are still valid for session continuation
+
+#### Common Integration Patterns
+
+**Best Practices:**
+```javascript
+// Always set up callbacks before initialization
+Abxr.onAuthCompleted(function(authData) {
+    if (authData.success) {
+        // Initialize your app components here
+        initializeApp();
+    } else {
+        console.error('Authentication failed');
+    }
+});
+
+// Then initialize
+Abxr_init('your-app-id');
+
+// Enable debug mode for development
+if (process.env.NODE_ENV === 'development') {
+    Abxr.setDebugMode(true);
+}
+```
+
+**Getting Help:**
+- Enable debug mode: `Abxr.setDebugMode(true)`
+- Check browser console for detailed error messages  
+- Verify network requests in browser developer tools
+- Test authentication flow in isolation before adding complex features
