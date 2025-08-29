@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.0.34] - 2025-08-29
+
+### ♻️ Refactoring
+
+- updated documentation and synced up a few more functions to better match the Unity model ([7191f29](../../commit/7191f296e7e2c523483fab9b64439130dc34aee1))
+- updated the moduleTarget functionality ([8bdab44](../../commit/8bdab44b6dc6db96539081150b6b9e8b0dbcbf07))
+- updated readme for the onAuthComplete tweaks ([bd40666](../../commit/bd40666be08617abf99da63d0c6ec4d10227e125))
+- updated inline documentation ([809d54f](../../commit/809d54f0a618401c49bb61cf42302784f020a503))
+- updated documentation and reorganized some code ([6933ddf](../../commit/6933ddf0036e5de22e919e852e0ce74933eb9360))
+
+### 🔨 Other Changes
+
+- fire and forget for all the send data events, ([cd887eb](../../commit/cd887ebaae28b084182458f4c8db1f750d98b2a1))
+- ModuleTargetData to CurrentSessionData ([192fe7c](../../commit/192fe7cb3257c4282e56c0be1f9ba9ee3dc053c0))
+- isAuthenticated to connectionActive to avoid confusion ([9e1d364](../../commit/9e1d3646d987836947226935454cfbe4967bfb02))
+- NotifyAuthCompleted needs to be private to the class ([31e3f00](../../commit/31e3f00b5aa69ef7ebfd246b43f4e7ddce66e006))
+- Removed broken ContinueSession and renamed Storage methods to match Unity SDK ([b270944](../../commit/b2709446358548338b87011170c248cd5f94de1c))
+- brought the README files into line with the Unity version ([61b5160](../../commit/61b51605c7ab16885a00060d98d58443ecdfc4c7))
+- reorganized some code ([df4fcb4](../../commit/df4fcb47bef3f4fce308a0b0d0848af8c00794f4))
+- cleaned up the examples from the inline documentation. Was making it too messy ([4950272](../../commit/4950272d020717f0b63988afd916b223684add77))
+- moved log functions up ([cf275df](../../commit/cf275dfdaefe207e8d62105a466d01e0e0ce84b8))
+
 ## [1.0.33] - 2025-08-28
 
 ### ✨ Features
