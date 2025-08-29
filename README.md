@@ -943,12 +943,12 @@ const userEmail = Abxr.getUserEmail();
 You can also manage the module target queue directly:
 
 ```javascript
-// Clear all module targets and storage
-Abxr.clearModuleTargets();
-
 // Check how many module targets remain
 const count = Abxr.getModuleTargetCount();
 console.log(`Modules remaining: ${count}`);
+
+// Clear all module targets and storage
+Abxr.clearModuleTargets();
 ```
 
 **Use Cases:**
@@ -968,104 +968,18 @@ console.log(`Modules remaining: ${count}`);
 7. **User feedback**: Show loading indicators during module transitions
 8. **Check completion**: Use `GetModuleTarget()` returning null to detect when all modules are done
 
-#### Example: Complete Multi-Module Setup
+#### Data Structures
 
-```javascript
-// Define your application modules
-const MODULES = {
-    'intro': { name: 'Introduction', scene: 'intro-scene' },
-    'lesson1': { name: 'Basic Operations', scene: 'lesson1-scene' },
-    'lesson2': { name: 'Advanced Techniques', scene: 'lesson2-scene' },
-    'final_exam': { name: 'Final Assessment', scene: 'exam-scene' }
-};
+The module target callback provides a `CurrentSessionData` object with the following properties:
 
-// Set up authentication completion callback
-Abxr.onAuthCompleted(function(authData) {
-    if (authData.success) {
-        console.log('Authentication completed!');
-        console.log('User ID:', authData.userId);
-        console.log('User Email:', authData.userEmail);
-        
-        if (authData.isReauthentication) {
-            console.log('User reauthenticated - refreshing data');
-            refreshUserData();
-        } else {
-            console.log('Initial authentication - full setup');
-            initializeUserInterface();
-        }
-        
-        // Handle first module target from authentication
-        if (authData.moduleTarget) {
-            console.log(`Starting with module: ${authData.moduleTarget}`);
-            navigateToModule(authData.moduleTarget);
-        } else {
-            console.log('No initial module target - showing main menu');
-            showModuleSelectionMenu();
-        }
-    } else {
-        console.error('Authentication failed');
-    }
-});
-
-// Call this when a module is completed to check for next module
-function onModuleCompleted(completedModuleName) {
-    console.log(`Module '${completedModuleName}' completed!`);
-    
-    // Complete the assessment for this module
-    Abxr.EventAssessmentComplete(completedModuleName, 100, Abxr.EventStatus.eComplete);
-    
-    // Check if there are more modules to process
-    const nextModule = Abxr.GetModuleTarget();
-    if (nextModule) {
-        console.log(`Next module available: ${nextModule.moduleTarget}`);
-        navigateToModule(nextModule.moduleTarget);
-    } else {
-        console.log('All modules completed - showing completion screen');
-        showCompletionScreen();
-    }
+```cpp
+public class CurrentSessionData
+{
+    public string moduleTarget;     // The target module identifier from LMS
+    public object userData;         // Additional user data from authentication
+    public object userId;           // User identifier
+    public string userEmail;        // User email address
 }
-
-function navigateToModule(moduleTargetId) {
-    const module = MODULES[moduleTargetId];
-    
-    if (module) {
-        console.log(`Navigating to module: ${module.name}`);
-        loadScene(module.scene);
-        
-        // Start assessment tracking for this module
-        Abxr.EventAssessmentStart(moduleTargetId, {
-            'module_name': module.name,
-            'user_id': Abxr.getUserId() || 'unknown',
-            'user_email': Abxr.getUserEmail() || 'unknown'
-        });
-    } else {
-        console.warn('Unknown module target:', moduleTargetId);
-        showModuleSelectionMenu();
-    }
-}
-
-function loadScene(sceneName) {
-    // Your scene loading logic here
-}
-
-function showModuleSelectionMenu() {
-    // Show your module selection UI
-}
-
-function showCompletionScreen() {
-    // Show completion UI or return to main menu
-}
-
-function refreshUserData() {
-    // Refresh user-specific data
-}
-
-function initializeUserInterface() {
-    // Initialize UI components
-}
-
-// Initialize with your credentials
-Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
 ```
 
 ### Authentication
