@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.35] - 2025-08-29
+
+### 🐛 Bug Fixes
+
+- fixed storage uage error ([10fec44](../../commit/10fec44f43c4e440e1dc82ea010b7d4563116398))
+
 ## [1.0.34] - 2025-08-29
 
 ### ♻️ Refactoring
