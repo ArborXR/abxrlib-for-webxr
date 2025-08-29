@@ -378,7 +378,7 @@ export interface AuthMechanismData {
 export type AuthMechanismCallback = (data: AuthMechanismData) => void;
 
 // Types for moduleTarget notification
-export interface ModuleTargetData {
+export interface CurrentSessionData {
     moduleTarget: string | null;
     userData?: any;
     userId?: any;
@@ -1044,11 +1044,11 @@ export class Abxr {
     
     // INTERNAL USE ONLY - Do not use in application code
     // This method is called by the authentication system to trigger callbacks
-    static setAuthenticated(authenticated: boolean, isReauthentication: boolean = false, moduleTargets?: string[]): void {
-        this.connectionActive = authenticated;
+    static NotifyAuthCompleted(success: boolean, isReauthentication: boolean = false, moduleTargets?: string[]): void {
+        this.connectionActive = success;
         
         // Notify auth completion subscribers when authentication succeeds
-        if (authenticated) {
+        if (success) {
             this.notifyAuthCompletedCallbacks(isReauthentication, moduleTargets);
         }
     }
@@ -1122,9 +1122,9 @@ export class Abxr {
      * Get the next module target from the queue for sequential module processing
      * Returns null when no more module targets are available
      * Each call removes the next module target from the queue and updates persistent storage
-     * @returns The next ModuleTargetData or null if queue is empty
+     * @returns The next CurrentSessionData or null if queue is empty
      */
-    static GetModuleTarget(): ModuleTargetData | null {
+    static GetModuleTarget(): CurrentSessionData | null {
         // Load queue from storage if empty (in case of page refresh)
         if (this.moduleTargetQueue.length === 0) {
             this.loadModuleTargetQueue();
@@ -1145,7 +1145,7 @@ export class Abxr {
         // Update persistent storage with remaining queue
         this.saveModuleTargetQueue();
         
-        // Create ModuleTargetData with current session data
+        // Create CurrentSessionData with current session data
         return {
             moduleTarget: nextModuleTargetId,
             userData: this.getUserData(),
@@ -1253,7 +1253,7 @@ export class Abxr {
         }
         
         // Reset authentication state
-        this.setAuthenticated(false);
+        this.NotifyAuthCompleted(false);
         this.setRequiresFinalAuth(false);
         this.setAuthenticationFailed(false);
         
@@ -1262,7 +1262,7 @@ export class Abxr {
         // have more sophisticated session management
         try {
             console.log('AbxrLib: Reauthentication completed (test implementation)');
-            this.setAuthenticated(true, true); // Mark as reauthentication
+            this.NotifyAuthCompleted(true, true); // Mark as reauthentication
         } catch (error) {
             console.log('AbxrLib: Reauthentication failed or requires additional steps');
             // Note: Additional authentication steps would be handled by the underlying system
@@ -1298,7 +1298,7 @@ export class Abxr {
         // Note: Session ID is handled internally, we just generate it for reference
         
         // Reset authentication state and reauthenticate
-        this.setAuthenticated(false);
+        this.NotifyAuthCompleted(false);
         this.setRequiresFinalAuth(false);
         this.setAuthenticationFailed(false);
         
@@ -1306,7 +1306,7 @@ export class Abxr {
         // Note: New session ID generation is handled internally by the authentication system
         try {
             console.log('AbxrLib: New session started successfully');
-            this.setAuthenticated(true, false); // New session, not reauthentication
+            this.NotifyAuthCompleted(true, false); // New session, not reauthentication
         } catch (error) {
             console.log('AbxrLib: New session authentication failed or requires additional steps');
             // Note: Additional authentication steps would be handled by the underlying system
@@ -1813,7 +1813,7 @@ export class Abxr {
                                         const result = await AbxrLibInit.FinalAuthenticate();
                             if (result === 0) {
                                 console.log('AbxrLib: Final authentication successful - library ready');
-                                this.setAuthenticated(true, false);
+                                this.NotifyAuthCompleted(true, false);
                                 this.setRequiresFinalAuth(false);
                                 return true;
                             } else {
@@ -2003,7 +2003,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                             }
                         } else {
                             console.log('AbxrLib: Authentication complete - library ready');
-                            Abxr.setAuthenticated(true, false);
+                            Abxr.NotifyAuthCompleted(true, false);
                         }
                     } else {
                         // Try to get detailed error message from AbxrLibClient

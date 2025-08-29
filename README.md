@@ -848,7 +848,7 @@ Module targets are delivered via the `OnAuthCompleted` callback (first target) a
 
 **TypeScript Interface:**
 ```typescript
-export interface ModuleTargetData {
+export interface CurrentSessionData {
     moduleTarget: string | null;    // The target module identifier from LMS
     userData?: any;                 // Additional user data from authentication  
     userId?: any;                   // User identifier
