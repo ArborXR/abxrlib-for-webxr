@@ -386,8 +386,6 @@ export interface ModuleTargetData {
     isAuthenticated: boolean;
 }
 
-export type ModuleTargetCallback = (data: ModuleTargetData) => void;
-
 // Types for authentication completion notification
 export interface AuthCompletedData {
     success: boolean;
@@ -450,7 +448,8 @@ export class Abxr {
         enabled: true
     };
     private static currentAuthData: AuthMechanismData | null = null;
-    private static moduleTargetCallbacks: ModuleTargetCallback[] = [];
+    private static moduleTargetQueue: string[] = [];
+    private static readonly MODULE_TARGET_QUEUE_KEY = 'abxr_module_target_queue';
     private static authCompletedCallbacks: AuthCompletedCallback[] = [];
     private static superProperties: Map<string, string> = new Map();
     private static readonly SUPER_PROPERTIES_KEY = 'abxr_super_properties';
@@ -1018,17 +1017,12 @@ export class Abxr {
     }
     
     // Internal configuration method
-    static setAuthenticated(authenticated: boolean, isReauthentication: boolean = false): void {
+    static setAuthenticated(authenticated: boolean, isReauthentication: boolean = false, moduleTargets?: string[]): void {
         this.isAuthenticated = authenticated;
         
         // Notify auth completion subscribers when authentication succeeds
         if (authenticated) {
-            this.notifyAuthCompletedCallbacks(isReauthentication);
-        }
-        
-        // Only notify moduleTarget subscribers if there's actually a moduleTarget value
-        if (authenticated && this.hasValidModuleTarget()) {
-            this.notifyModuleTargetCallbacks();
+            this.notifyAuthCompletedCallbacks(isReauthentication, moduleTargets);
         }
     }
     
@@ -1076,10 +1070,7 @@ export class Abxr {
         return authData ? authData.userEmail : null;
     }
     
-    static getModuleTarget(): string | null {
-        const authData = AbxrLibClient.getAuthResponseData();
-        return authData ? authData.moduleTarget : null;
-    }
+
     
     static setAuthenticationFailed(failed: boolean, error: string = ''): void {
         this.authenticationFailed = failed;
@@ -1101,47 +1092,90 @@ export class Abxr {
     }
     
     /**
-     * Subscribe to module target availability for multi-module LMS applications  
-     * Enables automatic navigation to specific modules when user enters from LMS
-     * Each module can be a separate assignment with individual grades and tracking
-     * @param callback Function to call when module target becomes available
+     * Get the next module target from the queue for sequential module processing
+     * Returns null when no more module targets are available
+     * Each call removes the next module target from the queue and updates persistent storage
+     * @returns The next ModuleTargetData or null if queue is empty
      */
-    // ModuleTarget subscription methods
-    static onModuleTargetAvailable(callback: ModuleTargetCallback): void {
-        if (typeof callback !== 'function') {
-            console.warn('AbxrLib: ModuleTarget callback must be a function');
+    static GetModuleTarget(): ModuleTargetData | null {
+        // Load queue from storage if empty (in case of page refresh)
+        if (this.moduleTargetQueue.length === 0) {
+            this.loadModuleTargetQueue();
+        }
+
+        // Return null if no more module targets
+        if (this.moduleTargetQueue.length === 0) {
+            return null;
+        }
+
+        // Pop the next module target from the queue
+        const nextModuleTargetId = this.moduleTargetQueue.shift() || null;
+        
+        if (!nextModuleTargetId) {
+            return null;
+        }
+        
+        // Update persistent storage with remaining queue
+        this.saveModuleTargetQueue();
+        
+        // Create ModuleTargetData with current session data
+        return {
+            moduleTarget: nextModuleTargetId,
+            userData: this.getUserData(),
+            userId: this.getUserId(),
+            userEmail: this.getUserEmail(),
+            isAuthenticated: this.isAuthenticated
+        };
+    }
+
+    /**
+     * Initialize the module targets from authentication response
+     * Should be called when authentication completes with module target data
+     * @param moduleTargets List of module target identifiers from auth response
+     */
+    static setModuleTargets(moduleTargets: string[]): void {
+        if (!moduleTargets || moduleTargets.length === 0) {
             return;
         }
-        
-        this.moduleTargetCallbacks.push(callback);
-        
-        // If moduleTarget is already available and has a value, notify immediately
-        if (this.isAuthenticated && this.hasValidModuleTarget()) {
-            const moduleTargetData = this.getModuleTargetData();
-            try {
-                callback(moduleTargetData);
-            } catch (error) {
-                console.error('AbxrLib: Error in moduleTarget callback:', error);
+
+        // Clear existing queue
+        this.moduleTargetQueue = [];
+
+        // Add each module target ID to the queue
+        for (const moduleTargetId of moduleTargets) {
+            if (moduleTargetId && moduleTargetId.trim() !== '') {
+                this.moduleTargetQueue.push(moduleTargetId.trim());
             }
         }
+
+        // Save to persistent storage
+        this.saveModuleTargetQueue();
     }
-    
-    static removeModuleTargetCallback(callback: ModuleTargetCallback): void {
-        const index = this.moduleTargetCallbacks.indexOf(callback);
-        if (index > -1) {
-            this.moduleTargetCallbacks.splice(index, 1);
+
+    /**
+     * Get the current number of module targets remaining
+     * @returns Number of module targets remaining
+     */
+    static getModuleTargetCount(): number {
+        if (this.moduleTargetQueue.length === 0) {
+            this.loadModuleTargetQueue();
         }
+        return this.moduleTargetQueue.length;
     }
-    
-    static clearModuleTargetCallbacks(): void {
-        this.moduleTargetCallbacks = [];
+
+    /**
+     * Clear all module targets and storage
+     */
+    static clearModuleTargets(): void {
+        this.moduleTargetQueue = [];
+        this.StorageRemoveEntry(this.MODULE_TARGET_QUEUE_KEY);
     }
     
     // AuthCompleted subscription methods
     /**
      * Subscribe to authentication completion events for post-auth initialization
      * Perfect for initializing UI components, loading user data, or showing welcome messages
-     * Callback fires immediately if authentication has already completed
+     * Callbacks are triggered via setAuthenticated() when authentication completes
      * @param callback Function to call when authentication completes successfully
      */
     static onAuthCompleted(callback: AuthCompletedCallback): void {
@@ -1152,15 +1186,8 @@ export class Abxr {
         
         this.authCompletedCallbacks.push(callback);
         
-        // If already authenticated, notify immediately
-        if (this.isAuthenticated) {
-            const authData = this.getAuthCompletedData();
-            try {
-                callback(authData);
-            } catch (error) {
-                console.error('AbxrLib: Error in authCompleted callback:', error);
-            }
-        }
+        // Note: Callbacks are triggered only via setAuthenticated() to ensure consistent data
+        // No immediate callback - wait for proper authentication completion notification
     }
     
     /**
@@ -1261,12 +1288,26 @@ export class Abxr {
     }
     
     // Internal method to notify all auth completion subscribers
-    private static notifyAuthCompletedCallbacks(isReauthentication: boolean = false): void {
+    private static notifyAuthCompletedCallbacks(isReauthentication: boolean = false, moduleTargets?: string[]): void {
+        let firstModuleTarget: string | null = null;
+        
+        // Handle module targets if provided and authentication was successful
+        if (this.isAuthenticated && moduleTargets && moduleTargets.length > 0) {
+            // Take the first module target for immediate use in onAuthCompleted
+            firstModuleTarget = moduleTargets[0];
+            
+            // Queue the remaining module targets for GetModuleTarget() calls
+            if (moduleTargets.length > 1) {
+                const remainingTargets = moduleTargets.slice(1);
+                this.setModuleTargets(remainingTargets);
+            }
+        }
+
         if (this.authCompletedCallbacks.length === 0) {
             return;
         }
         
-        const authData = this.getAuthCompletedData(isReauthentication);
+        const authData = this.getAuthCompletedData(isReauthentication, firstModuleTarget);
         
         for (const callback of this.authCompletedCallbacks) {
             try {
@@ -1278,56 +1319,42 @@ export class Abxr {
     }
        
     // Helper method to get auth completion data
-    private static getAuthCompletedData(isReauthentication: boolean = false): AuthCompletedData {
+    private static getAuthCompletedData(isReauthentication: boolean = false, firstModuleTarget?: string | null): AuthCompletedData {
         const authData = AbxrLibClient.getAuthResponseData();
         return {
             success: this.isAuthenticated,
             userData: authData ? authData.userData : null,
             userId: authData ? authData.userId : null,
             userEmail: authData ? authData.userEmail : null,
-            moduleTarget: authData ? authData.moduleTarget : null,
+            moduleTarget: firstModuleTarget ?? (authData ? authData.moduleTarget : null),
             isReauthentication
         };
     }
     
-    // Internal method to notify all moduleTarget subscribers
-    private static notifyModuleTargetCallbacks(): void {
-        if (this.moduleTargetCallbacks.length === 0) {
-            return;
+    // Helper methods for module target queue persistence
+    private static saveModuleTargetQueue(): void {
+        try {
+            const serializedQueue = JSON.stringify(this.moduleTargetQueue);
+            this.StorageSetEntry(serializedQueue, true, 'web', false, this.MODULE_TARGET_QUEUE_KEY);
+        } catch (error) {
+            console.error('AbxrLib: Failed to save module target queue:', error);
         }
-        
-        const moduleTargetData = this.getModuleTargetData();
-        
-        // Double-check that we actually have a moduleTarget value before notifying
-        if (!this.hasValidModuleTarget()) {
-            return;
-        }
-        
-        for (const callback of this.moduleTargetCallbacks) {
-            try {
-                callback(moduleTargetData);
-            } catch (error) {
-                console.error('AbxrLib: Error in moduleTarget callback:', error);
+    }
+
+    private static loadModuleTargetQueue(): void {
+        try {
+            const serializedQueue = this.StorageGetEntry(this.MODULE_TARGET_QUEUE_KEY);
+            if (serializedQueue && typeof serializedQueue === 'string') {
+                const parsedQueue = JSON.parse(serializedQueue);
+                if (Array.isArray(parsedQueue)) {
+                    // Ensure all items are strings
+                    this.moduleTargetQueue = parsedQueue.filter(item => typeof item === 'string' && item.trim() !== '');
+                }
             }
+        } catch (error) {
+            console.error('AbxrLib: Failed to load module target queue:', error);
+            this.moduleTargetQueue = [];
         }
-    }
-    
-    // Helper method to check if moduleTarget has a valid value
-    private static hasValidModuleTarget(): boolean {
-        const authData = AbxrLibClient.getAuthResponseData();
-        return authData && authData.moduleTarget !== null && authData.moduleTarget !== undefined && authData.moduleTarget !== '';
-    }
-    
-    // Helper method to get all moduleTarget-related data
-    private static getModuleTargetData(): ModuleTargetData {
-        const authData = AbxrLibClient.getAuthResponseData();
-        return {
-            moduleTarget: authData ? authData.moduleTarget : null,
-            userData: authData ? authData.userData : null,
-            userId: authData ? authData.userId : null,
-            userEmail: authData ? authData.userEmail : null,
-            isAuthenticated: this.isAuthenticated
-        };
     }
 
     // Helper method to convert various metadata formats to AbxrDictStrings

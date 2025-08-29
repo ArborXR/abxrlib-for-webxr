@@ -824,12 +824,10 @@ Abxr.PollUser("Overall satisfaction?", Abxr.PollType.Rating, null, function(resp
 
 The **Module Target** feature enables developers to create single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application can automatically direct the user to that module within the application. Individual grades and results are then tracked for that specific assignment in the LMS.
 
-The `ModuleTargetCallback` is a function that gets called when module target information becomes available after authentication. This enables automatic navigation to specific modules when users enter from an LMS.
+Module targets are delivered via the `OnAuthCompleted` callback (first target) and subsequent targets are retrieved using the `GetModuleTarget()` method for sequential processing.
 
 **TypeScript Interface:**
 ```typescript
-export type ModuleTargetCallback = (data: ModuleTargetData) => void;
-
 export interface ModuleTargetData {
     moduleTarget: string | null;    // The target module identifier from LMS
     userData?: any;                 // Additional user data from authentication  
@@ -839,50 +837,20 @@ export interface ModuleTargetData {
 }
 ```
 
-#### Setting Up Module Target Callback
-
-```javascript
-// Subscribe to module target availability events
-Abxr.onModuleTargetAvailable(function(data) {
-    console.log('Module target available:', data.moduleTarget);
-    console.log('User ID:', data.userId);
-    console.log('User Email:', data.userEmail);
-    console.log('Is Authenticated:', data.isAuthenticated);
-    
-    // Navigate user to the specified module
-    switch(data.moduleTarget) {
-        case 'intro':
-            navigateToIntroModule();
-            break;
-        case 'lesson1':
-            navigateToLesson1();
-            break;
-        case 'final_exam':
-            navigateToFinalExam();
-            break;
-        default:
-            showModuleSelectionMenu();
-            break;
-    }
-});
-
-// Initialize ABXRLib - callback will fire when module target is available
-Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
-```
-
 #### Getting Module Target Information
 
-You can also retrieve module target information directly:
+You can process module targets sequentially using the pull-based approach:
 
 ```javascript
-// Get current module target (returns null if none set)
-const currentModule = Abxr.getModuleTarget();
-console.log('Current module:', currentModule);
-
-// Check if a specific module is the current target
-if (Abxr.getModuleTarget() === 'lesson1') {
-    console.log('User is in Lesson 1 assignment');
-    enableLesson1Features();
+// Get the next module target from the queue
+const nextTarget = Abxr.GetModuleTarget();
+if (nextTarget) {
+    console.log(`Processing module: ${nextTarget.moduleTarget}`);
+    enableModuleFeatures(nextTarget.moduleTarget);
+    navigateToModule(nextTarget.moduleTarget);
+} else {
+    console.log('All modules completed!');
+    showCompletionScreen();
 }
 
 // Get current user information
@@ -891,32 +859,16 @@ const userData = Abxr.getUserData();
 const userEmail = Abxr.getUserEmail();
 ```
 
-#### Removing Module Target Callbacks
-
-```javascript
-// Store callback reference for later removal
-const moduleTargetCallback = function(data) {
-    navigateToModule(data.moduleTarget);
-};
-
-// Subscribe to module target events
-Abxr.onModuleTargetAvailable(moduleTargetCallback);
-
-// Remove callback when no longer needed (e.g., component unmount)
-Abxr.removeModuleTargetCallback(moduleTargetCallback);
-
-// Or clear all module target callbacks
-Abxr.clearModuleTargetCallbacks();
-```
-
 #### Best Practices
 
-1. **Set up callback early**: Subscribe before calling `Abxr_init()` for reliable delivery
-2. **Handle all cases**: Include default behavior for unknown or null module targets
-3. **Validate modules**: Check if requested module exists before navigation
-4. **Progress tracking**: Use assessment events to track module completion
-5. **Error handling**: Handle cases where navigation fails or module is invalid
-6. **User feedback**: Show loading indicators during module transitions
+1. **Set up auth callback early**: Subscribe to `onAuthCompleted` before calling `Abxr_init()`
+2. **Handle first module**: Process the first module target from `authData.moduleTarget`
+3. **Use GetModuleTarget() sequentially**: Call after completing each module to get the next one
+4. **Validate modules**: Check if requested module exists before navigation
+5. **Progress tracking**: Use assessment events to track module completion
+6. **Error handling**: Handle cases where navigation fails or module is invalid
+7. **User feedback**: Show loading indicators during module transitions
+8. **Check completion**: Use `GetModuleTarget()` returning null to detect when all modules are done
 
 #### Example: Complete Multi-Module Setup
 
@@ -929,27 +881,90 @@ const MODULES = {
     'final_exam': { name: 'Final Assessment', scene: 'exam-scene' }
 };
 
-// Set up module target callback
-Abxr.onModuleTargetAvailable(function(moduleData) {
-    const module = MODULES[moduleData.moduleTarget];
+// Set up authentication completion callback
+Abxr.onAuthCompleted(function(authData) {
+    if (authData.success) {
+        console.log('Authentication completed!');
+        console.log('User ID:', authData.userId);
+        console.log('User Email:', authData.userEmail);
+        
+        if (authData.isReauthentication) {
+            console.log('User reauthenticated - refreshing data');
+            refreshUserData();
+        } else {
+            console.log('Initial authentication - full setup');
+            initializeUserInterface();
+        }
+        
+        // Handle first module target from authentication
+        if (authData.moduleTarget) {
+            console.log(`Starting with module: ${authData.moduleTarget}`);
+            navigateToModule(authData.moduleTarget);
+        } else {
+            console.log('No initial module target - showing main menu');
+            showModuleSelectionMenu();
+        }
+    } else {
+        console.error('Authentication failed');
+    }
+});
+
+// Call this when a module is completed to check for next module
+function onModuleCompleted(completedModuleName) {
+    console.log(`Module '${completedModuleName}' completed!`);
+    
+    // Complete the assessment for this module
+    Abxr.EventAssessmentComplete(completedModuleName, '100', Abxr.EventStatus.eComplete);
+    
+    // Check if there are more modules to process
+    const nextModule = Abxr.GetModuleTarget();
+    if (nextModule) {
+        console.log(`Next module available: ${nextModule.moduleTarget}`);
+        navigateToModule(nextModule.moduleTarget);
+    } else {
+        console.log('All modules completed - showing completion screen');
+        showCompletionScreen();
+    }
+}
+
+function navigateToModule(moduleTargetId) {
+    const module = MODULES[moduleTargetId];
     
     if (module) {
         console.log(`Navigating to module: ${module.name}`);
         loadScene(module.scene);
         
         // Start assessment tracking for this module
-        Abxr.EventAssessmentStart(moduleData.moduleTarget, {
+        Abxr.EventAssessmentStart(moduleTargetId, {
             'module_name': module.name,
-            'user_id': moduleData.userId
+            'user_id': Abxr.getUserId() || 'unknown',
+            'user_email': Abxr.getUserEmail() || 'unknown'
         });
-    } else if (moduleData.moduleTarget === null) {
-        console.log('No specific module target - showing main menu');
-        showModuleSelectionMenu();
     } else {
-        console.warn('Unknown module target:', moduleData.moduleTarget);
+        console.warn('Unknown module target:', moduleTargetId);
         showModuleSelectionMenu();
     }
-});
+}
+
+function loadScene(sceneName) {
+    // Your scene loading logic here
+}
+
+function showModuleSelectionMenu() {
+    // Show your module selection UI
+}
+
+function showCompletionScreen() {
+    // Show completion UI or return to main menu
+}
+
+function refreshUserData() {
+    // Refresh user-specific data
+}
+
+function initializeUserInterface() {
+    // Initialize UI components
+}
 
 // Initialize with your credentials
 Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
