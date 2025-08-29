@@ -1016,7 +1016,8 @@ export class Abxr {
         return await this.Event(eventName, trackProperties);
     }
     
-    // Internal configuration method
+    // INTERNAL USE ONLY - Do not use in application code
+    // This method is called by the authentication system to trigger callbacks
     static setAuthenticated(authenticated: boolean, isReauthentication: boolean = false, moduleTargets?: string[]): void {
         this.isAuthenticated = authenticated;
         
@@ -1175,7 +1176,7 @@ export class Abxr {
     /**
      * Subscribe to authentication completion events for post-auth initialization
      * Perfect for initializing UI components, loading user data, or showing welcome messages
-     * Callbacks are triggered via setAuthenticated() when authentication completes
+     * Callbacks are triggered internally when authentication completes
      * @param callback Function to call when authentication completes successfully
      */
     static onAuthCompleted(callback: AuthCompletedCallback): void {
@@ -1186,7 +1187,7 @@ export class Abxr {
         
         this.authCompletedCallbacks.push(callback);
         
-        // Note: Callbacks are triggered only via setAuthenticated() to ensure consistent data
+        // Note: Callbacks are triggered only internally to ensure consistent data
         // No immediate callback - wait for proper authentication completion notification
     }
     
