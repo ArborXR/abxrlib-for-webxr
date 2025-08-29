@@ -115,7 +115,7 @@ Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
 const appConfig = '<?xml version="1.0" encoding="utf-8" ?><configuration><appSettings><add key="REST_URL" value="https://your-server.com/v1/"/></appSettings></configuration>';
 Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret', appConfig);
 
-// Now you can use the Abxr class
+// Now you can use the Abxr class (no await needed - runs in background!)
 Abxr.Event('user_action', { action: 'button_click' });
 Abxr.LogDebug('Debug message');
 ```
@@ -350,15 +350,15 @@ The ABXRLib SDK supports multiple flexible formats for the `meta` parameter in a
 
 #### 1. Plain JavaScript Objects (Recommended)
 ```typescript
-// Simple and intuitive - works with any object
-await Abxr.Event('user_action', { 
+// Simple and intuitive - works with any object (runs in background)
+Abxr.Event('user_action', { 
     action: 'click', 
     timestamp: new Date().toISOString(),
     userId: 12345,
     completed: true
 });
 
-await Abxr.LogInfo('User login', {
+Abxr.LogInfo('User login', {
     username: 'john_doe',
     loginMethod: 'oauth',
     deviceType: 'mobile'
@@ -367,45 +367,45 @@ await Abxr.LogInfo('User login', {
 
 #### 2. JSON Strings
 ```typescript
-// Perfect for APIs or stored JSON data
-await Abxr.EventAssessmentStart('Math Quiz', '{"difficulty": "hard", "timeLimit": 300, "attempts": 1}');
+// Perfect for APIs or stored JSON data (runs in background)
+Abxr.EventAssessmentStart('Math Quiz', '{"difficulty": "hard", "timeLimit": 300, "attempts": 1}');
 
-await Abxr.LogError('API Error', '{"endpoint": "/api/users", "status": 500, "message": "Database timeout"}');
+Abxr.LogError('API Error', '{"endpoint": "/api/users", "status": 500, "message": "Database timeout"}');
 ```
 
 #### 3. URL Parameter Strings
 ```typescript
-// Great for form data or query parameters
-await Abxr.Event('form_submit', 'name=John%20Doe&email=john@example.com&age=25');
+// Great for form data or query parameters (runs in background)
+Abxr.Event('form_submit', 'name=John%20Doe&email=john@example.com&age=25');
 
-await Abxr.LogDebug('Search query', 'query=virtual+reality&category=education&page=2');
+Abxr.LogDebug('Search query', 'query=virtual+reality&category=education&page=2');
 
 // Handles complex values with = signs
-await Abxr.Event('equation_solved', 'formula=x=y+5&result=10&method=substitution');
+Abxr.Event('equation_solved', 'formula=x=y+5&result=10&method=substitution');
 ```
 
 #### 4. AbxrDictStrings Objects (Advanced)
 ```typescript
-// For advanced users who need precise control
+// For advanced users who need precise control (runs in background)
 const meta = new Abxr.AbxrDictStrings();
 meta.Add('custom_field', 'value');
 meta.Add('timestamp', Date.now().toString());
-await Abxr.Event('custom_event', meta);
+Abxr.Event('custom_event', meta);
 ```
 
 #### 5. Primitive Values
 ```typescript
-// For simple single-value metadata
-await Abxr.Event('score_update', 1500);  // Number
-await Abxr.LogInfo('Feature enabled', true);  // Boolean
-await Abxr.Event('user_message', 'Hello World');  // String
+// For simple single-value metadata (runs in background)
+Abxr.Event('score_update', 1500);  // Number
+Abxr.LogInfo('Feature enabled', true);  // Boolean
+Abxr.Event('user_message', 'Hello World');  // String
 ```
 
 #### 6. No Metadata
 ```typescript
-// Events and logs work fine without metadata
-await Abxr.Event('app_started');
-await Abxr.LogInfo('Application initialized');
+// Events and logs work fine without metadata (runs in background)
+Abxr.Event('app_started');
+Abxr.LogInfo('Application initialized');
 ```
 
 #### Automatic Conversion Examples
@@ -421,9 +421,9 @@ The SDK automatically handles conversion and URL decoding:
 '{"user": {"name": "John", "age": 30}, "scores": [95, 87, 92]}'
 // Becomes: { user: "John,30", scores: "95,87,92" }
 
-// Mixed formats work seamlessly
-await Abxr.EventLevelComplete('Level 1', '85', 'score=85&attempts=3&bonus=true');
-await Abxr.EventAssessmentStart('Quiz', { startTime: Date.now(), difficulty: 'medium' });
+// Mixed formats work seamlessly (runs in background)
+Abxr.EventLevelComplete('Level 1', 85, 'score=85&attempts=3&bonus=true');
+Abxr.EventAssessmentStart('Quiz', { startTime: Date.now(), difficulty: 'medium' });
 ```
 
 **All event and log methods support these flexible metadata formats:**
@@ -454,7 +454,7 @@ Abxr.EventAssessmentComplete(assessmentName, score, eventStatus = EventStatus.eC
 
 // Example Usage
 Abxr.EventAssessmentStart('final_exam');
-Abxr.EventAssessmentComplete('final_exam', '92', Abxr.EventStatus.ePass);
+Abxr.EventAssessmentComplete('final_exam', 92, Abxr.EventStatus.ePass);
 
 // With metadata - multiple formats supported
 Abxr.EventAssessmentStart('final_exam', {
@@ -463,7 +463,7 @@ Abxr.EventAssessmentStart('final_exam', {
     'attempts': 1
 });
 
-Abxr.EventAssessmentComplete('final_exam', '92', Abxr.EventStatus.ePass, {
+Abxr.EventAssessmentComplete('final_exam', 92, Abxr.EventStatus.ePass, {
     'timeSpent': 1650,
     'questionsCorrect': 23,
     'questionsTotal': 25
@@ -545,7 +545,7 @@ Abxr.EventCritical('emergency_protocol_activated');
 
 **Parameters for all Event Wrapper Functions:**
 - `levelName/assessmentName/objectiveName/interactionName` (string): The identifier for the assessment, objective, interaction, or level.
-- `score` (int): The numerical score achieved. While typically between 1-100, any integer is valid. In metadata, you can also set a minScore and maxScore to define the range of scores for this objective.
+- `score` (number | string): The numerical score achieved. Automatically validated to be within 0-100 range. Invalid values are clamped to the valid range, and non-numeric values default to 0.
 - `result` (EventStatus for Assessment and Objective): The basic result of the assessment or objective.
 - `result` (Interactions): The result for the interaction is based on the InteractionType.
 - `resultDetails` (string): Optional. Additional details about the result. For interactions, this can be a single character or a string. For example: "a", "b", "c" or "correct", "incorrect".
@@ -562,20 +562,20 @@ The ABXRLib SDK includes a built-in timing system that allows you to measure the
 // JavaScript Timed Event Method Signature
 Abxr.StartTimedEvent(eventName)
 
-// Example Usage
+// Example Usage (fire-and-forget - runs in background)
 Abxr.StartTimedEvent("Table puzzle");
 // ... user performs puzzle activity for 20 seconds ...
-await Abxr.Event("Table puzzle"); // Duration automatically included: 20 seconds
+Abxr.Event("Table puzzle"); // Duration automatically included: 20 seconds
 
-// Works with all event methods
+// Works with all event methods  
 Abxr.StartTimedEvent("Assessment");
 // ... later ...
-await Abxr.EventAssessmentComplete("Assessment", "95", Abxr.EventStatus.ePass); // Duration included
+Abxr.EventAssessmentComplete("Assessment", 95, Abxr.EventStatus.ePass); // Duration included
 
 // Also works with Mixpanel compatibility methods
 Abxr.StartTimedEvent("User Session");
 // ... later ...
-await Abxr.Track("User Session"); // Duration automatically included
+Abxr.Track("User Session"); // Duration automatically included
 ```
 
 **Parameters:**
@@ -601,10 +601,10 @@ Abxr.Register("user_type", "premium");
 Abxr.Register("app_version", "1.2.3");
 Abxr.Register("device_type", "quest3");
 
-// All subsequent events automatically include these properties
-await Abxr.Event("button_click"); // Includes user_type, app_version, device_type
-await Abxr.EventAssessmentStart("quiz"); // Also includes all super properties
-await Abxr.Track("purchase"); // Mixpanel compatibility method also gets super properties
+// All subsequent events automatically include these properties (background execution)
+Abxr.Event("button_click"); // Includes user_type, app_version, device_type
+Abxr.EventAssessmentStart("quiz"); // Also includes all super properties
+Abxr.Track("purchase"); // Mixpanel compatibility method also gets super properties
 
 // Set default values that won't overwrite existing super properties
 Abxr.RegisterOnce("user_tier", "free"); // Only sets if not already set
@@ -641,14 +641,14 @@ Abxr.Log(Abxr.LogLevel.eInfo, 'Module started');
 
 Use standard or severity-specific logging:
 ```javascript
-// JavaScript Event Method Signatures
-Abxr.LogDebug(message, meta = null)
-Abxr.LogInfo(message, meta = null)
-Abxr.LogWarn(message, meta = null)
-Abxr.LogError(message, meta = null)
-Abxr.LogCritical(message, meta = null)
+// JavaScript Method Signatures  
+async Abxr.LogDebug(message: string, meta?: any): Promise<number>
+async Abxr.LogInfo(message: string, meta?: any): Promise<number>
+async Abxr.LogWarn(message: string, meta?: any): Promise<number>
+async Abxr.LogError(message: string, meta?: any): Promise<number>
+async Abxr.LogCritical(message: string, meta?: any): Promise<number>
 
-// Example usage
+// Example usage (fire-and-forget - runs in background)
 Abxr.LogError('Critical error in assessment phase');
 
 // With metadata - all formats supported
@@ -725,10 +725,10 @@ var allEntries = Abxr.GetAllStorageEntries();
 // JavaScript Event Method Signatures
 Abxr.StorageRemoveMultipleEntries(scope = StorageScope.user)
 
-// Example usage
-await Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.user); // Clear all user data
-await Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.device); // Clear all device data
-await Abxr.StorageRemoveMultipleEntries(); // Defaults to user scope
+// Example usage (fire-and-forget - runs in background)
+Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.user); // Clear all user data
+Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.device); // Clear all device data
+Abxr.StorageRemoveMultipleEntries(); // Defaults to user scope
 ```
 **Parameters:**
 - `scope` (StorageScope): Optional. Remove all from 'device' or 'user' storage. Default is 'user'.
@@ -751,8 +751,8 @@ Abxr.StoragePolicy.keepLatest     // Keep only latest
 Abxr.StoragePolicy.appendHistory  // Append to history
 
 // Example usage
-await Abxr.StorageSetEntry('progress', {'level': 5}, Abxr.StorageScope.user, Abxr.StoragePolicy.keepLatest);
-const progress = await Abxr.StorageGetEntry('progress', Abxr.StorageScope.user);
+Abxr.StorageSetEntry('progress', {'level': 5}, Abxr.StorageScope.user, Abxr.StoragePolicy.keepLatest); // Fire-and-forget
+const progress = await Abxr.StorageGetEntry('progress', Abxr.StorageScope.user); // Need await for return value
 ```
 
 ### Telemetry
@@ -952,7 +952,7 @@ function onModuleCompleted(completedModuleName) {
     console.log(`Module '${completedModuleName}' completed!`);
     
     // Complete the assessment for this module
-    Abxr.EventAssessmentComplete(completedModuleName, '100', Abxr.EventStatus.eComplete);
+    Abxr.EventAssessmentComplete(completedModuleName, 100, Abxr.EventStatus.eComplete);
     
     // Check if there are more modules to process
     const nextModule = Abxr.GetModuleTarget();

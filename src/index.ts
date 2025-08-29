@@ -670,19 +670,20 @@ export class Abxr {
      * Complete an assessment with score and status - triggers LMS grade recording
      * When complete, automatically records and closes the assessment in supported LMS platforms
      * @param assessmentName Name of the assessment (must match the start event)
-     * @param score Numerical score achieved (typically 0-100, but any integer is valid)
+     * @param score Numerical score achieved (number or string, automatically validated to 0-100 range)
      * @param eventStatus Result status of the assessment (ePass, eFail, eComplete, etc.)
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
-    static async EventAssessmentComplete(assessmentName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
+    static async EventAssessmentComplete(assessmentName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number> {
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Assessment complete event not sent - not authenticated');
             }
             return 0;
         }
-        return await AbxrLibSend.EventAssessmentComplete(assessmentName, score, eventStatus, this.convertToAbxrDictStrings(meta));
+        const validatedScore = this.validateScore(score, `assessment "${assessmentName}"`);
+        return await AbxrLibSend.EventAssessmentComplete(assessmentName, validatedScore, eventStatus, this.convertToAbxrDictStrings(meta));
     }
     
     /**
@@ -707,19 +708,20 @@ export class Abxr {
      * Complete an objective with score and status - contributes to overall assessment
      * Objectives automatically calculate duration if corresponding start event was logged
      * @param objectiveName Name of the objective (must match the start event)
-     * @param score Numerical score achieved for this objective
+     * @param score Numerical score achieved for this objective (number or string, automatically validated to 0-100 range)
      * @param eventStatus Result status (eComplete, ePass, eFail, etc.)
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
-    static async EventObjectiveComplete(objectiveName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
+    static async EventObjectiveComplete(objectiveName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number> {
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Objective complete event not sent - not authenticated');
             }
             return 0;
         }
-        return await AbxrLibSend.EventObjectiveComplete(objectiveName, score, eventStatus, this.convertToAbxrDictStrings(meta));
+        const validatedScore = this.validateScore(score, `objective "${objectiveName}"`);
+        return await AbxrLibSend.EventObjectiveComplete(objectiveName, validatedScore, eventStatus, this.convertToAbxrDictStrings(meta));
     }
     
     /**
@@ -781,18 +783,19 @@ export class Abxr {
      * Complete a level with score and optional metadata
      * Levels automatically calculate duration if corresponding start event was logged
      * @param levelName Name of the level (must match the start event)
-     * @param score Numerical score achieved for this level
+     * @param score Numerical score achieved for this level (number or string, automatically validated to 0-100 range)
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
-    static async EventLevelComplete(levelName: string, score: string, meta?: any): Promise<number> {
+    static async EventLevelComplete(levelName: string, score: number | string, meta?: any): Promise<number> {
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Level complete event not sent - not authenticated');
             }
             return 0;
         }
-        return await AbxrLibSend.EventLevelComplete(levelName, score, this.convertToAbxrDictStrings(meta));
+        const validatedScore = this.validateScore(score, `level "${levelName}"`);
+        return await AbxrLibSend.EventLevelComplete(levelName, validatedScore, this.convertToAbxrDictStrings(meta));
     }
     
     /**
@@ -1381,6 +1384,33 @@ export class Abxr {
             console.error('AbxrLib: Failed to load module target queue:', error);
             this.moduleTargetQueue = [];
         }
+    }
+
+    // Helper method to validate and normalize score values (0-100 range)
+    private static validateScore(score: number | string, context: string): string {
+        // Convert to number for validation
+        const numericScore = typeof score === 'number' ? score : parseFloat(score.toString());
+        
+        // Check if it's a valid number
+        if (isNaN(numericScore)) {
+            if (this.enableDebug) {
+                console.warn(`AbxrLib: Invalid score "${score}" for ${context}. Score must be a valid number. Using 0 as fallback.`);
+            }
+            return '0';
+        }
+        
+        // Check range (0-100)
+        if (numericScore < 0 || numericScore > 100) {
+            if (this.enableDebug) {
+                console.warn(`AbxrLib: Score ${numericScore} for ${context} is outside valid range (0-100). Clamping to valid range.`);
+            }
+            // Clamp to valid range
+            const clampedScore = Math.max(0, Math.min(100, numericScore));
+            return clampedScore.toString();
+        }
+        
+        // Valid score - return as string
+        return numericScore.toString();
     }
 
     // Helper method to convert various metadata formats to AbxrDictStrings

@@ -66,7 +66,7 @@ The easiest way to get started is with a single function call:
     
     // Start using the library immediately
     Abxr.Event('user_action', { action: 'button_click' });
-    Abxr.LogDebug('User clicked button');
+    await Abxr.LogDebug('User clicked button');
 </script>
 ```
 
@@ -186,7 +186,7 @@ Abxr.setDebugMode(true); // Enable debug logging
 
 // These will log debug messages but won't send data
 Abxr.Event('test_event');
-Abxr.LogDebug('test message');
+await Abxr.LogDebug('test message');
 ```
 
 ### Available Types and Enums
@@ -251,7 +251,7 @@ Abxr.EventAssessmentComplete(assessmentName, score, eventStatus = EventStatus.eC
 
 // Example Usage
 Abxr.EventAssessmentStart('final_exam');
-Abxr.EventAssessmentComplete('final_exam', '92', Abxr.EventStatus.ePass);
+Abxr.EventAssessmentComplete('final_exam', 92, Abxr.EventStatus.ePass);
 ```
 
 #### Objectives
@@ -302,7 +302,7 @@ await Abxr.Event("Table puzzle"); // Duration automatically included: 20 seconds
 // Works with all event methods
 Abxr.StartTimedEvent("Assessment");
 // ... later ...
-await Abxr.EventAssessmentComplete("Assessment", "95", Abxr.EventStatus.ePass); // Duration included
+await Abxr.EventAssessmentComplete("Assessment", 95, Abxr.EventStatus.ePass); // Duration included
 
 // Also works with Mixpanel compatibility methods
 Abxr.StartTimedEvent("User Session");
@@ -362,16 +362,16 @@ Abxr.Reset(); // Remove all super properties (matches mixpanel.reset())
 
 ### Logging
 ```javascript
-// JavaScript Event Method Signatures
-Abxr.LogDebug(message, meta = null)
-Abxr.LogInfo(message, meta = null)
-Abxr.LogWarn(message, meta = null)
-Abxr.LogError(message, meta = null)
-Abxr.LogCritical(message, meta = null)
+// JavaScript Method Signatures
+async Abxr.LogDebug(message: string, meta?: any): Promise<number>
+async Abxr.LogInfo(message: string, meta?: any): Promise<number>
+async Abxr.LogWarn(message: string, meta?: any): Promise<number>
+async Abxr.LogError(message: string, meta?: any): Promise<number>
+async Abxr.LogCritical(message: string, meta?: any): Promise<number>
 
 // Example usage
-Abxr.LogError('Critical error in assessment phase');
-Abxr.LogInfo('User login', {'userId': 12345, 'loginMethod': 'oauth'});
+await Abxr.LogError('Critical error in assessment phase');
+await Abxr.LogInfo('User login', {'userId': 12345, 'loginMethod': 'oauth'});
 ```
 
 ### Storage
@@ -501,7 +501,7 @@ Abxr.LogError('API Error', '{"endpoint": "/api/users", "status": 500, "message":
 // Great for form data or query parameters
 Abxr.Event('form_submit', 'name=John%20Doe&email=john@example.com&age=25');
 
-Abxr.LogDebug('Search query', 'query=virtual+reality&category=education&page=2');
+await Abxr.LogDebug('Search query', 'query=virtual+reality&category=education&page=2');
 
 // Handles complex values with = signs
 Abxr.Event('equation_solved', 'formula=x=y+5&result=10&method=substitution');
@@ -564,7 +564,7 @@ Abxr.EventAssessmentStart('Quiz', { startTime: Date.now(), difficulty: 'medium' 
 Abxr_init('app123', 'org456', 'secret789');
 
 // Assessment with result options
-Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { 'time_spent': '30min' });
+Abxr.EventAssessmentComplete('math_test', 85, Abxr.EventStatus.ePass, { 'time_spent': '30min' });
 
 // Interaction with interaction type
 Abxr.EventInteractionComplete('button_click', Abxr.InteractionType.eClick, 'success', {'x': 150, 'y': 200});
@@ -593,7 +593,7 @@ Abxr_init('your-app-id');
 
 // Start using immediately
 Abxr.Event('user_action', { action: 'button_click' });
-Abxr.LogDebug('User completed tutorial');
+await Abxr.LogDebug('User completed tutorial');
 
 // Store data
 Abxr.StorageSetEntry('user_progress', '75%');
@@ -615,7 +615,7 @@ For browser environments, include the bundled JavaScript file and initialize the
     
     // Start using the library immediately
     Abxr.Event('user_action', { action: 'button_click' });
-    Abxr.LogDebug('User clicked button');
+    await Abxr.LogDebug('User clicked button');
 </script>
 ```
 
@@ -659,7 +659,7 @@ Abxr_init('app123', 'org456', 'secret789');
 Abxr.Event('button_click');
 
 // Send logs
-Abxr.LogDebug('User completed tutorial');
+await Abxr.LogDebug('User completed tutorial');
 ```
 
 ### Storage API

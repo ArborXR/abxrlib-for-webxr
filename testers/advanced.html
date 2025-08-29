@@ -517,7 +517,7 @@
         console.log("Tester: Executing Abxr.EventAssessmentComplete()");
         try {
             const assessmentName = document.getElementById('assessment_name').value;
-            const score = document.getElementById('assessment_score').value;
+            const score = parseInt(document.getElementById('assessment_score').value, 10);
             const statusValue = document.getElementById('assessment_status').value;
             const eventStatus = Abxr.EventStatus[statusValue];
             const dictMeta = { completed_at: new Date().toISOString(), final_score: score };
@@ -559,7 +559,7 @@
         console.log("Tester: Executing Abxr.EventObjectiveComplete()");
         try {
             const objectiveName = document.getElementById('objective_name').value;
-            const score = document.getElementById('objective_score').value;
+            const score = parseInt(document.getElementById('objective_score').value, 10);
             const statusValue = document.getElementById('objective_status').value;
             const eventStatus = Abxr.EventStatus[statusValue];
             const dictMeta = { completed_at: new Date().toISOString(), final_score: score };
