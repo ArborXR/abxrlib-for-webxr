@@ -1076,7 +1076,7 @@ export class AbxrDbContext extends DbContext
 	m_dsABXRLogs:			DbSet<AbxrLog>;
 	m_dsABXRTelemetry:		DbSet<AbxrTelemetry>;
 	m_dsABXREvents:			DbSet<AbxrEvent>;	// Table name ABXREvents.
-	m_dsABXRStorage:		DbSet<AbxrStorage>;	// State info, etc.
+	m_dsABXRStorage:		DbSetStorage;	// State info, etc.
 	m_szDbPath:				string;
 	// ---
 	public static m_mapProperties: FieldPropertiesRecordContainer = new FieldPropertiesRecordContainer(Object.assign({},
@@ -1100,7 +1100,7 @@ export class AbxrDbContext extends DbContext
 		this.m_dsABXRLogs = new DbSet<AbxrLog>(AbxrLog);
 		this.m_dsABXRTelemetry = new DbSet<AbxrTelemetry>(AbxrTelemetry);
 		this.m_dsABXREvents = new DbSet<AbxrEvent>(AbxrEvent);
-		this.m_dsABXRStorage = new DbSet<AbxrStorage>(AbxrStorage);
+		this.m_dsABXRStorage = new DbSetStorage(AbxrStorage);
 		this.m_szDbPath = "";
 		// ---
 	// 	m_szDbPath = NormalizePath("ArborXR.db").c_str();
