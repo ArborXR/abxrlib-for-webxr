@@ -778,19 +778,79 @@ The Integration Methods offer developers access to additional services, enabling
 ```javascript
 // JavaScript Event Method Signatures
 Abxr.AIProxy(prompt, pastMessages = "", botId = "")
+Abxr.AIProxyWithCallback(prompt, llmProvider, pastMessages = [], callback)
 
-// Example usage
+// Example usage - Background tracking (default approach)
 Abxr.AIProxy('Provide me a randomized greeting that includes common small talk and ends by asking some form of how can I help');
+
+// Or with await to get request ID
+const requestId = await Abxr.AIProxy('What is the weather like today?', '', 'weather-bot');
+
+// Planned for future release - Immediate response (Unity-style)
+// Abxr.AIProxyWithCallback('What is the weather like today?', 'weather-bot', [], (response) => {
+//     if (response) {
+//         console.log('AI Response:', response);
+//     } else {
+//         console.log('AI request failed');
+//     }
+// });
 ```
 
-**Parameters:**
+**AIProxy Parameters:**
 - `prompt` (string): The input prompt for the AI.
 - `pastMessages` (string): Optional. Previous conversation history for context.
 - `botId` (string): Optional. An identifier for a specific pre-defined chatbot.
 
-**Returns:** The AI-generated response as a string.
+**AIProxy Returns:** `Promise<number>` - Request ID for tracking the AI request, or 0 if not authenticated. The AI response is processed on the backend and can be retrieved via polling or webhooks.
 
-**Note:** AIProxy calls are processed immediately and bypass the cache system. However, they still respect the SendRetriesOnFailure and SendRetryInterval settings.
+**AIProxyWithCallback Parameters:** *(Planned for future release)*
+- `prompt` (string): The input prompt for the AI.
+- `llmProvider` (string): The LLM provider/bot ID to use.
+- `pastMessages` (string[]): Optional. Array of previous conversation messages for context.
+- `callback` (function): Function called with AI response (string) or null on error.
+
+**AIProxyWithCallback Returns:** `Promise<void>` - Response provided via callback function. *(Currently returns null - not yet implemented)*
+
+**Usage Guidelines:**
+- **Use `AIProxy`** for fire-and-forget requests with backend tracking (recommended for current use)
+- **`AIProxyWithCallback`** is planned for future release to provide Unity-style immediate responses
+- Both methods will bypass the cache system and respect SendRetriesOnFailure/SendRetryInterval settings
+
+#### Platform Comparison & Migration
+
+**Unity vs WebXR AI Integration:**
+
+| **Aspect** | **Unity (C#)** | **WebXR (JavaScript/TypeScript)** |
+|------------|----------------|------------------------------------|
+| **Method Pattern** | `IEnumerator` with callback | Two approaches: `Promise<number>` or callback |
+| **Immediate Response** | `AIProxy(prompt, llmProvider, callback)` | `AIProxyWithCallback(prompt, llmProvider, pastMessages, callback)` |
+| **Background Tracking** | Not available | `AIProxy(prompt, pastMessages, botId)` → returns request ID |
+| **Past Messages** | `List<string>` parameter | String array or comma-separated string |
+| **Response Handling** | Direct callback with AI response | Callback with AI response OR request ID for polling |
+
+**Migration from Unity:**
+
+```javascript
+// Unity C# pattern:
+// StartCoroutine(Abxr.AIProxy("Hello AI", "gpt-4", result => {
+//     Debug.Log("AI Response: " + result);
+// }));
+
+// Current WebXR pattern (analytics tracking):
+const requestId = await Abxr.AIProxy("Hello AI", "", "gpt-4");
+console.log("Request submitted with ID:", requestId);
+
+// Future WebXR pattern (planned - Unity-style immediate response):
+// Abxr.AIProxyWithCallback("Hello AI", "gpt-4", [], (result) => {
+//     console.log("AI Response: " + result);
+// });
+```
+
+**When to Use Each Approach:**
+
+- **`AIProxy`** (WebXR): Currently available - best for analytics, fire-and-forget requests, or when you need request tracking
+- **`AIProxyWithCallback`** (WebXR): Planned for future release - will be best for immediate response handling, chat interfaces, or when migrating from Unity
+- **Unity `AIProxy`**: Callback-based, immediate response (equivalent to planned WebXR `AIProxyWithCallback`)
 
 ### Exit Polls
 

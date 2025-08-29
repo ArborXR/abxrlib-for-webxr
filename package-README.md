@@ -431,10 +431,23 @@ Abxr.Telemetry('headset_position', {'x': '1.23', 'y': '4.56', 'z': '7.89'});
 ```javascript
 // JavaScript Event Method Signatures
 Abxr.AIProxy(prompt, pastMessages = "", botId = "")
+Abxr.AIProxyWithCallback(prompt, llmProvider, pastMessages = [], callback)
 
-// Example usage
+// Background tracking (fire-and-forget)
 Abxr.AIProxy('Provide me a randomized greeting that includes common small talk and ends by asking some form of how can I help');
+
+// Planned for future - Immediate response (Unity-style)  
+// Abxr.AIProxyWithCallback('What is the weather like today?', 'weather-bot', [], (response) => {
+//     console.log('AI Response:', response);
+// });
 ```
+
+**AIProxy Returns:** `Promise<number>` - Request ID for tracking the AI request, or 0 if not authenticated.
+**AIProxyWithCallback Returns:** `Promise<void>` - Planned for future release.
+
+**Usage Patterns:**
+- `AIProxy`: Currently available - analytics tracking, fire-and-forget requests  
+- `AIProxyWithCallback`: Planned for future - immediate responses, chat interfaces, Unity migration
 
 ### Exit Polls
 
@@ -697,8 +710,13 @@ import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 // Initialize
 Abxr_init('app123', 'org456', 'secret789');
 
-// Send AI proxy request
+// Send AI proxy request (fire-and-forget)
 Abxr.AIProxy('Provide a greeting message', '', 'default');
+
+// Future: get immediate response with callback (planned for future release)
+// Abxr.AIProxyWithCallback('Provide a greeting message', 'default', [], (response) => {
+//     console.log('AI says:', response);
+// });
 ```
 
 ## Mixpanel Migration & Compatibility

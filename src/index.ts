@@ -393,6 +393,7 @@ export interface AuthCompletedData {
     userEmail?: string | null;
     moduleTarget?: string | null;
     isReauthentication?: boolean;
+    error?: string;  // Error message when success is false (enhancement over Unity)
 }
 
 export type AuthCompletedCallback = (data: AuthCompletedData) => void;
@@ -1016,6 +1017,22 @@ export class Abxr {
         return await AbxrLibAnalytics.AddAIProxy(new AbxrAIProxy().Construct0(prompt, pastMessages || "", botId || "default"));
     }
 
+    /**
+     * Send a prompt to the AI with immediate response via callback (Unity-style)
+     * Note: This method is planned for a future release to provide Unity-style immediate responses
+     * Currently, use AIProxy() for fire-and-forget requests with backend tracking
+     * @param prompt The input prompt for the AI
+     * @param llmProvider The LLM provider/bot ID to use
+     * @param pastMessages Optional array of previous conversation messages for context
+     * @param callback Function called with AI response (string) or null on error
+     */
+    static async AIProxyWithCallback(prompt: string, llmProvider: string, pastMessages?: string[], callback?: (response: string | null) => void): Promise<void> {
+        if (this.enableDebug) {
+            console.log('AbxrLib: AIProxyWithCallback is not yet implemented. Use AIProxy() for fire-and-forget requests.');
+        }
+        callback?.(null);
+    }
+
     // ===== Mixpanel Compatibility Methods =====
     
     /**
@@ -1045,25 +1062,58 @@ export class Abxr {
         return await this.Event(eventName, trackProperties);
     }
     
-    // INTERNAL USE ONLY - Do not use in application code
-    // This method is called by the authentication system to trigger callbacks
-    static NotifyAuthCompleted(success: boolean, isReauthentication: boolean = false, moduleTargets?: string[]): void {
+    /**
+     * INTERNAL USE ONLY - Do not use in application code
+     * This method is called by the authentication system to trigger callbacks
+     * Unified method that handles both authentication success and failure (Unity-style)
+     * Always notifies registered callbacks with AuthCompletedData containing success/failure information
+     * @internal
+     */
+    static NotifyAuthCompleted(success: boolean, isReauthentication: boolean = false, moduleTargets?: string[], error: string = ''): void {
+        // Update connection status based on authentication result (handles both success and failure)
         this.connectionActive = success;
         
-        // Notify auth completion subscribers when authentication succeeds
         if (success) {
-            this.notifyAuthCompletedCallbacks(isReauthentication, moduleTargets);
+            // Handle successful authentication
+            this.authenticationFailed = false;
+            this.authenticationError = '';
+        } else {
+            // Handle authentication failure (unified failure handling)
+            this.authenticationFailed = true;
+            this.authenticationError = error;
+            // Clear other states when authentication fails
+            this.requiresFinalAuth = false;
+            
+            if (this.enableDebug) {
+                console.warn(`AbxrLib: Authentication failed - ${error}`);
+            }
         }
+        
+        // Always notify auth completion subscribers (both success AND failure cases like Unity)
+        // This ensures developers get AuthCompletedData for all authentication attempts
+        this.notifyAuthCompletedCallbacks(isReauthentication, moduleTargets);
     }
     
+    /**
+     * INTERNAL USE ONLY - Do not use in application code
+     * @internal
+     */
     static setAuthParams(params: { appId?: string; orgId?: string; authSecret?: string }): void {
         this.authParams = { ...params };
     }
     
+    /**
+     * INTERNAL USE ONLY - Do not use in application code
+     * @internal
+     */
     static setAppConfig(config: string): void {
         this.appConfig = config;
     }
     
+    /**
+     * INTERNAL USE ONLY - Do not use in application code
+     * @internal
+     */
     static setRequiresFinalAuth(requires: boolean): void {
         this.requiresFinalAuth = requires;
     }
@@ -1100,16 +1150,14 @@ export class Abxr {
         return authData ? authData.userEmail : null;
     }
     
-
-    
-    static setAuthenticationFailed(failed: boolean, error: string = ''): void {
-        this.authenticationFailed = failed;
-        this.authenticationError = error;
-        if (failed) {
-            // Clear other states when authentication fails
-            this.connectionActive = false;
-            this.requiresFinalAuth = false;
-        }
+    /**
+     * @deprecated Use NotifyAuthCompleted(success, isReauthentication, moduleTargets, error) instead
+     * This method is kept for backward compatibility but will be removed in a future version
+     * The unified NotifyAuthCompleted method now handles both success and failure cases
+     */
+    private static setAuthenticationFailed(failed: boolean, error: string = ''): void {
+        // Redirect to unified method for consistency
+        this.NotifyAuthCompleted(!failed, false, undefined, error);
     }
     
     // AuthMechanism callback methods
@@ -1204,8 +1252,18 @@ export class Abxr {
     /**
      * Subscribe to authentication completion events for post-auth initialization
      * Perfect for initializing UI components, loading user data, or showing welcome messages
-     * Callbacks are triggered internally when authentication completes
-     * @param callback Function to call when authentication completes successfully
+     * Callbacks are triggered for BOTH authentication success and failure (like Unity)
+     * @param callback Function to call when authentication completes (receives AuthCompletedData with success flag and error info)
+     * 
+     * @example
+     * Abxr.onAuthCompleted((authData) => {
+     *     if (authData.success) {
+     *         console.log('Authentication successful!', authData.userId);
+     *         console.log('Module target:', authData.moduleTarget);
+     *     } else {
+     *         console.log('Authentication failed:', authData.error);
+     *     }
+     * });
      */
     static onAuthCompleted(callback: AuthCompletedCallback): void {
         if (typeof callback !== 'function') {
@@ -1255,10 +1313,9 @@ export class Abxr {
             return;
         }
         
-        // Reset authentication state
-        this.NotifyAuthCompleted(false);
+        // Reset authentication state (unified approach)
         this.setRequiresFinalAuth(false);
-        this.setAuthenticationFailed(false);
+        this.NotifyAuthCompleted(true); // Clear failed state by setting success=true
         
         // For testing purposes, trigger reauthentication using the existing authentication flow
         // Note: This is a simplified implementation for testing - in production this would
@@ -1300,10 +1357,9 @@ export class Abxr {
         // Set the new session ID in the authentication system
         // Note: Session ID is handled internally, we just generate it for reference
         
-        // Reset authentication state and reauthenticate
-        this.NotifyAuthCompleted(false);
+        // Reset authentication state and reauthenticate (unified approach)
         this.setRequiresFinalAuth(false);
-        this.setAuthenticationFailed(false);
+        this.NotifyAuthCompleted(true); // Clear failed state by setting success=true
         
         // For new sessions, we'll trigger a fresh authentication
         // Note: New session ID generation is handled internally by the authentication system
@@ -1356,7 +1412,8 @@ export class Abxr {
             userId: authData ? authData.userId : null,
             userEmail: authData ? authData.userEmail : null,
             moduleTarget: firstModuleTarget ?? (authData ? authData.moduleTarget : null),
-            isReauthentication
+            isReauthentication,
+            error: !this.connectionActive ? this.authenticationError : undefined  // Include error message on failure
         };
     }
     
@@ -1472,18 +1529,28 @@ export class Abxr {
         return dictMeta;
     }
     
-    // Configure built-in dialog options
+    /**
+     * INTERNAL USE ONLY - Configure built-in dialog options
+     * @internal
+     */
     static setDialogOptions(options: AuthMechanismDialogOptions): void {
         this.dialogOptions = { ...this.dialogOptions, ...options };
     }
-    
+
+    /**
+     * INTERNAL USE ONLY - Get built-in dialog options
+     * @internal
+     */
     static getDialogOptions(): AuthMechanismDialogOptions {
         return { ...this.dialogOptions };
     }
     
 
     
-    // Built-in authentication handler (browser-only)
+    /**
+     * INTERNAL USE ONLY - Built-in authentication handler (browser-only)
+     * @internal
+     */
     static builtInAuthMechanismHandler(authData: AuthMechanismData): void {
         if (typeof window === 'undefined') {
             console.warn('AbxrLib: Built-in dialog not available in non-browser environment');
@@ -1706,7 +1773,10 @@ export class Abxr {
         }
     }
     
-    // Extract authMechanism data into a structured format
+    /**
+     * INTERNAL USE ONLY - Extract authMechanism data into a structured format
+     * @internal
+     */
     static extractAuthMechanismData(): AuthMechanismData | null {
         try {
             const authMechanism = AbxrLibInit.get_AuthMechanism();
@@ -1740,8 +1810,8 @@ export class Abxr {
         }
     }
     
-    // Helper method to format auth data for completeFinalAuth based on type
-    static formatAuthDataForSubmission(inputValue: string, authType: string, domain?: string): any {
+    // INTERNAL USE ONLY - Helper method to format auth data for completeFinalAuth based on type
+    private static formatAuthDataForSubmission(inputValue: string, authType: string, domain?: string): any {
         const authData: any = {};
         
         if (authType === 'email') {
@@ -1759,7 +1829,10 @@ export class Abxr {
         return authData;
     }
     
-    // Method to attempt version fallback on authentication failure
+    /**
+     * INTERNAL USE ONLY - Method to attempt version fallback on authentication failure
+     * @internal
+     */
     static async attemptVersionFallback(): Promise<boolean> {
         try {
             const currentRestUrl = getAbxrParameter('abxr_rest_url') || 'https://lib-backend.xrdm.app/v1/';
@@ -1792,8 +1865,8 @@ export class Abxr {
         }
     }
 
-    // Method to complete final authentication when authMechanism is required
-    static async completeFinalAuth(authData: any): Promise<boolean> {
+    // INTERNAL USE ONLY - Method to complete final authentication when authMechanism is required
+    private static async completeFinalAuth(authData: any): Promise<boolean> {
         if (!this.requiresFinalAuth) {
             console.warn('AbxrLib: No final authentication required');
             return false;
@@ -1909,8 +1982,8 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
         return;
     }
     
-    // Reset authentication state for new initialization attempt
-    Abxr.setAuthenticationFailed(false);
+    // Reset authentication state for new initialization attempt (unified approach)
+    Abxr.NotifyAuthCompleted(true); // Clear failed state by setting success=true
     AbxrLibClient.clearLastAuthError();
     
     // Configure dialog options if provided
@@ -2050,16 +2123,16 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                         }
                         
                         console.warn(`AbxrLib: Authentication failed - ${errorMessage}`);
-                        Abxr.setAuthenticationFailed(true, errorMessage);
+                        Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
                     }
                 })
                 .catch((error: any) => {
                     console.error('AbxrLib: Authentication error:', error);
-                    Abxr.setAuthenticationFailed(true, `Authentication error: ${error.message}`);
+                    Abxr.NotifyAuthCompleted(false, false, undefined, `Authentication error: ${error.message}`);
                 });
         } catch (error: any) {
             console.error('AbxrLib: Configuration error:', error);
-            Abxr.setAuthenticationFailed(true, `Configuration error: ${error.message}`);
+            Abxr.NotifyAuthCompleted(false, false, undefined, `Configuration error: ${error.message}`);
         }
             }
 }
