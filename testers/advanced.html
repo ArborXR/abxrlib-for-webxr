@@ -116,7 +116,7 @@
             
             // Check authentication status
             setTimeout(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.hasAuthenticationFailed()) {
@@ -130,7 +130,7 @@
             
             // Set up periodic check for completion
             const checkAuth = setInterval(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
                     enableSharedButtons();
                     clearInterval(checkAuth);
@@ -176,7 +176,7 @@
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.hasAuthenticationFailed()) {
@@ -189,7 +189,7 @@
             }, 1000);
             
             const checkAuth = setInterval(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed with custom-styled XR dialog!', 'success');
                     enableSharedButtons();
                     clearInterval(checkAuth);
@@ -238,7 +238,7 @@
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully with advanced XR styling!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.hasAuthenticationFailed()) {
@@ -251,7 +251,7 @@
             }, 1000);
             
             const checkAuth = setInterval(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully with advanced XR dialog!', 'success');
                     enableSharedButtons();
                     clearInterval(checkAuth);
@@ -281,7 +281,7 @@
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.hasAuthenticationFailed()) {
@@ -294,7 +294,7 @@
             }, 1000);
             
             const checkAuth = setInterval(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully with default-themed XR dialog (no virtual keyboard)!', 'success');
                     enableSharedButtons();
                     clearInterval(checkAuth);
@@ -321,7 +321,7 @@
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.hasAuthenticationFailed()) {
@@ -394,7 +394,7 @@
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully with custom callback!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.hasAuthenticationFailed()) {
@@ -448,7 +448,7 @@
             Abxr.setDebugMode(true);
             
             setTimeout(() => {
-                if (Abxr.isConfigured()) {
+                if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
                     enableSharedButtons();
                 } else if (Abxr.hasAuthenticationFailed()) {

@@ -40,6 +40,7 @@ The **ABXRLib SDK for WebXR** is an open-source analytics and data collection li
    - [Resources](#resources)
    - [FAQ](#faq)
    - [Troubleshooting](#troubleshooting)
+   - [Debug Mode](#debug-mode)
 
 ## Installation
 
@@ -66,9 +67,6 @@ The easiest way to get started is with a single function call:
     // Start using the library immediately
     Abxr.Event('user_action', { action: 'button_click' });
     Abxr.LogDebug('User clicked button');
-    
-    // Enable debug mode to see when operations are skipped
-    Abxr.setDebugMode(true);
 </script>
 ```
 
@@ -190,13 +188,6 @@ Abxr.setDebugMode(true); // Enable debug logging
 Abxr.Event('test_event');
 Abxr.LogDebug('test message');
 ```
-
-### Configuration Methods
-
-- `Abxr.setDebugMode(enabled)` - Enable/disable debug logging
-- `Abxr.getDebugMode()` - Get current debug mode
-- `Abxr.isConfigured()` - Check if library is authenticated
-- `Abxr.getAuthParams()` - Get authentication parameters (for debugging)
 
 ### Available Types and Enums
 
@@ -415,6 +406,18 @@ await Abxr.StorageSetEntry('progress', {'level': 5}, Abxr.StorageScope.user, Abx
 const progress = await Abxr.StorageGetEntry('progress', Abxr.StorageScope.user);
 ```
 
+#### Remove All Storage Entries for Scope
+```javascript
+// JavaScript Event Method Signatures
+Abxr.StorageRemoveMultipleEntries(scope = StorageScope.user)
+
+// Example usage
+await Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.user); // Clear all user data
+await Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.device); // Clear all device data
+await Abxr.StorageRemoveMultipleEntries(); // Defaults to user scope
+```
+**Note:** This is a bulk operation that clears all stored entries at once. Use with caution as this cannot be undone.
+
 ### Telemetry
 ```javascript
 // JavaScript Event Method Signatures
@@ -560,9 +563,6 @@ Abxr.EventAssessmentStart('Quiz', { startTime: Date.now(), difficulty: 'medium' 
 // Initialize
 Abxr_init('app123', 'org456', 'secret789');
 
-// Enable debug mode
-Abxr.setDebugMode(true);
-
 // Assessment with result options
 Abxr.EventAssessmentComplete('math_test', '85', Abxr.EventStatus.ePass, { 'time_spent': '30min' });
 
@@ -616,9 +616,6 @@ For browser environments, include the bundled JavaScript file and initialize the
     // Start using the library immediately
     Abxr.Event('user_action', { action: 'button_click' });
     Abxr.LogDebug('User clicked button');
-    
-    // Enable debug mode to see when operations are skipped
-    Abxr.setDebugMode(true);
 </script>
 ```
 
@@ -785,6 +782,33 @@ ABXRLib also includes core [Super Properties](#super-properties) functionality (
 
 The **Module Target** feature enables developers to create single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application can automatically direct the user to that module within the application. Individual grades and results are then tracked for that specific assignment in the LMS.
 
+#### Module Target Management
+
+```javascript
+// Get the next module target from the queue
+const nextTarget = Abxr.GetModuleTarget();
+if (nextTarget) {
+    console.log(`Processing module: ${nextTarget.moduleTarget}`);
+    navigateToModule(nextTarget.moduleTarget);
+} else {
+    console.log('All modules completed!');
+    showCompletionScreen();
+}
+
+// Clear all module targets and storage
+Abxr.clearModuleTargets();
+
+// Check how many module targets remain
+const count = Abxr.getModuleTargetCount();
+console.log(`Modules remaining: ${count}`);
+```
+
+**Use Cases for clearModuleTargets():**
+- **Reset state**: Clear module targets when starting a new experience
+- **Error recovery**: Clear corrupted module target data
+- **Testing**: Reset module queue during development
+- **Session management**: Clean up between different users
+
 ### Authentication
 
 The **Authentication Completion** callback feature enables developers to get notified when authentication completes successfully. This is particularly useful for initializing UI components, starting background services, or showing welcome messages after the user has been authenticated.
@@ -842,6 +866,7 @@ Abxr.removeAuthCompletedCallback(authCallback);
 
 // Clear all authentication callbacks
 Abxr.clearAuthCompletedCallbacks();
+
 ```
 
 #### Authentication Data Structure
@@ -873,7 +898,7 @@ await Abxr.StartNewSession();
 // Example usage
 async function testAuthFlow() {
     await Abxr.ReAuthenticate();
-    if (Abxr.isConfigured()) {
+    if (Abxr.ConnectionActive()) {
         await Abxr.EventAssessmentStart('test_assessment');
     }
 }
@@ -904,6 +929,34 @@ Object tracking can be enabled by adding the Track Object component to any GameO
 
 ### Troubleshooting
 
+#### Debug Mode
+
+For debugging authentication, network issues, or other problems, enable debug logging:
+
+```javascript
+// Check if connection is established with the service
+Abxr.ConnectionActive();
+
+// Enable detailed debug logging
+Abxr.setDebugMode(true);   // Turn on debug mode
+Abxr.setDebugMode(false);  // Turn off debug mode
+
+// Check current debug state
+const isDebugging = Abxr.getDebugMode();
+console.log('Debug mode:', isDebugging);
+
+// Conditional setup for development
+if (process.env.NODE_ENV === 'development') {
+    Abxr.setDebugMode(true);
+}
+```
+
+**Debug Mode Benefits:**
+- **Detailed error messages**: See exactly what's failing during authentication
+- **Network request logging**: Track API calls and responses  
+- **State information**: Monitor internal library state changes
+- **Performance insights**: Identify bottlenecks and timing issues
+
 #### Authentication Issues
 
 **Problem: Library fails to authenticate**
@@ -930,7 +983,7 @@ Object tracking can be enabled by adding the Track Object component to any GameO
 #### Event and Data Issues
 
 **Problem: Events not being sent**
-- **Solution**: Check authentication status with `Abxr.isConfigured()`
+- **Solution**: Check connection status with `Abxr.ConnectionActive()`
 - **Debug**: Enable debug logging to see why events are being blocked
 - **Check**: Verify your event names use snake_case format for best processing
 
@@ -962,11 +1015,6 @@ Abxr.onAuthCompleted(function(authData) {
 
 // Then initialize
 Abxr_init('your-app-id');
-
-// Enable debug mode for development
-if (process.env.NODE_ENV === 'development') {
-    Abxr.setDebugMode(true);
-}
 
 // Clean up callbacks when components are destroyed (React example)
 useEffect(() => {

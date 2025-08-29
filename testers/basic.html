@@ -53,8 +53,8 @@
     
     // Check for authentication completion and log user data
     function checkAuthCompletion() {
-      if (Abxr.isConfigured()) {
-        console.log('AbxrLib: Authentication completed successfully!');
+      if (Abxr.ConnectionActive()) {
+        console.log('AbxrLib: Connection established successfully!');
         
         // Get and log user data
         const userId = Abxr.getUserId();

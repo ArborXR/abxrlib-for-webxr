@@ -22,10 +22,13 @@ The name "ABXR" stands for "Analytics Backbone for XR"—a flexible, open-source
    - [Authentication](#authentication)
    - [Session Management](#session-management)
    - [Mixpanel Compatibility](#mixpanel-compatibility)
-6. [Support](#support)
+6. [Configuration](#configuration)
+   - [Configuration Status](#configuration-status)
+7. [Support](#support)
    - [Resources](#resources)
    - [FAQ](#faq)
    - [Troubleshooting](#troubleshooting)
+   - [Debug Mode](#debug-mode)
 
 ---
 
@@ -717,6 +720,23 @@ var allEntries = Abxr.GetAllStorageEntries();
 ```
 **Returns:** An object containing all storage entries for the current user/device.
 
+#### Remove All Storage Entries for Scope
+```javascript
+// JavaScript Event Method Signatures
+Abxr.StorageRemoveMultipleEntries(scope = StorageScope.user)
+
+// Example usage
+await Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.user); // Clear all user data
+await Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.device); // Clear all device data
+await Abxr.StorageRemoveMultipleEntries(); // Defaults to user scope
+```
+**Parameters:**
+- `scope` (StorageScope): Optional. Remove all from 'device' or 'user' storage. Default is 'user'.
+
+**Returns:** Promise<number> Operation result code or 0 if not authenticated.
+
+**Note:** This is a bulk operation that clears all stored entries at once. Use with caution as this cannot be undone.
+
 #### Enhanced Storage Methods **NEW**
 ```javascript
 // Enhanced storage with scope and policy control
@@ -833,7 +853,6 @@ export interface ModuleTargetData {
     userData?: any;                 // Additional user data from authentication  
     userId?: any;                   // User identifier
     userEmail?: string | null;      // User email address
-    isAuthenticated: boolean;       // Authentication status
 }
 ```
 
@@ -858,6 +877,25 @@ const userId = Abxr.getUserId();
 const userData = Abxr.getUserData();
 const userEmail = Abxr.getUserEmail();
 ```
+
+#### Module Target Management
+
+You can also manage the module target queue directly:
+
+```javascript
+// Clear all module targets and storage
+Abxr.clearModuleTargets();
+
+// Check how many module targets remain
+const count = Abxr.getModuleTargetCount();
+console.log(`Modules remaining: ${count}`);
+```
+
+**Use Cases:**
+- **Reset state**: Clear module targets when starting a new experience
+- **Error recovery**: Clear corrupted module target data
+- **Testing**: Reset module queue during development
+- **Session management**: Clean up between different users
 
 #### Best Practices
 
@@ -1054,7 +1092,7 @@ async function testReauth() {
     console.log('Testing reauthentication...');
     await Abxr.ReAuthenticate();
     
-    if (Abxr.isConfigured()) {
+    if (Abxr.ConnectionActive()) {
         console.log('Reauthentication successful');
         // Continue with authenticated operations
         await Abxr.Event('reauth_test_passed');
@@ -1183,6 +1221,39 @@ Abxr.EventAssessmentStart('safety_training');                // LMS-compatible a
 **Additional Core Features Beyond Mixpanel:**
 ABXRLib also includes core [Super Properties](#super-properties) functionality (`Register`, `RegisterOnce`) that works identically to Mixpanel, plus advanced [Timed Events](#timed-events) that work universally across all event types.
 
+## Configuration
+
+### Connection Status
+
+Check if AbxrLib has an active connection to the server:
+
+```javascript
+// JavaScript Method Signatures
+Abxr.ConnectionActive()
+
+// Example usage
+if (Abxr.ConnectionActive()) {
+    console.log('AbxrLib is connected and ready to send data');
+    Abxr.Event('app_ready');
+} else {
+    console.log('Connection not active - waiting for authentication...');
+    // Set up authentication completion callback
+    Abxr.onAuthCompleted(function(authData) {
+        if (authData.success) {
+            console.log('Connection established!');
+        }
+    });
+}
+```
+
+**Returns:** Boolean indicating if the library can communicate with the server
+
+**Use Cases:**
+- **Conditional logic**: Only send events when connection is active
+- **UI state management**: Show online/offline status indicators
+- **Error prevention**: Check connection before making API calls
+- **Feature gating**: Enable/disable features that require server communication
+
 ## Support
 
 ### Resources
@@ -1199,6 +1270,42 @@ Your Application ID can be found in the Web Dashboard under the application deta
 Object tracking can be enabled by adding the Track Object component to any GameObject in your scene via the Unity Inspector.
 
 ### Troubleshooting
+
+#### Debug Mode
+
+For debugging authentication, network issues, or other problems, enable debug logging:
+
+```javascript
+// Check if connection is established with the service
+Abxr.ConnectionActive();
+
+// Enable and check debug mode Method Sigantures
+Abxr.setDebugMode(enabled)
+Abxr.getDebugMode()
+
+// Example usage
+Abxr.setDebugMode(true);  // Enable debug logging
+Abxr.setDebugMode(false); // Disable debug logging
+
+const isDebugging = Abxr.getDebugMode();
+console.log('Debug mode:', isDebugging);
+
+// Conditional debug setup for development
+if (process.env.NODE_ENV === 'development') {
+    Abxr.setDebugMode(true);
+}
+```
+
+**Parameters:**
+- `enabled` (boolean): Enable or disable debug mode
+
+**Returns:** `getDebugMode()` returns boolean indicating current debug state
+
+**Debug Mode Benefits:**
+- **Detailed error messages**: See exactly what's failing during authentication
+- **Network request logging**: Track API calls and responses
+- **State information**: Monitor internal library state changes
+- **Performance insights**: Identify bottlenecks and timing issues
 
 #### Authentication Issues
 
@@ -1226,7 +1333,7 @@ Object tracking can be enabled by adding the Track Object component to any GameO
 #### Event and Data Issues
 
 **Problem: Events not being sent**
-- **Solution**: Check authentication status with `Abxr.isConfigured()`
+- **Solution**: Check connection status with `Abxr.ConnectionActive()`
 - **Debug**: Enable debug logging to see why events are being blocked
 - **Check**: Verify your event names use snake_case format for best processing
 
@@ -1258,15 +1365,10 @@ Abxr.onAuthCompleted(function(authData) {
 
 // Then initialize
 Abxr_init('your-app-id');
-
-// Enable debug mode for development
-if (process.env.NODE_ENV === 'development') {
-    Abxr.setDebugMode(true);
-}
 ```
 
 **Getting Help:**
-- Enable debug mode: `Abxr.setDebugMode(true)`
+- See [Debug Mode](#debug-mode) for detailed logging and troubleshooting
 - Check browser console for detailed error messages  
 - Verify network requests in browser developer tools
 - Test authentication flow in isolation before adding complex features

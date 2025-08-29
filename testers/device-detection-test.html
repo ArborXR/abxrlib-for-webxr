@@ -170,7 +170,7 @@
       
       // Monitor authentication status
       const checkInterval = setInterval(() => {
-        if (Abxr.isConfigured()) {
+        if (Abxr.ConnectionActive()) {
           clearInterval(checkInterval);
           
           document.getElementById('status').textContent = 'Status: Authentication completed!';
@@ -213,7 +213,7 @@
       
       // Timeout after 30 seconds
       setTimeout(() => {
-        if (!Abxr.isConfigured() && !Abxr.hasAuthenticationFailed()) {
+        if (!Abxr.ConnectionActive() && !Abxr.hasAuthenticationFailed()) {
           clearInterval(checkInterval);
           document.getElementById('status').textContent = 'Status: Authentication timed out!';
           console.error('Authentication test timed out');

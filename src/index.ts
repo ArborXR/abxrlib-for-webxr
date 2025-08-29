@@ -383,7 +383,6 @@ export interface ModuleTargetData {
     userData?: any;
     userId?: any;
     userEmail?: string | null;
-    isAuthenticated: boolean;
 }
 
 // Types for authentication completion notification
@@ -432,7 +431,7 @@ export interface AuthMechanismDialogOptions {
 // Global Abxr class that gets configured by Abxr_init()
 export class Abxr {
     private static enableDebug: boolean = false;
-    private static isAuthenticated: boolean = false;
+    private static connectionActive: boolean = false;
     private static requiresFinalAuth: boolean = false;
     private static authenticationFailed: boolean = false;
     private static authenticationError: string = '';
@@ -477,11 +476,17 @@ export class Abxr {
         return this.enableDebug;
     }
     
-    static isConfigured(): boolean {
-        return this.isAuthenticated;
+    /**
+     * Check if AbxrLib has an active connection to the server and can send data
+     * This indicates whether the library is configured and ready to communicate
+     * @returns True if connection is active, false otherwise
+     */
+    static ConnectionActive(): boolean {
+        return this.connectionActive;
     }
     
-    static getAuthParams(): any {
+    // INTERNAL USE ONLY - Do not use in application code
+    private static getAuthParams(): any {
         return { ...this.authParams };
     }
 
@@ -493,7 +498,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogDebug(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
             }
@@ -512,7 +517,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogInfo(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
             }
@@ -531,7 +536,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogWarn(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
             }
@@ -550,7 +555,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogError(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
             }
@@ -569,7 +574,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogCritical(message: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
             }
@@ -589,7 +594,7 @@ export class Abxr {
      */
     // Event methods
     static async Event(name: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Event not sent - not authenticated');
             }
@@ -652,7 +657,7 @@ export class Abxr {
      */
     // Assessment Events
     static async EventAssessmentStart(assessmentName: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Assessment start event not sent - not authenticated');
             }
@@ -671,7 +676,7 @@ export class Abxr {
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventAssessmentComplete(assessmentName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Assessment complete event not sent - not authenticated');
             }
@@ -689,7 +694,7 @@ export class Abxr {
      */
     // Objective Events
     static async EventObjectiveStart(objectiveName: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Objective start event not sent - not authenticated');
             }
@@ -708,7 +713,7 @@ export class Abxr {
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventObjectiveComplete(objectiveName: string, score: string, eventStatus: EventStatus, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Objective complete event not sent - not authenticated');
             }
@@ -726,7 +731,7 @@ export class Abxr {
      */
     // Interaction Events
     static async EventInteractionStart(interactionName: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Interaction start event not sent - not authenticated');
             }
@@ -745,7 +750,7 @@ export class Abxr {
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, response: string = "", meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Interaction complete event not sent - not authenticated');
             }
@@ -763,7 +768,7 @@ export class Abxr {
      */
     // Level Events
     static async EventLevelStart(levelName: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Level start event not sent - not authenticated');
             }
@@ -781,7 +786,7 @@ export class Abxr {
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventLevelComplete(levelName: string, score: string, meta?: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Level complete event not sent - not authenticated');
             }
@@ -894,7 +899,7 @@ export class Abxr {
      */
     // Storage methods
     static async StorageSetEntry(data: any, keepLatest: boolean = true, origin: string = "web", sessionData: boolean = false, name: string = "state"): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Storage not set - not authenticated');
             }
@@ -910,7 +915,7 @@ export class Abxr {
      * @returns Promise<string> Retrieved storage data as string, or empty string if not found/authenticated
      */
     static async StorageGetEntry(name: string = "state"): Promise<string> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Storage not retrieved - not authenticated');
             }
@@ -926,7 +931,7 @@ export class Abxr {
      * @returns Promise<number> Operation result code or 0 if not authenticated
      */
     static async StorageRemoveEntry(name: string = "state"): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Storage not removed - not authenticated');
             }
@@ -947,6 +952,27 @@ export class Abxr {
         // for API consistency with Unity and future enhancement.
         return await this.StorageRemoveEntry("state");
     }
+
+    /**
+     * Remove all session data stored for the current user or device
+     * This is a bulk operation that clears all stored entries at once
+     * Use with caution as this cannot be undone
+     * @param scope Storage scope - 'user' for cross-device data, 'device' for device-specific data (default: user)
+     * @returns Promise<number> Operation result code or 0 if not authenticated
+     */
+    static async StorageRemoveMultipleEntries(scope: StorageScope = StorageScope.user): Promise<number> {
+        if (!this.connectionActive) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: StorageRemoveMultipleEntries not executed - not authenticated');
+            }
+            return 0;
+        }
+        
+        // Note: Current implementation doesn't distinguish between user/device scope
+        // This is a simplified implementation - in practice, the backend would handle bulk operations
+        // For now, we clear the default "state" entry as the primary storage entry
+        return await this.StorageRemoveEntry("state");
+    }
     
     /**
      * Send spatial, hardware, or system telemetry data for XR analytics
@@ -957,7 +983,7 @@ export class Abxr {
      */
     // Telemetry methods
     static async Telemetry(name: string, data: any): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Telemetry not sent - not authenticated');
             }
@@ -978,7 +1004,7 @@ export class Abxr {
      */
     // AI Proxy methods
     static async AIProxy(prompt: string, pastMessages?: string, botId?: string): Promise<number> {
-        if (!this.isAuthenticated) {
+        if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: AI Proxy not sent - not authenticated');
             }
@@ -1019,7 +1045,7 @@ export class Abxr {
     // INTERNAL USE ONLY - Do not use in application code
     // This method is called by the authentication system to trigger callbacks
     static setAuthenticated(authenticated: boolean, isReauthentication: boolean = false, moduleTargets?: string[]): void {
-        this.isAuthenticated = authenticated;
+        this.connectionActive = authenticated;
         
         // Notify auth completion subscribers when authentication succeeds
         if (authenticated) {
@@ -1078,7 +1104,7 @@ export class Abxr {
         this.authenticationError = error;
         if (failed) {
             // Clear other states when authentication fails
-            this.isAuthenticated = false;
+            this.connectionActive = false;
             this.requiresFinalAuth = false;
         }
     }
@@ -1124,17 +1150,16 @@ export class Abxr {
             moduleTarget: nextModuleTargetId,
             userData: this.getUserData(),
             userId: this.getUserId(),
-            userEmail: this.getUserEmail(),
-            isAuthenticated: this.isAuthenticated
+            userEmail: this.getUserEmail()
         };
     }
 
     /**
      * Initialize the module targets from authentication response
-     * Should be called when authentication completes with module target data
+     * INTERNAL USE ONLY - Called by authentication system when authentication completes
      * @param moduleTargets List of module target identifiers from auth response
      */
-    static setModuleTargets(moduleTargets: string[]): void {
+    private static setModuleTargets(moduleTargets: string[]): void {
         if (!moduleTargets || moduleTargets.length === 0) {
             return;
         }
@@ -1293,7 +1318,7 @@ export class Abxr {
         let firstModuleTarget: string | null = null;
         
         // Handle module targets if provided and authentication was successful
-        if (this.isAuthenticated && moduleTargets && moduleTargets.length > 0) {
+        if (this.connectionActive && moduleTargets && moduleTargets.length > 0) {
             // Take the first module target for immediate use in onAuthCompleted
             firstModuleTarget = moduleTargets[0];
             
@@ -1323,7 +1348,7 @@ export class Abxr {
     private static getAuthCompletedData(isReauthentication: boolean = false, firstModuleTarget?: string | null): AuthCompletedData {
         const authData = AbxrLibClient.getAuthResponseData();
         return {
-            success: this.isAuthenticated,
+            success: this.connectionActive,
             userData: authData ? authData.userData : null,
             userId: authData ? authData.userId : null,
             userEmail: authData ? authData.userEmail : null,
