@@ -388,13 +388,13 @@ Abxr.LogInfo('User login', {'userId': 12345, 'loginMethod': 'oauth'});
 #### Basic Storage Methods
 ```javascript
 // JavaScript Event Method Signatures
-Abxr.SetStorageEntry(data, name = "state", keepLatest = true, origin = null, sessionData = false)
-Abxr.GetStorageEntry(name = "state")
-Abxr.RemoveStorageEntry(name = "state")
+Abxr.StorageSetEntry(data, name = "state", keepLatest = true, origin = null, sessionData = false)
+Abxr.StorageGetEntry(name = "state")
+Abxr.StorageRemoveEntry(name = "state")
 
 // Example usage
-Abxr.SetStorageEntry({'progress': '75%'});
-var state = Abxr.GetStorageEntry('state');
+Abxr.StorageSetEntry({'progress': '75%'});
+var state = Abxr.StorageGetEntry('state');
 ```
 
 #### Enhanced Storage Methods **NEW**
@@ -596,7 +596,7 @@ Abxr.Event('user_action', { action: 'button_click' });
 Abxr.LogDebug('User completed tutorial');
 
 // Store data
-Abxr.SetStorageEntry('user_progress', '75%');
+Abxr.StorageSetEntry('user_progress', '75%');
 ```
 
 ## Browser (UMD)
@@ -674,10 +674,10 @@ import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 Abxr_init('app123', 'org456', 'secret789');
 
 // Store data
-Abxr.SetStorageEntry({'user_progress': '75%'});
+Abxr.StorageSetEntry({'user_progress': '75%'});
 
 // Retrieve data
-const entry = Abxr.GetStorageEntry('user_progress');
+const entry = Abxr.StorageGetEntry('user_progress');
 ```
 
 ### Telemetry
@@ -869,9 +869,6 @@ await Abxr.ReAuthenticate();
 
 // Start new session with fresh session ID  
 await Abxr.StartNewSession();
-
-// Continue existing session
-await Abxr.ContinueSession('session_12345');
 
 // Example usage
 async function testAuthFlow() {

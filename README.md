@@ -664,13 +664,13 @@ The Storage API enables developers to store and retrieve learner/player progress
 #### Save Progress
 ```javascript
 // JavaScript Event Method Signatures
-Abxr.SetStorageEntry(data, name = "state", keepLatest = true, origin = null, sessionData = false)
+Abxr.StorageSetEntry(data, name = "state", keepLatest = true, origin = null, sessionData = false)
 
 // Example usage
-Abxr.SetStorageEntry({'progress': '75%'});
+Abxr.StorageSetEntry({'progress': '75%'});
 
 // With more options
-Abxr.SetStorageEntry({'progress': '75%', 'level': 'intermediate'}, 'user_progress', true, 'game', false);
+Abxr.StorageSetEntry({'progress': '75%', 'level': 'intermediate'}, 'user_progress', true, 'game', false);
 ```
 **Parameters:**
 - `data` (object): The key-value pairs to store.
@@ -682,10 +682,10 @@ Abxr.SetStorageEntry({'progress': '75%', 'level': 'intermediate'}, 'user_progres
 #### Retrieve Data
 ```javascript
 // JavaScript Event Method Signatures
-Abxr.GetStorageEntry(name = "state", origin = null, tagsAny = null, tagsAll = null, userOnly = false)
+Abxr.StorageGetEntry(name = "state", origin = null, tagsAny = null, tagsAll = null, userOnly = false)
 
 // Example usage
-var state = Abxr.GetStorageEntry('state');
+var state = Abxr.StorageGetEntry('state');
 ```
 **Parameters:**
 - `name` (string): Optional. The identifier of the storage entry to retrieve. Default is "state".
@@ -1024,14 +1024,11 @@ Abxr.clearAuthCompletedCallbacks();
 The ABXRLib SDK provides comprehensive session management capabilities that allow you to control authentication state and session continuity. These methods are particularly useful for multi-user environments, testing scenarios, and creating seamless user experiences across devices and time.
 
 ```javascript
-// Manually trigger reauthentication (primarily for testing)
-await Abxr.ReAuthenticate();
-
 // Start a new session with fresh session ID
 await Abxr.StartNewSession();
 
-// Continue an existing session (future enhancement)
-await Abxr.ContinueSession('session_12345');
+// Manually trigger reauthentication (primarily for testing)
+await Abxr.ReAuthenticate();
 ```
 
 ##### Session Management Examples
@@ -1061,15 +1058,7 @@ async function startNewExperience() {
     await Abxr.EventAssessmentStart('fresh_training_assessment');
 }
 
-// Session continuation for resumable experiences
-async function resumeExperience(sessionId) {
-    console.log(`Resuming experience with session: ${sessionId}`);
-    await Abxr.ContinueSession(sessionId);
-    
-    // Load previous progress
-    const progress = await Abxr.StorageGetDefaultEntry(Abxr.StorageScope.user);
-    console.log('Resumed with progress:', progress);
-}
+
 ```
 
 ### Mixpanel Compatibility

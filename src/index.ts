@@ -894,7 +894,7 @@ export class Abxr {
      * @returns Promise<number> Storage entry ID or 0 if not authenticated
      */
     // Storage methods
-    static async SetStorageEntry(data: any, keepLatest: boolean = true, origin: string = "web", sessionData: boolean = false, name: string = "state"): Promise<number> {
+    static async StorageSetEntry(data: any, keepLatest: boolean = true, origin: string = "web", sessionData: boolean = false, name: string = "state"): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Storage not set - not authenticated');
@@ -910,7 +910,7 @@ export class Abxr {
      * @param name Identifier of the storage entry to retrieve (default: "state")
      * @returns Promise<string> Retrieved storage data as string, or empty string if not found/authenticated
      */
-    static async GetStorageEntry(name: string = "state"): Promise<string> {
+    static async StorageGetEntry(name: string = "state"): Promise<string> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Storage not retrieved - not authenticated');
@@ -926,7 +926,7 @@ export class Abxr {
      * @param name Identifier of the storage entry to remove (default: "state") 
      * @returns Promise<number> Operation result code or 0 if not authenticated
      */
-    static async RemoveStorageEntry(name: string = "state"): Promise<number> {
+    static async StorageRemoveEntry(name: string = "state"): Promise<number> {
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Storage not removed - not authenticated');
@@ -934,6 +934,19 @@ export class Abxr {
             return 0;
         }
         return await AbxrLibStorage.RemoveEntry(name);
+    }
+    
+    /**
+     * Remove the session data stored under the default name 'state'
+     * Convenience method that calls StorageRemoveEntry with "state" as the name
+     * @param scope Storage scope - 'user' for cross-device data, 'device' for device-specific data (default: user)
+     * @returns Promise<number> Operation result code or 0 if not authenticated
+     */
+    static async StorageRemoveDefaultEntry(scope: StorageScope = StorageScope.user): Promise<number> {
+        // Note: Current implementation doesn't use scope parameter as the underlying 
+        // StorageRemoveEntry method doesn't support scoping yet. This is provided 
+        // for API consistency with Unity and future enhancement.
+        return await this.StorageRemoveEntry("state");
     }
     
     /**
@@ -1243,45 +1256,6 @@ export class Abxr {
             this.setAuthenticated(true, false); // New session, not reauthentication
         } catch (error) {
             console.log('AbxrLib: New session authentication failed or requires additional steps');
-            // Note: Additional authentication steps would be handled by the underlying system
-        }
-    }
-    
-    /**
-     * Continue an existing session using a specific session identifier
-     * Allows resuming previous sessions for continuity across devices or time
-     * @param sessionId The session ID to continue (must be a valid existing session)
-     */
-    static async ContinueSession(sessionId: string): Promise<void> {
-        if (!sessionId) {
-            console.error('AbxrLib: ContinueSession called with empty sessionId');
-            return;
-        }
-        
-        if (this.enableDebug) {
-            console.log('AbxrLib: ContinueSession called with session ID:', sessionId);
-        }
-        
-        const params = this.getAuthParams();
-        if (!params.appId) {
-            console.error('AbxrLib: Cannot continue session - no appId stored. Call Abxr_init() first.');
-            return;
-        }
-        
-        // Set the provided session ID (handled internally by the authentication system)
-        // Note: For now, session ID is managed internally by the system
-        
-        // Reset authentication state and authenticate with existing session
-        this.setAuthenticated(false);
-        this.setRequiresFinalAuth(false);
-        this.setAuthenticationFailed(false);
-        
-        // Attempt reauthentication (in future could be enhanced to use specific sessionId)
-        try {
-            console.log('AbxrLib: Session continued successfully');
-            this.setAuthenticated(true, true); // Continuing session counts as reauthentication
-        } catch (error) {
-            console.log('AbxrLib: Session continuation failed or requires additional steps');
             // Note: Additional authentication steps would be handled by the underlying system
         }
     }
