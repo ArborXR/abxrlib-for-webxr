@@ -9,7 +9,7 @@ RUN apt-get update && \
 
 RUN mkdir /opt/arborxr
 WORKDIR /opt/arborxr
-COPY package.json ts-node-config.json tsconfig.json webpack.config.js .eslintignore .eslintrc.json .npmignore README.md LICENSE package-README.md ./ 
+COPY package.json ts-node-config.json tsconfig.json webpack.config.js .eslintignore .eslintrc.json .npmignore README.md LICENSE ./ 
 COPY abxr-launch.sh ./ 
 RUN chmod +x abxr-launch.sh
 COPY src ./src

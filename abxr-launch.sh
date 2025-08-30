@@ -144,7 +144,7 @@ if $do_publish; then
 	cp build/index.d.ts abxrlib-for-webxr/index.d.ts
 	cp -R build/network abxrlib-for-webxr/
 	cp package.json LICENSE abxrlib-for-webxr/
-	cp package-README.md abxrlib-for-webxr/README.md
+	cp README.md abxrlib-for-webxr/README.md
 
 	# Build directory cleanup is handled by volume mount
 
