@@ -301,7 +301,16 @@ Interactions are sub-tasts to an assessment or objective
 ```javascript
 // Status enumeration for all analytics events
 Abxr.EventStatus.ePass, Abxr.EventStatus.eFail, Abxr.EventStatus.eComplete, Abxr.EventStatus.eIncomplete, Abxr.EventStatus.eBrowsed
+
 Abxr.InteractionType.eNull, Abxr.InteractionType.eBool, Abxr.InteractionType.eSelect, Abxr.InteractionType.eText, Abxr.InteractionType.eRating, Abxr.InteractionType.eNumber, Abxr.InteractionType.eMatching, Abxr.InteractionType.ePerformance, Abxr.InteractionType.eSequencing
+
+// JavaScript Method Signatures
+Abxr.EventAssessmentStart(assessmentName, meta = null)
+Abxr.EventAssessmentComplete(assessmentName, score, status, meta = null)
+Abxr.EventObjectiveStart(objectiveName, meta = null)
+Abxr.EventObjectiveComplete(objectiveName, score, status, meta = null)
+Abxr.EventInteractionStart(interactionName, meta = null)
+Abxr.EventInteractionComplete(interactionName, type, result, meta = null)
 
 // Assessment tracking (overall course/curriculum performance)
 Abxr.EventAssessmentStart('final_exam');
@@ -318,6 +327,11 @@ Abxr.EventInteractionComplete('select_option_a', Abxr.InteractionType.eSelect, '
 
 #### Additional Event Wrappers
 ```javascript
+// JavaScript Method Signatures
+Abxr.EventLevelStart(levelName, meta = null)
+Abxr.EventLevelComplete(levelName, score, meta = null)
+Abxr.EventCritical(eventName, meta = null)
+
 // Level tracking 
 Abxr.EventLevelStart('level_1');
 Abxr.EventLevelComplete('level_1', 85);
@@ -370,6 +384,10 @@ Abxr.Track("User Session"); // Duration automatically included
 Global properties automatically included in all events:
 
 ```javascript
+// JavaScript Method Signatures
+Abxr.Register(key, value)
+Abxr.RegisterOnce(key, value)
+
 // Set persistent properties (included in all events)
 Abxr.Register("user_type", "premium");
 Abxr.Register("app_version", "1.2.3");
@@ -418,6 +436,13 @@ Abxr.LogDebug('User interaction', {
 The Storage API enables developers to store and retrieve learner/player progress, facilitating the creation of long-form training content. When users log in using ArborXR's facility or the developer's in-app solution, these methods allow users to continue their progress on different headsets, ensuring a seamless learning experience across multiple sessions or devices.
 
 ```javascript
+// JavaScript Method Signatures
+Abxr.StorageSetEntry(name, entry, scope, policy = 'keepLatest')
+Abxr.StorageSetDefaultEntry(entry, scope, policy = 'keepLatest')
+Abxr.StorageGetEntry(name, scope)
+Abxr.StorageGetDefaultEntry(scope)
+Abxr.StorageRemoveEntry(name, scope)
+
 // Save progress data
 Abxr.StorageSetEntry("state", {"progress": "75%"}, Abxr.StorageScope.user);
 Abxr.StorageSetDefaultEntry({"progress": "75%"}, Abxr.StorageScope.user);
@@ -442,6 +467,9 @@ Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.user); // Clear all entries 
 The Telemetry Methods provide comprehensive tracking of the XR environment. By default, they capture headset and controller movements, but can be extended to track any custom objects in the virtual space. These functions also allow collection of system-level data such as frame rates or device temperatures. This versatile tracking enables developers to gain deep insights into user interactions and application performance, facilitating optimization and enhancing the overall XR experience.
 
 ```javascript
+// JavaScript Method Signatures
+Abxr.TelemetryEntry(name, meta)
+
 // Custom telemetry logging
 Abxr.TelemetryEntry("headset_position", { 
     "x": "1.23", "y": "4.56", "z": "7.89" 
@@ -474,13 +502,15 @@ const requestId2 = await Abxr.AIProxy("What's the weather like?", pastMessages.j
 ### Exit Polls
 Deliver questionnaires to users to gather feedback.
 ```javascript
+// Poll type enumeration
+Abxr.PollType.Thumbs, Abxr.PollType.Rating, Abxr.PollType.MultipleChoice
+
+// JavaScript Method Signatures
+Abxr.PollUser(question, pollType)
+
 // Poll types: Thumbs, Rating (1-5), MultipleChoice (2-8 options)
 Abxr.PollUser("How would you rate this training experience?", Abxr.PollType.Rating);
 ```
-**Poll Types:**
-- `Thumbs Up/Thumbs Down`
-- `Rating (1-5)`
-- `Multiple Choice (2-8 string options)`
 
 ### Metadata Formats
 
@@ -727,6 +757,10 @@ The ABXRLib SDK provides full compatibility with Mixpanel's JavaScript SDK, maki
 #### Drop-in Compatibility Methods
 
 ```javascript
+// JavaScript Method Signatures
+Abxr.Track(eventName)
+Abxr.Track(eventName, properties)
+
 // Abxr compatibility methods for Mixpanel users
 Abxr.Track("user_signup");
 Abxr.Track("purchase_completed", { amount: 29.99, currency: "USD" });
