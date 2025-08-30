@@ -21,6 +21,7 @@ The name "ABXR" stands for "Analytics Backbone for XR"—a flexible, open-source
    - [Module Targets](#module-targets)
    - [Authentication](#authentication)
    - [Session Management](#session-management)
+   - [Debug Mode](#debug-mode)
    - [Mixpanel Compatibility](#mixpanel-compatibility)
    - [XR Dialog Customization](#xr-dialog-customization)
 6. [Support](#support)
@@ -660,6 +661,43 @@ await Abxr.ReAuthenticate();
 
 **Note:** All session management methods work asynchronously and will trigger the `onAuthCompleted` callback when authentication completes, allowing you to respond to success or failure states.
 
+#### Debug Mode
+
+For debugging authentication, network issues, or other problems, enable debug logging:
+
+```javascript
+// Check if connection is established with the service
+Abxr.ConnectionActive();
+
+// Enable and check debug mode Method Sigantures
+Abxr.setDebugMode(enabled)
+Abxr.getDebugMode()
+
+// Example usage
+Abxr.setDebugMode(true);  // Enable debug logging
+Abxr.setDebugMode(false); // Disable debug logging
+
+const isDebugging = Abxr.getDebugMode();
+console.log('Debug mode:', isDebugging);
+
+// Conditional debug setup for development
+if (process.env.NODE_ENV === 'development') {
+    Abxr.setDebugMode(true);
+}
+```
+
+**Parameters:**
+- `enabled` (boolean): Enable or disable debug mode
+
+**Returns:** `getDebugMode()` returns boolean indicating current debug state
+
+**Debug Mode Benefits:**
+- **Detailed error messages**: See exactly what's failing during authentication
+- **Network request logging**: Track API calls and responses
+- **State information**: Monitor internal library state changes
+- **Performance insights**: Identify bottlenecks and timing issues
+
+
 ### Mixpanel Compatibility
 
 The ABXRLib SDK provides full compatibility with Mixpanel's JavaScript SDK, making migration simple and straightforward. You can replace your existing Mixpanel tracking calls with minimal code changes while gaining access to ABXR's advanced XR analytics capabilities.
@@ -871,42 +909,6 @@ Your Application ID can be found in the Web Dashboard under the application deta
 Object tracking can be enabled by adding the Track Object component to any GameObject in your scene via the Unity Inspector.
 
 ### Troubleshooting
-
-#### Debug Mode
-
-For debugging authentication, network issues, or other problems, enable debug logging:
-
-```javascript
-// Check if connection is established with the service
-Abxr.ConnectionActive();
-
-// Enable and check debug mode Method Sigantures
-Abxr.setDebugMode(enabled)
-Abxr.getDebugMode()
-
-// Example usage
-Abxr.setDebugMode(true);  // Enable debug logging
-Abxr.setDebugMode(false); // Disable debug logging
-
-const isDebugging = Abxr.getDebugMode();
-console.log('Debug mode:', isDebugging);
-
-// Conditional debug setup for development
-if (process.env.NODE_ENV === 'development') {
-    Abxr.setDebugMode(true);
-}
-```
-
-**Parameters:**
-- `enabled` (boolean): Enable or disable debug mode
-
-**Returns:** `getDebugMode()` returns boolean indicating current debug state
-
-**Debug Mode Benefits:**
-- **Detailed error messages**: See exactly what's failing during authentication
-- **Network request logging**: Track API calls and responses
-- **State information**: Monitor internal library state changes
-- **Performance insights**: Identify bottlenecks and timing issues
 
 #### Authentication Issues
 
