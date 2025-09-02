@@ -533,6 +533,48 @@ Abxr.Event("app_started");
 
 **Key Takeaway:** All event and log methods support these flexible metadata formats
 
+### Automatic Data Collection
+
+The ABXRLib SDK automatically enhances your data with additional context and metadata without requiring explicit configuration:
+
+#### Super Properties Auto-Merge
+Super properties are automatically merged into **every** event's metadata. Event-specific properties take precedence when keys conflict:
+```javascript
+// Set super properties
+Abxr.Register("app_version", "1.2.3");
+Abxr.Register("user_type", "premium");
+
+// Every event automatically includes super properties
+Abxr.Event("level_complete", {
+    "level": "3", 
+    "user_type": "trial"  // This overrides the super property
+});
+// Result includes: app_version=1.2.3, user_type=trial, level=3
+```
+
+#### Duration Auto-Calculation
+When using timed events or event wrappers, duration is automatically calculated and included:
+```javascript
+// Manual timed events
+Abxr.StartTimedEvent("puzzle_solving");
+// ... 30 seconds later ...
+Abxr.Event("puzzle_solving"); // Automatically includes {"duration": "30"}
+
+// Event wrapper functions automatically handle duration
+Abxr.EventAssessmentStart("final_exam");
+// ... 45 seconds later ...
+Abxr.EventAssessmentComplete("final_exam", 95, Abxr.EventStatus.Pass); // Automatically includes duration
+
+// Works for all start/complete pairs:
+// - EventAssessmentStart/Complete
+// - EventObjectiveStart/Complete  
+// - EventInteractionStart/Complete
+// - EventLevelStart/Complete
+
+// Duration defaults to "0" if no corresponding start event was found
+// Timer is automatically removed after the first matching event
+```
+
 ---
 
 ## Advanced Features
@@ -585,6 +627,30 @@ Abxr.clearModuleTargets();
 - **Error recovery**: Clear corrupted module target data
 - **Testing**: Reset module queue during development
 - **Session management**: Clean up between different users
+
+#### Persistence and Recovery
+
+Module targets are automatically persisted across browser sessions and page reloads:
+
+```javascript
+// Module targets are automatically saved when received from authentication
+// No manual intervention required
+
+// When page reloads or browser crashes, module queue is automatically restored
+const nextTarget = Abxr.GetModuleTarget(); // Loads from storage if needed
+```
+
+**Automatic Recovery Features:**
+- **Session Persistence**: Module target queue survives page refreshes and browser crashes
+- **Lazy Loading**: Queue is automatically loaded from storage when first accessed
+- **Error Resilience**: Failed storage operations are logged but don't crash the application
+- **Cross-Session Continuity**: Users can continue multi-module experiences across browser sessions
+
+**Storage Details:**
+- Module targets are stored in browser's persistent storage (IndexedDB/localStorage)
+- Storage key: `"AbxrModuleTargetQueue"` (handled internally)
+- Automatic cleanup when `clearModuleTargets()` is called
+- Uses ABXRLib's storage system for reliability and offline capabilities
 
 #### Best Practices
 
