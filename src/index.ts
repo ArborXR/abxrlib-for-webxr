@@ -605,7 +605,32 @@ export class Abxr {
         log.Construct(LogLevel.eCritical, message, this.convertToAbxrDictStrings(meta));
         return await AbxrLibSend.AddLog(log);
     }
-        
+ 
+    /**
+     * General logging method with configurable level
+     * @param message The log message
+     * @param level Log level: "debug", "info", "warn", "error", or "critical" (defaults to "info")
+     * @param meta Optional metadata with additional context
+     * @returns Promise<number> Log ID or 0 if not authenticated
+     */
+    static async Log(message: string, level: string = "info", meta?: any): Promise<number> {
+        switch (level.toLowerCase()) {
+            case "debug":
+                return await this.LogDebug(message, meta);
+            case "info":
+                return await this.LogInfo(message, meta);
+            case "warn":
+            case "warning":
+                return await this.LogWarn(message, meta);
+            case "error":
+                return await this.LogError(message, meta);
+            case "critical":
+                return await this.LogCritical(message, meta);
+            default:
+                return await this.LogInfo(message, meta);
+        }
+    }
+
     /**
      * Log a named event with optional metadata
      * Timestamps and spatial context are automatically added
@@ -1081,7 +1106,172 @@ export class Abxr {
         
         return await this.Event(eventName, trackProperties);
     }
+
+    // ===== Cognitive3D Compatibility Methods =====
     
+    /**
+     * Cognitive3D compatibility class for custom events
+     * This class provides compatibility with Cognitive3D SDK for easier migration
+     * Usage: new Cognitive3D.CustomEvent("event_name").Send() instead of Cognitive3D SDK calls
+     */
+    static CustomEvent = class {
+        private eventName: string;
+        private properties: { [key: string]: string };
+
+        constructor(name: string) {
+            this.eventName = name;
+            this.properties = {};
+        }
+
+        /**
+         * Set a property for this custom event
+         * @param key Property key
+         * @param value Property value
+         * @returns This CustomEvent instance for method chaining
+         */
+        SetProperty(key: string, value: any): this {
+            this.properties[key] = String(value);
+            return this;
+        }
+
+        /**
+         * Send the custom event to AbxrLib
+         */
+        async Send(): Promise<number> {
+            const meta = { ...this.properties, Cognitive3DMethod: "CustomEvent" };
+            return await Abxr.Event(this.eventName, meta);
+        }
+    };
+
+    /**
+     * Start an event (maps to EventAssessmentStart for Cognitive3D compatibility)
+     * @param eventName Name of the event to start
+     * @param properties Optional properties for the event
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async StartEvent(eventName: string, properties?: any): Promise<number> {
+        const meta: any = { Cognitive3DMethod: "StartEvent" };
+
+        if (properties && typeof properties === 'object') {
+            Object.assign(meta, properties);
+        }
+
+        return await this.EventAssessmentStart(eventName, meta);
+    }
+
+    /**
+     * End an event (maps to EventAssessmentComplete for Cognitive3D compatibility)
+     * Attempts to convert Cognitive3D result formats to AbxrLib EventStatus
+     * @param eventName Name of the event to end
+     * @param result Event result (will attempt conversion to EventStatus)
+     * @param score Optional score (defaults to 100)
+     * @param properties Optional properties for the event
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async EndEvent(eventName: string, result?: any, score: number = 100, properties?: any): Promise<number> {
+        const meta: any = { Cognitive3DMethod: "EndEvent" };
+
+        if (properties && typeof properties === 'object') {
+            Object.assign(meta, properties);
+        }
+
+        // Convert result to EventStatus with best guess logic
+        let status = EventStatus.eComplete;
+        if (result !== undefined && result !== null) {
+            const resultStr = String(result).toLowerCase();
+            if (resultStr.includes("pass") || resultStr.includes("success") || resultStr.includes("complete") || resultStr === "true" || resultStr === "1") {
+                status = EventStatus.ePass;
+            } else if (resultStr.includes("fail") || resultStr.includes("error") || resultStr === "false" || resultStr === "0") {
+                status = EventStatus.eFail;
+            } else if (resultStr.includes("incomplete")) {
+                status = EventStatus.eIncomplete;
+            } else if (resultStr.includes("browse")) {
+                status = EventStatus.eBrowsed;
+            }
+        }
+
+        return await this.EventAssessmentComplete(eventName, score, status, meta);
+    }
+
+    /**
+     * Send an event (maps to EventObjectiveComplete for Cognitive3D compatibility)
+     * @param eventName Name of the event
+     * @param properties Event properties
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async SendEvent(eventName: string, properties?: any): Promise<number> {
+        const meta: any = { Cognitive3DMethod: "SendEvent" };
+        let score = 100;
+        let status = EventStatus.eComplete;
+
+        if (properties && typeof properties === 'object') {
+            Object.entries(properties).forEach(([key, value]) => {
+                const keyLower = key.toLowerCase();
+                const valueStr = String(value);
+
+                // Extract score if provided
+                if (keyLower === "score") {
+                    const parsedScore = parseInt(valueStr, 10);
+                    if (!isNaN(parsedScore)) {
+                        score = parsedScore;
+                    }
+                }
+                // Extract status/result if provided
+                else if (keyLower === "result" || keyLower === "status" || keyLower === "success") {
+                    const valueLower = valueStr.toLowerCase();
+                    if (valueLower.includes("pass") || valueLower.includes("success") || valueStr === "true" || valueStr === "1") {
+                        status = EventStatus.ePass;
+                    } else if (valueLower.includes("fail") || valueLower.includes("error") || valueStr === "false" || valueStr === "0") {
+                        status = EventStatus.eFail;
+                    } else if (valueLower.includes("incomplete")) {
+                        status = EventStatus.eIncomplete;
+                    }
+                }
+
+                meta[key] = valueStr;
+            });
+        }
+
+        return await this.EventObjectiveComplete(eventName, score, status, meta);
+    }
+
+    /**
+     * Set session property (maps to Register for Cognitive3D compatibility)
+     * @param key Property key
+     * @param value Property value
+     */
+    static SetSessionProperty(key: string, value: any): void {
+        this.Register(key, String(value));
+    }
+
+    /**
+     * Set participant property (stub for Cognitive3D compatibility - not implemented)
+     * This method exists for string replacement compatibility but does not store data
+     * Use AbxrLib's authentication system and GetLearnerData() instead
+     * @param key Property key (ignored)
+     * @param value Property value (ignored)
+     * @deprecated SetParticipantProperty is not implemented. Use AbxrLib's authentication system and GetLearnerData() instead.
+     */
+    static SetParticipantProperty(key: string, value: any): void {
+        // Intentionally empty stub for compatibility
+        if (this.enableDebug) {
+            console.warn(`AbxrLib: SetParticipantProperty called but not implemented. Key: ${key}, Value: ${value}. Use AbxrLib authentication system instead.`);
+        }
+    }
+
+    /**
+     * Get participant property (maps to GetLearnerData for Cognitive3D compatibility)
+     * @param key Property key to retrieve
+     * @returns Property value if found, null otherwise
+     */
+    static GetParticipantProperty(key: string): any {
+        const learnerData = this.GetLearnerData();
+        if (learnerData && typeof learnerData === 'object' && learnerData[key] !== undefined) {
+            return learnerData[key];
+        }
+        return null;
+    }
+
     /**
      * INTERNAL USE ONLY - Do not use in application code
      * This method is called by the authentication system to trigger callbacks
