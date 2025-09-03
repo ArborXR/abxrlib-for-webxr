@@ -588,7 +588,7 @@ The **Module Target** feature enables developers to create single applications w
 You can process module targets sequentially:
 
 ```javascript
-// Get the next module target from the queue
+// Get the next module target from available modules
 const nextTarget = Abxr.GetModuleTarget();
 if (nextTarget) {
     console.log(`Processing module: ${nextTarget.moduleTarget}`);
@@ -611,46 +611,57 @@ const userEmail = Abxr.getUserEmail();
 
 #### Module Target Management
 
-You can also manage the module target queue directly:
+You can manage module progress and access rich module data:
 
 ```javascript
-// Check how many module targets remain
-const count = Abxr.getModuleTargetCount();
-console.log(`Modules remaining: ${count}`);
+// Check remaining modules and preview current
+const remaining = Abxr.getModuleTargetCount();
+const currentModule = Abxr.GetCurrentModule();
+if (currentModule) {
+    console.log(`Next: ${currentModule.name} (${remaining} remaining)`);
+}
 
-// Clear all module targets and storage
+// Get all available modules
+const allModules = Abxr.GetAvailableModules();
+console.log(`Total modules: ${allModules.length}`);
+
+// Reset progress or access learner data
 Abxr.clearModuleTargets();
+const learnerData = Abxr.GetLearnerData();
 ```
 
 **Use Cases:**
-- **Reset state**: Clear module targets when starting a new experience
-- **Error recovery**: Clear corrupted module target data
-- **Testing**: Reset module queue during development
+- **Reset state**: Reset module progress when starting a new experience
+- **Error recovery**: Clear module progress and restart from beginning
+- **Testing**: Reset module sequence during development
 - **Session management**: Clean up between different users
+- **Rich module data**: Access complete module information including names, IDs, and ordering
 
 #### Persistence and Recovery
 
-Module targets are automatically persisted across browser sessions and page reloads:
+Module progress is automatically persisted across browser sessions and page reloads:
 
 ```javascript
-// Module targets are automatically saved when received from authentication
-// No manual intervention required
+// Module data is automatically retrieved from authentication response
+// Module progress is automatically saved when advancing through modules
 
-// When page reloads or browser crashes, module queue is automatically restored
-const nextTarget = Abxr.GetModuleTarget(); // Loads from storage if needed
+// When page reloads or browser crashes, module progress is automatically restored
+const nextTarget = Abxr.GetModuleTarget(); // Loads progress from storage if needed
 ```
 
 **Automatic Recovery Features:**
-- **Session Persistence**: Module target queue survives page refreshes and browser crashes
-- **Lazy Loading**: Queue is automatically loaded from storage when first accessed
+- **Session Persistence**: Module progress survives page refreshes and browser crashes
+- **Lazy Loading**: Progress is automatically loaded from storage when first accessed
 - **Error Resilience**: Failed storage operations are logged but don't crash the application
 - **Cross-Session Continuity**: Users can continue multi-module experiences across browser sessions
+- **Rich Data Access**: Complete module information available from authentication response
 
 **Storage Details:**
-- Module targets are stored in browser's persistent storage (IndexedDB/localStorage)
-- Storage key: `"AbxrModuleTargetQueue"` (handled internally)
+- Module progress is stored in browser's persistent storage (IndexedDB/localStorage)
+- Storage key: `"abxr_module_index"` (handled internally)
 - Automatic cleanup when `clearModuleTargets()` is called
 - Uses ABXRLib's storage system for reliability and offline capabilities
+- Module data comes directly from authentication response for accuracy
 
 #### Best Practices
 
@@ -701,13 +712,28 @@ Abxr.clearAuthCompletedCallbacks();              // Clear all callbacks
 The callback provides an `AuthCompletedData` object with comprehensive authentication information:
 
 ```javascript
+interface ModuleData {
+    id: string;       // Module unique identifier
+    name: string;     // Module display name
+    target: string;   // Module target identifier
+    order: number;    // Module order/sequence
+}
+
 interface AuthCompletedData {
     success: boolean;             // Whether authentication was successful
-    userData?: any;               // Additional user data from authentication response
+    token?: string;               // Authentication token
+    secret?: string;              // Authentication secret
+    userData?: any;               // Complete user data object from authentication response
     userId?: any;                 // User identifier
-    userEmail?: string | null;    // User email address
-    moduleTarget?: string | null; // Target module from LMS (if applicable)
+    userEmail?: string | null;    // User email address (extracted from userData.email)
+    appId?: string;               // Application identifier
+    modules?: ModuleData[];       // List of available modules
+    moduleTarget?: string | null; // Target module from first module (backward compatibility)
     isReauthentication?: boolean; // Whether this was a reauthentication (vs initial auth)
+    error?: string;               // Error message when success is false
+    
+    // Method to reconstruct original authentication response
+    toJsonString?(): string;
 }
 ```
 
@@ -735,6 +761,41 @@ if (Abxr.ConnectionActive()) {
 ```
 
 **Returns:** Boolean indicating if the library has an active connection and can communicate with the server
+
+#### Accessing Learner Data
+
+After authentication completes, you can access comprehensive learner data and preferences:
+
+```javascript
+// Get learner data and preferences
+const learnerData = Abxr.GetLearnerData();
+if (learnerData) {
+    const userName = learnerData.name;
+    const audioPreference = learnerData.audioPreference;
+    
+    console.log(`Welcome back, ${userName}!`);
+    setAudioLevel(audioPreference);
+}
+
+// Check connection status before accessing data
+if (Abxr.ConnectionActive()) {
+    customizeExperience(Abxr.GetLearnerData());
+}
+```
+
+**Returns:** Object containing learner data from the authentication response, or null if not authenticated
+
+**Available Data (when provided by authentication response):**
+- **User Preferences**: `audioPreference`, `speedPreference`, `textPreference`
+- **User Information**: `name`, `email`, `id`, `user_id`
+- **Custom Fields**: Any additional data provided in the userData object
+
+**Use Cases:**
+- **Personalization**: Customize audio levels, playback speed, and text size based on user preferences
+- **Accessibility**: Apply user-specific accessibility settings automatically
+- **User Experience**: Greet users by name and show personalized content
+- **Analytics**: Track usage patterns based on user preferences
+- **Adaptive Content**: Adjust content difficulty or presentation based on user data
 
 ### Session Management
 

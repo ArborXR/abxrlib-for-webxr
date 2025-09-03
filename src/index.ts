@@ -385,15 +385,34 @@ export interface CurrentSessionData {
     userEmail?: string | null;
 }
 
-// Types for authentication completion notification
+// Types for module information from authentication response
+export interface ModuleData {
+    id: string;       // Module unique identifier
+    name: string;     // Module display name
+    target: string;   // Module target identifier
+    order: number;    // Module order/sequence
+}
+
+// Types for complete authentication response information
+// Contains the full authentication payload for JSON reconstruction and comprehensive access
 export interface AuthCompletedData {
-    success: boolean;
-    userData?: any;
-    userId?: any;
-    userEmail?: string | null;
-    moduleTarget?: string | null;
-    isReauthentication?: boolean;
-    error?: string;  // Error message when success is false (enhancement over Unity)
+    success: boolean;             // Whether authentication was successful
+    token?: string;               // Authentication token
+    secret?: string;              // Authentication secret
+    userData?: any;               // Complete user data object from authentication response
+    userId?: any;                 // User identifier
+    userEmail?: string | null;    // User email address (extracted from userData.email)
+    appId?: string;               // Application identifier
+    modules?: ModuleData[];       // List of available modules
+    moduleTarget?: string | null; // Target module from first module (backward compatibility)
+    isReauthentication?: boolean; // Whether this was a reauthentication (vs initial auth)
+    error?: string;               // Error message when success is false (enhancement over Unity)
+    
+    /**
+     * Reconstruct the original authentication response as a JSON string
+     * Useful for debugging or passing complete auth data to other systems
+     */
+    toJsonString?(): string;
 }
 
 export type AuthCompletedCallback = (data: AuthCompletedData) => void;
@@ -448,8 +467,9 @@ export class Abxr {
         enabled: true
     };
     private static currentAuthData: AuthMechanismData | null = null;
-    private static moduleTargetQueue: string[] = [];
-    private static readonly MODULE_TARGET_QUEUE_KEY = 'abxr_module_target_queue';
+    private static moduleIndex: number = 0;
+    private static readonly MODULE_INDEX_KEY = 'abxr_module_index';
+    private static latestAuthCompletedData: AuthCompletedData | null = null;
     private static authCompletedCallbacks: AuthCompletedCallback[] = [];
     private static superProperties: Map<string, string> = new Map();
     private static readonly SUPER_PROPERTIES_KEY = 'abxr_super_properties';
@@ -1149,6 +1169,57 @@ export class Abxr {
         const authData = AbxrLibClient.getAuthResponseData();
         return authData ? authData.userEmail : null;
     }
+
+    /**
+     * Get the complete authentication data from the most recent authentication completion
+     * This allows you to access user data, email, module targets, and authentication status anytime
+     * Returns null if no authentication has completed yet
+     * @returns AuthCompletedData containing all authentication information, or null if not authenticated
+     */
+    static GetAuthCompletedData(): AuthCompletedData | null {
+        return this.latestAuthCompletedData;
+    }
+
+    /**
+     * Get the learner/user data from the most recent authentication completion
+     * This is the userData object from the authentication response, containing user preferences and information
+     * Returns null if no authentication has completed yet
+     * @returns Object containing learner data, or null if not authenticated
+     */
+    static GetLearnerData(): any | null {
+        return this.latestAuthCompletedData?.userData || null;
+    }
+
+    /**
+     * Get all available modules from the authentication response
+     * Provides complete module information including id, name, target, and order
+     * Returns empty array if no authentication has completed yet
+     * @returns Array of ModuleData objects with complete module information
+     */
+    static GetAvailableModules(): ModuleData[] {
+        return this.latestAuthCompletedData?.modules || [];
+    }
+
+    /**
+     * Get the current module in the sequence without advancing to the next one
+     * Useful for checking what module the learner should be on without consuming it
+     * Returns null if no modules are available or all modules have been completed
+     * @returns ModuleData for the current module, or null if none available
+     */
+    static GetCurrentModule(): ModuleData | null {
+        const modules = this.GetAvailableModules();
+        if (!modules || modules.length === 0) {
+            return null;
+        }
+
+        this.loadModuleIndex();
+
+        if (this.moduleIndex >= modules.length) {
+            return null;
+        }
+
+        return modules[this.moduleIndex];
+    }
     
     /**
      * @deprecated Use NotifyAuthCompleted(success, isReauthentication, moduleTargets, error) instead
@@ -1170,35 +1241,36 @@ export class Abxr {
     }
     
     /**
-     * Get the next module target from the queue for sequential module processing
+     * Get the next module target from the available modules for sequential module processing
      * Returns null when no more module targets are available
-     * Each call removes the next module target from the queue and updates persistent storage
-     * @returns The next CurrentSessionData or null if queue is empty
+     * Each call moves to the next module in the sequence and updates persistent storage
+     * @returns The next CurrentSessionData with complete module information, or null if no more modules
      */
     static GetModuleTarget(): CurrentSessionData | null {
-        // Load queue from storage if empty (in case of page refresh)
-        if (this.moduleTargetQueue.length === 0) {
-            this.loadModuleTargetQueue();
-        }
-
-        // Return null if no more module targets
-        if (this.moduleTargetQueue.length === 0) {
+        // Check if we have authentication data and modules
+        const modules = this.GetAvailableModules();
+        if (!modules || modules.length === 0) {
             return null;
         }
 
-        // Pop the next module target from the queue
-        const nextModuleTargetId = this.moduleTargetQueue.shift() || null;
-        
-        if (!nextModuleTargetId) {
+        // Load current index from storage if needed
+        this.loadModuleIndex();
+
+        // Return null if we've gone through all modules
+        if (this.moduleIndex >= modules.length) {
             return null;
         }
+
+        // Get the next module
+        const nextModule = modules[this.moduleIndex];
         
-        // Update persistent storage with remaining queue
-        this.saveModuleTargetQueue();
+        // Move to next module and save progress
+        this.moduleIndex++;
+        this.saveModuleIndex();
         
-        // Create CurrentSessionData with current session data
+        // Create CurrentSessionData with complete module information
         return {
-            moduleTarget: nextModuleTargetId,
+            moduleTarget: nextModule.target,
             userData: this.getUserData(),
             userId: this.getUserId(),
             userEmail: this.getUserEmail()
@@ -1206,27 +1278,16 @@ export class Abxr {
     }
 
     /**
-     * Initialize the module targets from authentication response
+     * Initialize module processing from authentication response
      * INTERNAL USE ONLY - Called by authentication system when authentication completes
-     * @param moduleTargets List of module target identifiers from auth response
+     * Resets the module index to start from the beginning
+     * @param moduleTargets List of module target identifiers from auth response (legacy parameter)
      */
-    private static setModuleTargets(moduleTargets: string[]): void {
-        if (!moduleTargets || moduleTargets.length === 0) {
-            return;
-        }
-
-        // Clear existing queue
-        this.moduleTargetQueue = [];
-
-        // Add each module target ID to the queue
-        for (const moduleTargetId of moduleTargets) {
-            if (moduleTargetId && moduleTargetId.trim() !== '') {
-                this.moduleTargetQueue.push(moduleTargetId.trim());
-            }
-        }
-
-        // Save to persistent storage
-        this.saveModuleTargetQueue();
+    private static setModuleTargets(moduleTargets?: string[]): void {
+        // Reset module index to start from the beginning
+        // Note: moduleTargets parameter is now legacy - actual modules come from latestAuthCompletedData
+        this.moduleIndex = 0;
+        this.saveModuleIndex();
     }
 
     /**
@@ -1234,18 +1295,22 @@ export class Abxr {
      * @returns Number of module targets remaining
      */
     static getModuleTargetCount(): number {
-        if (this.moduleTargetQueue.length === 0) {
-            this.loadModuleTargetQueue();
+        const modules = this.GetAvailableModules();
+        if (!modules || modules.length === 0) {
+            return 0;
         }
-        return this.moduleTargetQueue.length;
+
+        this.loadModuleIndex();
+        const remaining = modules.length - this.moduleIndex;
+        return Math.max(0, remaining);
     }
 
     /**
-     * Clear all module targets and storage
+     * Clear module progress and reset to beginning
      */
     static clearModuleTargets(): void {
-        this.moduleTargetQueue = [];
-        this.StorageRemoveEntry(this.MODULE_TARGET_QUEUE_KEY);
+        this.moduleIndex = 0;
+        this.StorageRemoveEntry(this.MODULE_INDEX_KEY);
     }
     
     // AuthCompleted subscription methods
@@ -1374,25 +1439,36 @@ export class Abxr {
     
     // Internal method to notify all auth completion subscribers
     private static notifyAuthCompletedCallbacks(isReauthentication: boolean = false, moduleTargets?: string[]): void {
+        // Get complete auth response data from the client
+        const authResponseData = AbxrLibClient.getAuthResponseData();
+        
+        // Convert raw modules to typed ModuleData array
+        const moduleDataList = this.convertToModuleDataList(authResponseData?.modules || []);
+        
         let firstModuleTarget: string | null = null;
         
-        // Handle module targets if provided and authentication was successful
-        if (this.connectionActive && moduleTargets && moduleTargets.length > 0) {
+        // Handle module targets if available and authentication was successful
+        if (this.connectionActive && moduleDataList && moduleDataList.length > 0) {
             // Take the first module target for immediate use in onAuthCompleted
-            firstModuleTarget = moduleTargets[0];
+            firstModuleTarget = moduleDataList[0].target;
             
-            // Queue the remaining module targets for GetModuleTarget() calls
-            if (moduleTargets.length > 1) {
-                const remainingTargets = moduleTargets.slice(1);
-                this.setModuleTargets(remainingTargets);
-            }
+            // Set up module index for GetModuleTarget() calls
+            // If we have modules, start from index 1 since first module is used immediately
+            this.moduleIndex = moduleDataList.length > 1 ? 1 : moduleDataList.length;
+            this.saveModuleIndex();
+        } else {
+            // No modules available, reset index
+            this.moduleIndex = 0;
+            this.saveModuleIndex();
         }
+
+        // Create and store complete authentication data
+        const authData = this.createAuthCompletedData(isReauthentication, firstModuleTarget, authResponseData, moduleDataList);
+        this.latestAuthCompletedData = authData;
 
         if (this.authCompletedCallbacks.length === 0) {
             return;
         }
-        
-        const authData = this.getAuthCompletedData(isReauthentication, firstModuleTarget);
         
         for (const callback of this.authCompletedCallbacks) {
             try {
@@ -1403,43 +1479,116 @@ export class Abxr {
         }
     }
        
-    // Helper method to get auth completion data
-    private static getAuthCompletedData(isReauthentication: boolean = false, firstModuleTarget?: string | null): AuthCompletedData {
-        const authData = AbxrLibClient.getAuthResponseData();
-        return {
+    // Helper method to create complete auth completion data
+    private static createAuthCompletedData(
+        isReauthentication: boolean = false, 
+        firstModuleTarget: string | null = null,
+        authResponseData: any = null,
+        moduleDataList: ModuleData[] = []
+    ): AuthCompletedData {
+        const authData: AuthCompletedData = {
             success: this.connectionActive,
-            userData: authData ? authData.userData : null,
-            userId: authData ? authData.userId : null,
-            userEmail: authData ? authData.userEmail : null,
-            moduleTarget: firstModuleTarget ?? (authData ? authData.moduleTarget : null),
+            token: authResponseData?.token || undefined,
+            secret: authResponseData?.secret || undefined,
+            userData: authResponseData?.userData || null,
+            userId: authResponseData?.userId || null,
+            userEmail: authResponseData?.userEmail || null,
+            appId: authResponseData?.appId || undefined,
+            modules: moduleDataList,
+            moduleTarget: firstModuleTarget,
             isReauthentication,
-            error: !this.connectionActive ? this.authenticationError : undefined  // Include error message on failure
+            error: !this.connectionActive ? this.authenticationError : undefined,
+            
+            // Method to reconstruct original JSON
+            toJsonString: function(): string {
+                try {
+                    const originalResponse: any = {
+                        token: this.token || "",
+                        secret: this.secret || "",
+                        userData: this.userData,
+                        userId: this.userId,
+                        appId: this.appId || ""
+                    };
+
+                    if (this.modules && this.modules.length > 0) {
+                        originalResponse.modules = this.modules.map(m => ({
+                            id: m.id || "",
+                            name: m.name || "",
+                            target: m.target || "",
+                            order: m.order || 0
+                        }));
+                    }
+
+                    return JSON.stringify(originalResponse, null, 2);
+                } catch (error) {
+                    console.error('AbxrLib: Failed to serialize AuthCompletedData to JSON:', error);
+                    return "{}";
+                }
+            }
         };
+        
+        return authData;
+    }
+
+    // Helper method to convert raw module data to typed ModuleData objects
+    private static convertToModuleDataList(rawModules: any[]): ModuleData[] {
+        const moduleDataList: ModuleData[] = [];
+        if (!rawModules || !Array.isArray(rawModules)) return moduleDataList;
+
+        try {
+            const tempList: ModuleData[] = [];
+            
+            for (const rawModule of rawModules) {
+                const id = rawModule?.id ? rawModule.id.toString() : "";
+                const name = rawModule?.name ? rawModule.name.toString() : "";
+                const target = rawModule?.target ? rawModule.target.toString() : "";
+                let order = 0;
+                
+                if (rawModule?.order !== undefined && rawModule.order !== null) {
+                    const parsedOrder = parseInt(rawModule.order.toString(), 10);
+                    if (!isNaN(parsedOrder)) {
+                        order = parsedOrder;
+                    }
+                }
+
+                tempList.push({ id, name, target, order });
+            }
+
+            // Sort modules by order field
+            return tempList.sort((a, b) => a.order - b.order);
+        } catch (error) {
+            console.error('AbxrLib: Failed to convert module data:', error);
+        }
+
+        return moduleDataList;
     }
     
-    // Helper methods for module target queue persistence
-    private static saveModuleTargetQueue(): void {
+    // Helper methods for module index persistence
+    private static saveModuleIndex(): void {
         try {
-            const serializedQueue = JSON.stringify(this.moduleTargetQueue);
-            this.StorageSetEntry(serializedQueue, true, 'web', false, this.MODULE_TARGET_QUEUE_KEY);
+            const serializedIndex = JSON.stringify({ moduleIndex: this.moduleIndex });
+            this.StorageSetEntry(serializedIndex, true, 'web', false, this.MODULE_INDEX_KEY);
         } catch (error) {
-            console.error('AbxrLib: Failed to save module target queue:', error);
+            console.error('AbxrLib: Failed to save module index:', error);
         }
     }
 
-    private static loadModuleTargetQueue(): void {
+    private static loadModuleIndex(): void {
         try {
-            const serializedQueue = this.StorageGetEntry(this.MODULE_TARGET_QUEUE_KEY);
-            if (serializedQueue && typeof serializedQueue === 'string') {
-                const parsedQueue = JSON.parse(serializedQueue);
-                if (Array.isArray(parsedQueue)) {
-                    // Ensure all items are strings
-                    this.moduleTargetQueue = parsedQueue.filter(item => typeof item === 'string' && item.trim() !== '');
+            this.StorageGetEntry(this.MODULE_INDEX_KEY).then((serializedIndex) => {
+                if (serializedIndex && typeof serializedIndex === 'string') {
+                    const parsedIndex = JSON.parse(serializedIndex);
+                    if (typeof parsedIndex.moduleIndex === 'number') {
+                        this.moduleIndex = parsedIndex.moduleIndex;
+                    }
                 }
-            }
+            }).catch((error) => {
+                console.error('AbxrLib: Failed to load module index:', error);
+                this.moduleIndex = 0;
+            });
         } catch (error) {
-            console.error('AbxrLib: Failed to load module target queue:', error);
-            this.moduleTargetQueue = [];
+            console.error('AbxrLib: Failed to load module index:', error);
+            this.moduleIndex = 0;
         }
     }
 
