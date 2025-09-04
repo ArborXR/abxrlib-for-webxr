@@ -609,22 +609,21 @@ export class Abxr {
     /**
      * General logging method with configurable level
      * @param message The log message
-     * @param level Log level: "debug", "info", "warn", "error", or "critical" (defaults to "info")
+     * @param level Log level (defaults to LogLevel.eInfo)
      * @param meta Optional metadata with additional context
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
-    static async Log(message: string, level: string = "info", meta?: any): Promise<number> {
-        switch (level.toLowerCase()) {
-            case "debug":
+    static async Log(message: string, level: LogLevel = LogLevel.eInfo, meta?: any): Promise<number> {
+        switch (level) {
+            case LogLevel.eDebug:
                 return await this.LogDebug(message, meta);
-            case "info":
+            case LogLevel.eInfo:
                 return await this.LogInfo(message, meta);
-            case "warn":
-            case "warning":
+            case LogLevel.eWarn:
                 return await this.LogWarn(message, meta);
-            case "error":
+            case LogLevel.eError:
                 return await this.LogError(message, meta);
-            case "critical":
+            case LogLevel.eCritical:
                 return await this.LogCritical(message, meta);
             default:
                 return await this.LogInfo(message, meta);
@@ -954,6 +953,16 @@ export class Abxr {
             }
             return 0;
         }
+        
+        // For persistent cross-device storage (sessionData: false), we need a user to actually be logged in
+        // For session-specific storage (sessionData: true), app-level authentication should be sufficient
+        if (!sessionData && this.getUserId() == null) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Persistent storage requires user to be logged in, deferring request');
+            }
+            return 0;
+        }
+        
         return await AbxrLibStorage.SetEntry(data, keepLatest, origin, sessionData, name);
     }
     
@@ -970,6 +979,10 @@ export class Abxr {
             }
             return "";
         }
+        
+        // Note: For retrieval, we allow reading even if user is not fully authenticated
+        // This enables applications to check for existing data before requiring full login
+        // The storage system will handle filtering based on what data is actually accessible
         return await AbxrLibStorage.GetEntryAsString(name);
     }
     
@@ -986,6 +999,10 @@ export class Abxr {
             }
             return 0;
         }
+        
+        // For removing persistent user data, ensure user is logged in
+        // Note: We allow removal even without full user auth for session cleanup scenarios
+        // The storage system will handle filtering based on what data is actually accessible
         return await AbxrLibStorage.RemoveEntry(name);
     }
     
@@ -1013,6 +1030,14 @@ export class Abxr {
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: StorageRemoveMultipleEntries not executed - not authenticated');
+            }
+            return 0;
+        }
+        
+        // For user-scoped bulk removal, ensure user is logged in to prevent accidental cross-user data removal
+        if (scope === StorageScope.user && this.getUserId() == null) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: User-scoped bulk storage removal requires user to be logged in, deferring request');
             }
             return 0;
         }
@@ -1115,8 +1140,8 @@ export class Abxr {
      * Usage: new Cognitive3D.CustomEvent("event_name").Send() instead of Cognitive3D SDK calls
      */
     static CustomEvent = class {
-        private eventName: string;
-        private properties: { [key: string]: string };
+        public eventName: string;
+        public properties: { [key: string]: string };
 
         constructor(name: string) {
             this.eventName = name;
@@ -1756,6 +1781,8 @@ export class Abxr {
     // Helper methods for module index persistence
     private static saveModuleIndex(): void {
         try {
+            // Module tracking uses persistent storage for LMS integrations - requires user to be logged in
+            // The StorageSetEntry function will handle the authentication checks and defer until user auth is ready
             const serializedIndex = JSON.stringify({ moduleIndex: this.moduleIndex });
             this.StorageSetEntry(serializedIndex, true, 'web', false, this.MODULE_INDEX_KEY);
         } catch (error) {

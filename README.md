@@ -409,10 +409,12 @@ The Log Methods provide straightforward logging functionality, similar to syslog
 
 ```javascript
 // JavaScript Event Method Signatures
-Abxr.Log(level, message, meta = null)
+Abxr.Log(message, level = LogLevel.eInfo, meta = null)
 
 // Example usage
-Abxr.Log(Abxr.LogLevel.eInfo, 'Module started');
+Abxr.Log('Module started'); // Defaults to LogLevel.eInfo
+Abxr.Log('Module started', Abxr.LogLevel.eInfo);
+Abxr.Log('Debug information', Abxr.LogLevel.eDebug);
 ```
 
 Use standard or severity-specific logging:
@@ -1013,10 +1015,10 @@ Abxr.Register("user_type", "technician");
 Cognitive3D.Log("Assessment started");
 
 // After (ABXRLib):
-Abxr.Log("Assessment started"); // Defaults to "info" level
+Abxr.Log("Assessment started"); // Defaults to LogLevel.eInfo
 // Or with specific levels:
-Abxr.Log("Assessment started", "info");
-Abxr.Log("Error occurred", "error");
+Abxr.Log("Assessment started", Abxr.LogLevel.eInfo);
+Abxr.Log("Error occurred", Abxr.LogLevel.eError);
 ```
 
 #### Advanced Migration Features
