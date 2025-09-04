@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.36] - 2025-09-04
+
+### ✨ Features
+
+- added C3D compatibility functions ([10ddda5](../../commit/10ddda54a71fdec9e9c1c12058b39c9a4aba17a6))
+- added appid and modules support ([b2e8f0a](../../commit/b2e8f0a8589f65c9e562b014e6d001894bc0d6e9))
+- Added some missing details to the README ([2cc307d](../../commit/2cc307d319316872b84b6a2f24558e69d43bbfe3))
+- README updates to re-added and improve Method Signatures ([4187c8b](../../commit/4187c8b8f01480f92432faadea0098c46c4de038))
+
+### 🐛 Bug Fixes
+
+- fixed Log() function siganture ([f3c8efb](../../commit/f3c8efb0ac46127ecd4aa35cd6fa9c4de3a3bc07))
+- Readme edit to move Debug Mode content ([bf5290f](../../commit/bf5290f57e6344504d4bb12e5d680f4b68c4fce3))
+
+### 🔨 Other Changes
+
+- more README edits ([0b3dcda](../../commit/0b3dcda687251dc68d4c281a2d020408533a27a5))
+- removed package-README in favor of just the one README and shortened the README as well ([e40ece2](../../commit/e40ece25453923f1784439852948dd0c0550838d))
+- cleaned up documentation ([86b514f](../../commit/86b514f81d5fe61f39f081da1362d75dc78d8dba))
+
 ## [1.0.35] - 2025-08-29
 
 ### 🐛 Bug Fixes
