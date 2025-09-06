@@ -889,27 +889,69 @@ export class Abxr {
     }
 
     /**
-     * Private helper function to merge super properties into metadata
+     * Private helper function to merge super properties and module info into metadata
      * Handles various metadata formats and ensures data-specific properties take precedence
      * @param meta The metadata to merge super properties into
-     * @returns The metadata with super properties merged
+     * @returns The metadata with super properties and module info merged
      */
     private static mergeSuperProperties(meta: any): any {
-        if (this.superProperties.size === 0) {
-            return meta;
-        }
+        // Helper function to add module info to object-style metadata
+        const addModuleInfoToObject = (obj: any): any => {
+            const currentModule = this.GetCurrentModule();
+            if (currentModule) {
+                // Only add module info if not already present (data-specific properties take precedence)
+                if (!('module' in obj) && currentModule.target) {
+                    obj.module = currentModule.target;
+                }
+                if (!('module_name' in obj) && currentModule.name) {
+                    obj.module_name = currentModule.name;
+                }
+                if (!('module_id' in obj) && currentModule.id) {
+                    obj.module_id = currentModule.id;
+                }
+                if (!('module_order' in obj)) {
+                    obj.module_order = currentModule.order.toString();
+                }
+            }
+            return obj;
+        };
+
+        // Helper function to add module info to AbxrDictStrings
+        const addModuleInfoToDictStrings = (dictStrings: any): any => {
+            const currentModule = this.GetCurrentModule();
+            if (currentModule) {
+                // Only add module info if not already present
+                if (!dictStrings.has('module') && currentModule.target) {
+                    dictStrings.Add('module', currentModule.target);
+                }
+                if (!dictStrings.has('module_name') && currentModule.name) {
+                    dictStrings.Add('module_name', currentModule.name);
+                }
+                if (!dictStrings.has('module_id') && currentModule.id) {
+                    dictStrings.Add('module_id', currentModule.id);
+                }
+                if (!dictStrings.has('module_order')) {
+                    dictStrings.Add('module_order', currentModule.order.toString());
+                }
+            }
+            return dictStrings;
+        };
 
         if (!meta) {
-            // If no meta provided, create object with super properties
+            // If no meta provided, create object with module info and super properties
             meta = {};
+            meta = addModuleInfoToObject(meta);
             this.superProperties.forEach((value, key) => {
-                meta[key] = value;
+                if (!(key in meta)) { // Don't overwrite module info
+                    meta[key] = value;
+                }
             });
         } else if (typeof meta === 'object' && meta !== null && !Array.isArray(meta)) {
-            // If meta is an object, add super properties (don't overwrite data-specific properties)
+            // If meta is an object, add module info and super properties (don't overwrite data-specific properties)
             const combined = { ...meta }; // Start with data-specific properties
+            addModuleInfoToObject(combined);
             this.superProperties.forEach((value, key) => {
-                if (!(key in combined)) { // Only add if not already present
+                if (!(key in combined)) { // Only add if not already present (preserves data-specific and module info)
                     combined[key] = value;
                 }
             });
@@ -917,8 +959,9 @@ export class Abxr {
         } else {
             // If meta is a string, JSON, URL params, etc., convert and merge
             const convertedMeta = this.convertToAbxrDictStrings(meta);
+            addModuleInfoToDictStrings(convertedMeta);
             this.superProperties.forEach((value, key) => {
-                if (!convertedMeta.has(key)) {
+                if (!convertedMeta.has(key)) { // Don't overwrite data-specific or module info
                     convertedMeta.Add(key, value);
                 }
             });
