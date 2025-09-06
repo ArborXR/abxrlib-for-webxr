@@ -512,6 +512,29 @@ export class Abxr {
     }
 
     /**
+     * General logging method with configurable level - main logging function
+     * @param message The log message
+     * @param level Log level (defaults to LogLevel.eInfo)
+     * @param meta Optional metadata with additional context
+     * @returns Promise<number> Log ID or 0 if not authenticated
+     */
+    static async Log(message: string, level: LogLevel = LogLevel.eInfo, meta?: any): Promise<number> {
+        if (!this.connectionActive) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Log not sent - not authenticated');
+            }
+            return 0;
+        }
+        
+        // Add super properties to all logs
+        meta = this.mergeSuperProperties(meta);
+        
+        const log = new AbxrLog();
+        log.Construct(level, message, this.convertToAbxrDictStrings(meta));
+        return await AbxrLibSend.AddLog(log);
+    }
+
+    /**
      * Send a debug-level log message with optional metadata
      * Debug logs are typically used for development and troubleshooting
      * @param message Log message to send
@@ -519,18 +542,10 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogDebug(message: string, meta?: any): Promise<number> {
-        if (!this.connectionActive) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eDebug, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
+        return await this.Log(message, LogLevel.eDebug, meta);
     }
     
-        /**
+    /**
      * Send an info-level log message with optional metadata
      * Info logs are used for general application events and user actions
      * @param message Log message to send
@@ -538,15 +553,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogInfo(message: string, meta?: any): Promise<number> {
-        if (!this.connectionActive) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eInfo, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
+        return await this.Log(message, LogLevel.eInfo, meta);
     }
     
     /**
@@ -557,15 +564,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogWarn(message: string, meta?: any): Promise<number> {
-        if (!this.connectionActive) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eWarn, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
+        return await this.Log(message, LogLevel.eWarn, meta);
     }
     
     /**
@@ -576,15 +575,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogError(message: string, meta?: any): Promise<number> {
-        if (!this.connectionActive) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eError, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
+        return await this.Log(message, LogLevel.eError, meta);
     }
     
     /**
@@ -595,39 +586,7 @@ export class Abxr {
      * @returns Promise<number> Log ID or 0 if not authenticated
      */
     static async LogCritical(message: string, meta?: any): Promise<number> {
-        if (!this.connectionActive) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Log not sent - not authenticated');
-            }
-            return 0;
-        }
-        const log = new AbxrLog();
-        log.Construct(LogLevel.eCritical, message, this.convertToAbxrDictStrings(meta));
-        return await AbxrLibSend.AddLog(log);
-    }
- 
-    /**
-     * General logging method with configurable level
-     * @param message The log message
-     * @param level Log level (defaults to LogLevel.eInfo)
-     * @param meta Optional metadata with additional context
-     * @returns Promise<number> Log ID or 0 if not authenticated
-     */
-    static async Log(message: string, level: LogLevel = LogLevel.eInfo, meta?: any): Promise<number> {
-        switch (level) {
-            case LogLevel.eDebug:
-                return await this.LogDebug(message, meta);
-            case LogLevel.eInfo:
-                return await this.LogInfo(message, meta);
-            case LogLevel.eWarn:
-                return await this.LogWarn(message, meta);
-            case LogLevel.eError:
-                return await this.LogError(message, meta);
-            case LogLevel.eCritical:
-                return await this.LogCritical(message, meta);
-            default:
-                return await this.LogInfo(message, meta);
-        }
+        return await this.Log(message, LogLevel.eCritical, meta);
     }
 
     /**
@@ -647,35 +606,7 @@ export class Abxr {
         }
         
         // Add super properties to all events
-        if (this.superProperties.size > 0) {
-            if (!meta) {
-                // If no meta provided, create object with super properties
-                meta = {};
-                this.superProperties.forEach((value, key) => {
-                    meta[key] = value;
-                });
-            } else if (typeof meta === 'object' && meta !== null && !Array.isArray(meta)) {
-                // If meta is an object, add super properties (don't overwrite event-specific properties)
-                const combined = { ...meta }; // Start with event-specific properties
-                this.superProperties.forEach((value, key) => {
-                    if (!(key in combined)) { // Only add if not already present
-                        combined[key] = value;
-                    }
-                });
-                meta = combined;
-            } else {
-                // If meta is a string, JSON, URL params, etc., convert and merge
-                const convertedMeta = this.convertToAbxrDictStrings(meta);
-                this.superProperties.forEach((value, key) => {
-                    if (!convertedMeta.has(key)) {
-                        convertedMeta.Add(key, value);
-                    }
-                });
-                const event = new AbxrEvent();
-                event.Construct(name, convertedMeta);
-                return await AbxrLibSend.EventCore(event);
-            }
-        }
+        meta = this.mergeSuperProperties(meta);
         
         const event = new AbxrEvent();
         event.Construct(name, this.convertToAbxrDictStrings(meta));
@@ -936,6 +867,46 @@ export class Abxr {
     }
 
     /**
+     * Private helper function to merge super properties into metadata
+     * Handles various metadata formats and ensures data-specific properties take precedence
+     * @param meta The metadata to merge super properties into
+     * @returns The metadata with super properties merged
+     */
+    private static mergeSuperProperties(meta: any): any {
+        if (this.superProperties.size === 0) {
+            return meta;
+        }
+
+        if (!meta) {
+            // If no meta provided, create object with super properties
+            meta = {};
+            this.superProperties.forEach((value, key) => {
+                meta[key] = value;
+            });
+        } else if (typeof meta === 'object' && meta !== null && !Array.isArray(meta)) {
+            // If meta is an object, add super properties (don't overwrite data-specific properties)
+            const combined = { ...meta }; // Start with data-specific properties
+            this.superProperties.forEach((value, key) => {
+                if (!(key in combined)) { // Only add if not already present
+                    combined[key] = value;
+                }
+            });
+            meta = combined;
+        } else {
+            // If meta is a string, JSON, URL params, etc., convert and merge
+            const convertedMeta = this.convertToAbxrDictStrings(meta);
+            this.superProperties.forEach((value, key) => {
+                if (!convertedMeta.has(key)) {
+                    convertedMeta.Add(key, value);
+                }
+            });
+            meta = convertedMeta;
+        }
+
+        return meta;
+    }
+
+    /**
      * Store user progress and application state for cross-device continuity
      * Enables resumable training and long-form content across headsets
      * @param data The key-value pairs to store (object, JSON string, or other formats)
@@ -1063,6 +1034,10 @@ export class Abxr {
             }
             return 0;
         }
+        
+        // Add super properties to all telemetry entries
+        data = this.mergeSuperProperties(data);
+        
         const telemetry = new AbxrTelemetry();
         telemetry.Construct(name, data);
         return await AbxrLibSend.AddTelemetryEntryCore(telemetry);

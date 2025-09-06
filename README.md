@@ -383,14 +383,14 @@ Abxr.Track("User Session"); // Duration automatically included
 
 ### Super Properties
 
-Global properties automatically included in all events:
+Global properties automatically included in all events, logs, and telemetry data:
 
 ```javascript
 // JavaScript Method Signatures
 Abxr.Register(key, value)
 Abxr.RegisterOnce(key, value)
 
-// Set persistent properties (included in all events)
+// Set persistent properties (included in all events, logs, and telemetry)
 Abxr.Register("user_type", "premium");
 Abxr.Register("app_version", "1.2.3");
 
@@ -402,7 +402,7 @@ Abxr.Unregister("device_type");  // Remove specific property
 Abxr.Reset();                    // Clear all super properties
 ```
 
-Perfect for user attributes, app state, and device information that should be included with every event.
+Perfect for user attributes, app state, and device information that should be included with every event, log entry, and telemetry data point.
 
 ### Logging
 The Log Methods provide straightforward logging functionality, similar to syslogs. These functions are available to developers by default, even across enterprise users, allowing for consistent and accessible logging across different deployment scenarios.
@@ -541,7 +541,7 @@ Abxr.Event("app_started");
 The ABXRLib SDK automatically enhances your data with additional context and metadata without requiring explicit configuration:
 
 #### Super Properties Auto-Merge
-Super properties are automatically merged into **every** event's metadata. Event-specific properties take precedence when keys conflict:
+Super properties are automatically merged into **every** event, log, and telemetry entry's metadata. Data-specific properties take precedence when keys conflict:
 ```javascript
 // Set super properties
 Abxr.Register("app_version", "1.2.3");
@@ -553,6 +553,13 @@ Abxr.Event("level_complete", {
     "user_type": "trial"  // This overrides the super property
 });
 // Result includes: app_version=1.2.3, user_type=trial, level=3
+
+// Logs and telemetry also automatically include super properties
+Abxr.LogInfo("Player action", { "action": "jump" });
+// Result includes: app_version=1.2.3, user_type=premium, action=jump
+
+Abxr.TelemetryEntry("frame_rate", { "fps": "60" });
+// Result includes: app_version=1.2.3, user_type=premium, fps=60
 ```
 
 #### Duration Auto-Calculation
