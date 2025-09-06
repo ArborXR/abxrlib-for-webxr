@@ -781,6 +781,17 @@ export class Abxr {
      * @param value Property value
      */
     static Register(key: string, value: string): void {
+        if (this.isReservedSuperPropertyKey(key)) {
+            const errorMessage = `AbxrLib: Cannot register super property with reserved key '${key}'. Reserved keys are: module, module_name, module_id, module_order`;
+            console.warn(errorMessage);
+            this.LogInfo(errorMessage, { 
+                attempted_key: key, 
+                attempted_value: value,
+                error_type: 'reserved_super_property_key'
+            });
+            return;
+        }
+
         this.superProperties.set(key, value);
         this.saveSuperProperties();
     }
@@ -793,6 +804,17 @@ export class Abxr {
      * @param value Property value (only set if key doesn't already exist)
      */
     static RegisterOnce(key: string, value: string): void {
+        if (this.isReservedSuperPropertyKey(key)) {
+            const errorMessage = `AbxrLib: Cannot register super property with reserved key '${key}'. Reserved keys are: module, module_name, module_id, module_order`;
+            console.warn(errorMessage);
+            this.LogInfo(errorMessage, { 
+                attempted_key: key, 
+                attempted_value: value,
+                error_type: 'reserved_super_property_key'
+            });
+            return;
+        }
+
         if (!this.superProperties.has(key)) {
             this.superProperties.set(key, value);
             this.saveSuperProperties();
@@ -904,6 +926,16 @@ export class Abxr {
         }
 
         return meta;
+    }
+
+    /**
+     * Private helper to check if a super property key is reserved for module data
+     * Reserved keys: module, module_name, module_id, module_order
+     * @param key The key to validate
+     * @returns True if the key is reserved, false otherwise
+     */
+    private static isReservedSuperPropertyKey(key: string): boolean {
+        return key === 'module' || key === 'module_name' || key === 'module_id' || key === 'module_order';
     }
 
     /**
