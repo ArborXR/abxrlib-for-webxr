@@ -377,6 +377,26 @@ export interface AuthMechanismData {
 
 export type AuthMechanismCallback = (data: AuthMechanismData) => void;
 
+// Types for event queuing system
+enum QueuedEventType {
+    AssessmentStart = 'AssessmentStart',
+    AssessmentComplete = 'AssessmentComplete',
+    ObjectiveStart = 'ObjectiveStart',
+    ObjectiveComplete = 'ObjectiveComplete',
+    InteractionStart = 'InteractionStart',
+    InteractionComplete = 'InteractionComplete'
+}
+
+interface QueuedEvent {
+    eventType: QueuedEventType;
+    eventName: string;
+    meta?: any;
+    score?: string;  // Changed from number to string to match validateScore return type
+    status?: EventStatus;
+    interactionType?: InteractionType;
+    response?: string;
+}
+
 // Types for moduleTarget notification
 export interface CurrentSessionData {
     moduleTarget: string | null;
@@ -455,6 +475,10 @@ export class Abxr {
     private static requiresFinalAuth: boolean = false;
     private static authenticationFailed: boolean = false;
     private static authenticationError: string = '';
+
+    // Queue for events that need to wait for authentication completion
+    private static queuedEvents: QueuedEvent[] = [];
+    private static isAuthenticated: boolean = false;
     private static appConfig: string = '';
     private static authParams: {
         appId?: string;
@@ -641,6 +665,20 @@ export class Abxr {
      */
     // Assessment Events
     static async EventAssessmentStart(assessmentName: string, meta?: any): Promise<number> {
+        // If authentication is not complete, queue this event
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log(`AbxrLib - Assessment Start '${assessmentName}' queued until authentication completes`);
+            }
+            this.queuedEvents.push({
+                eventType: QueuedEventType.AssessmentStart,
+                eventName: assessmentName,
+                meta: meta
+            });
+            return 1; // Return success - event will be processed later
+        }
+
+        // Authentication is complete, process immediately
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Assessment start event not sent - not authenticated');
@@ -668,6 +706,22 @@ export class Abxr {
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventAssessmentComplete(assessmentName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number> {
+        // If authentication is not complete, queue this event
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log(`AbxrLib - Assessment Complete '${assessmentName}' queued until authentication completes`);
+            }
+            this.queuedEvents.push({
+                eventType: QueuedEventType.AssessmentComplete,
+                eventName: assessmentName,
+                meta: meta,
+                score: this.validateScore(score, `assessment "${assessmentName}"`),
+                status: eventStatus
+            });
+            return 1; // Return success - event will be processed later
+        }
+
+        // Authentication is complete, process immediately
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Assessment complete event not sent - not authenticated');
@@ -695,6 +749,20 @@ export class Abxr {
      */
     // Objective Events
     static async EventObjectiveStart(objectiveName: string, meta?: any): Promise<number> {
+        // If authentication is not complete, queue this event
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log(`AbxrLib - Objective Start '${objectiveName}' queued until authentication completes`);
+            }
+            this.queuedEvents.push({
+                eventType: QueuedEventType.ObjectiveStart,
+                eventName: objectiveName,
+                meta: meta
+            });
+            return 1; // Return success - event will be processed later
+        }
+
+        // Authentication is complete, process immediately
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Objective start event not sent - not authenticated');
@@ -722,6 +790,22 @@ export class Abxr {
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventObjectiveComplete(objectiveName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number> {
+        // If authentication is not complete, queue this event
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log(`AbxrLib - Objective Complete '${objectiveName}' queued until authentication completes`);
+            }
+            this.queuedEvents.push({
+                eventType: QueuedEventType.ObjectiveComplete,
+                eventName: objectiveName,
+                meta: meta,
+                score: this.validateScore(score, `objective "${objectiveName}"`),
+                status: eventStatus
+            });
+            return 1; // Return success - event will be processed later
+        }
+
+        // Authentication is complete, process immediately
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Objective complete event not sent - not authenticated');
@@ -749,6 +833,20 @@ export class Abxr {
      */
     // Interaction Events
     static async EventInteractionStart(interactionName: string, meta?: any): Promise<number> {
+        // If authentication is not complete, queue this event
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log(`AbxrLib - Interaction Start '${interactionName}' queued until authentication completes`);
+            }
+            this.queuedEvents.push({
+                eventType: QueuedEventType.InteractionStart,
+                eventName: interactionName,
+                meta: meta
+            });
+            return 1; // Return success - event will be processed later
+        }
+
+        // Authentication is complete, process immediately
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Interaction start event not sent - not authenticated');
@@ -776,6 +874,22 @@ export class Abxr {
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, response: string = "", meta?: any): Promise<number> {
+        // If authentication is not complete, queue this event
+        if (!this.isAuthenticated) {
+            if (this.enableDebug) {
+                console.log(`AbxrLib - Interaction Complete '${interactionName}' queued until authentication completes`);
+            }
+            this.queuedEvents.push({
+                eventType: QueuedEventType.InteractionComplete,
+                eventName: interactionName,
+                meta: meta,
+                interactionType: interactionType,
+                response: response
+            });
+            return 1; // Return success - event will be processed later
+        }
+
+        // Authentication is complete, process immediately
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Interaction complete event not sent - not authenticated');
@@ -1115,9 +1229,9 @@ export class Abxr {
             if (localData) {
                 const parsed = JSON.parse(localData);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    if (this.enableDebug) {
-                        console.log(`AbxrLib: Retrieved data from localStorage with key: ${localStorageKey}`);
-                    }
+                    //if (this.enableDebug) {
+                    //    console.log(`AbxrLib: Retrieved data from localStorage with key: ${localStorageKey}`);
+                    //}
                     return parsed;
                 } else if (typeof parsed === 'object' && parsed !== null) {
                     // Single object, wrap in array
@@ -1236,9 +1350,9 @@ export class Abxr {
                 localStorage.setItem(localStorageKey, JSON.stringify(existingData));
             }
             
-            if (this.enableDebug) {
-                console.log(`AbxrLib: Data stored in localStorage with key: ${localStorageKey}`);
-            }
+            //if (this.enableDebug) {
+            //    console.log(`AbxrLib: Data stored in localStorage with key: ${localStorageKey}`);
+            //}
         } catch (error) {
             if (this.enableDebug) {
                 console.error('AbxrLib: Failed to store in localStorage:', error);
@@ -1722,10 +1836,29 @@ export class Abxr {
             // Handle successful authentication
             this.authenticationFailed = false;
             this.authenticationError = '';
+            this.isAuthenticated = true;
+            
+            // Process any queued events if authentication was successful
+            if (this.queuedEvents.length > 0) {
+                if (this.enableDebug) {
+                    console.log(`AbxrLib - Processing ${this.queuedEvents.length} queued events`);
+                }
+                this.ProcessQueuedEvents();
+            }
         } else {
             // Handle authentication failure (unified failure handling)
             this.authenticationFailed = true;
             this.authenticationError = error;
+            this.isAuthenticated = false;
+            
+            // Clear queued events when authentication fails
+            if (this.queuedEvents.length > 0) {
+                if (this.enableDebug) {
+                    console.warn(`AbxrLib - Clearing ${this.queuedEvents.length} queued events due to authentication failure`);
+                }
+                this.queuedEvents = [];
+            }
+            
             // Clear other states when authentication fails
             this.requiresFinalAuth = false;
             
@@ -2736,6 +2869,74 @@ export class Abxr {
             console.error('AbxrLib: Final authentication error:', error);
             return false;
         }
+    }
+
+    /**
+     * Process all queued events after authentication completes
+     * @private
+     */
+    private static ProcessQueuedEvents(): void {
+        this.queuedEvents.forEach(queuedEvent => {
+            try {
+                switch (queuedEvent.eventType) {
+                    case QueuedEventType.AssessmentStart:
+                        AbxrLibSend.EventAssessmentStart(queuedEvent.eventName, this.convertToAbxrDictStrings(queuedEvent.meta)).catch(error => {
+                            if (this.enableDebug) {
+                                console.error('AbxrLib: Failed to send queued assessment start event:', error);
+                            }
+                        });
+                        break;
+                    
+                    case QueuedEventType.AssessmentComplete:
+                        AbxrLibSend.EventAssessmentComplete(queuedEvent.eventName, queuedEvent.score!, queuedEvent.status!, this.convertToAbxrDictStrings(queuedEvent.meta)).catch(error => {
+                            if (this.enableDebug) {
+                                console.error('AbxrLib: Failed to send queued assessment complete event:', error);
+                            }
+                        });
+                        break;
+                    
+                    case QueuedEventType.ObjectiveStart:
+                        AbxrLibSend.EventObjectiveStart(queuedEvent.eventName, this.convertToAbxrDictStrings(queuedEvent.meta)).catch(error => {
+                            if (this.enableDebug) {
+                                console.error('AbxrLib: Failed to send queued objective start event:', error);
+                            }
+                        });
+                        break;
+                    
+                    case QueuedEventType.ObjectiveComplete:
+                        AbxrLibSend.EventObjectiveComplete(queuedEvent.eventName, queuedEvent.score!, queuedEvent.status!, this.convertToAbxrDictStrings(queuedEvent.meta)).catch(error => {
+                            if (this.enableDebug) {
+                                console.error('AbxrLib: Failed to send queued objective complete event:', error);
+                            }
+                        });
+                        break;
+                    
+                    case QueuedEventType.InteractionStart:
+                        AbxrLibSend.EventInteractionStart(queuedEvent.eventName, this.convertToAbxrDictStrings(queuedEvent.meta)).catch(error => {
+                            if (this.enableDebug) {
+                                console.error('AbxrLib: Failed to send queued interaction start event:', error);
+                            }
+                        });
+                        break;
+                    
+                    case QueuedEventType.InteractionComplete:
+                        AbxrLibSend.EventInteractionComplete(queuedEvent.eventName, queuedEvent.interactionType!, queuedEvent.response!, this.convertToAbxrDictStrings(queuedEvent.meta)).catch(error => {
+                            if (this.enableDebug) {
+                                console.error('AbxrLib: Failed to send queued interaction complete event:', error);
+                            }
+                        });
+                        break;
+                }
+                
+                if (this.enableDebug) {
+                    console.log(`AbxrLib - Processed queued event: ${queuedEvent.eventType} '${queuedEvent.eventName}'`);
+                }
+            } catch (error: any) {
+                console.error(`AbxrLib - Error processing queued event ${queuedEvent.eventType} '${queuedEvent.eventName}':`, error);
+            }
+        });
+        
+        this.queuedEvents = []; // Clear the queue
     }
 }
 

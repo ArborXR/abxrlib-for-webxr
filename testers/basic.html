@@ -48,14 +48,10 @@
       console.log('AbxrLib: User Data:', userData);
       
       // Check module targets - you can use either approach:
-      // 1. Use the moduleCount from authData parameter (new consistent API)
+      // Show moduleCount from authData parameter (new consistent API)
       console.log(`AbxrLib: Total modules available (from authData): ${authData.moduleCount}`);
-      
-      // 2. Or use the GetModuleTargetCount() method (alternative approach) 
-      const moduleCount = Abxr.GetModuleTargetCount();
-      console.log(`AbxrLib: Total modules available (from method): ${moduleCount}`);
-      
-      if (moduleCount > 0) {
+            
+      if (authData.moduleCount > 0) {
         console.log('AbxrLib: Processing all modules...');
         let currentModule;
         let moduleIndex = 1;
@@ -64,6 +60,8 @@
         while ((currentModule = Abxr.GetModuleTarget()) !== null) {
           console.log(`AbxrLib: Module ${moduleIndex}:`, currentModule);
           moduleIndex++;
+          let remainingModuleCount = Abxr.GetModuleTargetCount();
+          console.log(`AbxrLib: Total remaining modules available (from method): ${remainingModuleCount}`);
         }
         
         console.log(`AbxrLib: Processed ${moduleIndex - 1} modules total`);
