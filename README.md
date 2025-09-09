@@ -383,14 +383,14 @@ Abxr.Track("User Session"); // Duration automatically included
 
 ### Super Properties
 
-Global properties automatically included in all events:
+Global properties automatically included in all events, logs, and telemetry data:
 
 ```javascript
 // JavaScript Method Signatures
 Abxr.Register(key, value)
 Abxr.RegisterOnce(key, value)
 
-// Set persistent properties (included in all events)
+// Set persistent properties (included in all events, logs, and telemetry)
 Abxr.Register("user_type", "premium");
 Abxr.Register("app_version", "1.2.3");
 
@@ -402,7 +402,7 @@ Abxr.Unregister("device_type");  // Remove specific property
 Abxr.Reset();                    // Clear all super properties
 ```
 
-Perfect for user attributes, app state, and device information that should be included with every event.
+Perfect for user attributes, app state, and device information that should be included with every event, log entry, and telemetry data point.
 
 ### Logging
 The Log Methods provide straightforward logging functionality, similar to syslogs. These functions are available to developers by default, even across enterprise users, allowing for consistent and accessible logging across different deployment scenarios.
@@ -441,19 +441,34 @@ The Storage API enables developers to store and retrieve learner/player progress
 
 ```javascript
 // JavaScript Method Signatures
-Abxr.StorageSetEntry(name, entry, scope, policy = 'keepLatest')
-Abxr.StorageSetDefaultEntry(entry, scope, policy = 'keepLatest')
-Abxr.StorageGetEntry(name, scope)
-Abxr.StorageGetDefaultEntry(scope)
-Abxr.StorageRemoveEntry(name, scope)
+static async StorageSetEntry(name, entry, scope, policy = StoragePolicy.keepLatest): Promise<number>
+static async StorageSetDefaultEntry(entry, scope, policy = StoragePolicy.keepLatest): Promise<number>
+static async StorageGetEntry(name, scope): Promise<{[key: string]: string}[]>
+static async StorageGetDefaultEntry(scope): Promise<{[key: string]: string}[]>
+static StorageRemoveEntry(name, scope)
 
 // Save progress data
-Abxr.StorageSetEntry("state", {"progress": "75%"}, Abxr.StorageScope.user);
-Abxr.StorageSetDefaultEntry({"progress": "75%"}, Abxr.StorageScope.user);
+await Abxr.StorageSetEntry("state", {"progress": "75%"}, Abxr.StorageScope.user);
+await Abxr.StorageSetDefaultEntry({"progress": "75%"}, Abxr.StorageScope.user);
 
-// Retrieve progress data
+// Using StoragePolicy enum explicitly
+await Abxr.StorageSetEntry("state", {"progress": "75%"}, Abxr.StorageScope.user, Abxr.StoragePolicy.keepLatest);
+await Abxr.StorageSetEntry("history", {"action": "completed_level_1"}, Abxr.StorageScope.user, Abxr.StoragePolicy.appendHistory);
+
+// Retrieve progress data (returns array of dictionaries, matching Unity's List<Dictionary<string, string>>)
 const result = await Abxr.StorageGetEntry("state", Abxr.StorageScope.user);
+console.log("Retrieved data:", result); // Array of objects: [{"progress": "75%"}]
+
 const defaultResult = await Abxr.StorageGetDefaultEntry(Abxr.StorageScope.user);
+console.log("Retrieved default data:", defaultResult); // Array of objects from "state" key
+
+// Process retrieved data (similar to Unity callback pattern)
+if (result && result.length > 0) {
+    const data = result[0]; // Get the most recent entry
+    if (data.progress) {
+        console.log("Progress:", data.progress);
+    }
+}
 
 // Remove storage entries  
 Abxr.StorageRemoveEntry("state", Abxr.StorageScope.user);
@@ -463,9 +478,13 @@ Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.user); // Clear all entries 
 
 **Parameters:**
 - `name` (string): The identifier for this storage entry.
-- `entry` (object): The key-value pairs to store.
+- `entry` (object): The key-value pairs to store as `{[key: string]: string}`.
 - `scope` (StorageScope): Store/retrieve from 'device' or 'user' storage.
-- `policy` (StoragePolicy): How data should be stored - 'keepLatest' or 'appendHistory' (defaults to 'keepLatest').
+- `policy` (StoragePolicy): How data should be stored - `StoragePolicy.keepLatest` or `StoragePolicy.appendHistory` (defaults to `StoragePolicy.keepLatest`).
+
+**Return Values:**
+- **Set methods**: Return `Promise<number>` - Storage entry ID or 0 if not authenticated.
+- **Get methods**: Return `Promise<{[key: string]: string}[]>` - Array of dictionaries matching Unity's `List<Dictionary<string, string>>` format.
 
 ### Telemetry
 The Telemetry Methods provide comprehensive tracking of the XR environment. By default, they capture headset and controller movements, but can be extended to track any custom objects in the virtual space. These functions also allow collection of system-level data such as frame rates or device temperatures. This versatile tracking enables developers to gain deep insights into user interactions and application performance, facilitating optimization and enhancing the overall XR experience.
@@ -485,23 +504,56 @@ Abxr.TelemetryEntry("headset_position", {
 - `meta` (object): Key-value pairs of telemetry measurements.
 
 ### AI Integration
-The Integration Methods offer developers access to additional services, enabling customized experiences for enterprise users. Currently, this includes access to GPT services through the AIProxy method, allowing for advanced AI-powered interactions within the XR environment. More integration services are planned for future releases, further expanding the capabilities available to developers for creating tailored enterprise solutions.
+The AI Integration methods provide access to AI services for enhanced user interactions and experiences within XR environments. WebXR uses a Promise-based approach that allows developers to choose between blocking and non-blocking patterns.
 
 ```javascript
-// Access GPT services for AI-powered interactions
-const requestId = await Abxr.AIProxy("How can I help you today?", "", "gpt-4");
+// Non-blocking approach - process response when ready
+Abxr.AIProxy("How can I help you today?", "gpt-4").then(response => {
+    if (response) {
+        console.log("AI Response:", response);
+        // Process the AI response without blocking
+    } else {
+        console.log("AI request failed");
+    }
+});
 
-// With previous messages for context
+// Blocking approach - wait for response
+const response = await Abxr.AIProxy("What's the weather like?", "gpt-4");
+if (response) {
+    console.log("Weather:", response);
+}
+
+// With conversation history for context
 const pastMessages = ["Hello", "Hi there! How can I help?"];
-const requestId2 = await Abxr.AIProxy("What's the weather like?", pastMessages.join(","), "gpt-4");
+const contextualResponse = await Abxr.AIProxy("What did we just discuss?", "gpt-4", pastMessages);
+
+// Error handling with try/catch
+try {
+    const aiAdvice = await Abxr.AIProxy("Give me XR development tips", "gpt-4");
+    if (aiAdvice) {
+        displayAdvice(aiAdvice);
+    }
+} catch (error) {
+    console.error("AI request error:", error);
+}
+```
+
+**Method Signature:**
+```typescript
+static AIProxy(prompt: string, llmProvider?: string, pastMessages?: string[]): Promise<string | null>
 ```
 
 **Parameters:**
-- `prompt` (string): The input prompt for the AI.
-- `pastMessages` (string): Optional. Previous conversation history for context.
-- `llmProvider` (string): The LLM provider identifier.
+- `prompt` (string): The input prompt for the AI system
+- `llmProvider` (string, optional): The LLM provider to use (e.g., "gpt-4", "claude", "default")
+- `pastMessages` (string[], optional): Previous conversation messages for context
 
-**Note:** AIProxy calls are processed immediately and bypass the cache system.
+**Returns:**
+- `Promise<string | null>`: The AI response string, or null if the request failed
+
+**Platform Differences:**
+- **Unity**: Uses coroutines with callbacks - `StartCoroutine(Abxr.AIProxy(prompt, provider, callback))`
+- **WebXR**: Uses Promise-based approach - developers can choose `await` (blocking) or `.then()` (non-blocking)
 
 ### Exit Polls
 Deliver questionnaires to users to gather feedback.
@@ -541,7 +593,7 @@ Abxr.Event("app_started");
 The ABXRLib SDK automatically enhances your data with additional context and metadata without requiring explicit configuration:
 
 #### Super Properties Auto-Merge
-Super properties are automatically merged into **every** event's metadata. Event-specific properties take precedence when keys conflict:
+Super properties are automatically merged into **every** event, log, and telemetry entry's metadata. Data-specific properties take precedence when keys conflict:
 ```javascript
 // Set super properties
 Abxr.Register("app_version", "1.2.3");
@@ -553,6 +605,13 @@ Abxr.Event("level_complete", {
     "user_type": "trial"  // This overrides the super property
 });
 // Result includes: app_version=1.2.3, user_type=trial, level=3
+
+// Logs and telemetry also automatically include super properties
+Abxr.LogInfo("Player action", { "action": "jump" });
+// Result includes: app_version=1.2.3, user_type=premium, action=jump
+
+Abxr.TelemetryEntry("frame_rate", { "fps": "60" });
+// Result includes: app_version=1.2.3, user_type=premium, fps=60
 ```
 
 #### Duration Auto-Calculation
@@ -603,13 +662,13 @@ if (nextTarget) {
 }
 
 // Check remaining module count
-const remaining = Abxr.getModuleTargetCount();
+const remaining = Abxr.GetModuleTargetCount();
 console.log(`Modules remaining: ${remaining}`);
 
 // Get current user information
-const userId = Abxr.getUserId();
-const userData = Abxr.getUserData();
-const userEmail = Abxr.getUserEmail();
+const userId = Abxr.GetUserId();
+const userData = Abxr.GetUserData();
+const userEmail = Abxr.GetUserEmail();
 ```
 
 #### Module Target Management
@@ -618,18 +677,18 @@ You can manage module progress and access rich module data:
 
 ```javascript
 // Check remaining modules and preview current
-const remaining = Abxr.getModuleTargetCount();
-const currentModule = Abxr.GetCurrentModule();
-if (currentModule) {
-    console.log(`Next: ${currentModule.name} (${remaining} remaining)`);
+const remaining = Abxr.GetModuleTargetCount();
+const nextModule = Abxr.GetModuleTarget();
+if (nextModule) {
+    console.log(`Next: ${nextModule.moduleTarget} (${remaining} remaining)`);
 }
 
 // Get all available modules
-const allModules = Abxr.GetAvailableModules();
+const allModules = Abxr.GetModuleTargetList();
 console.log(`Total modules: ${allModules.length}`);
 
 // Reset progress or access learner data
-Abxr.clearModuleTargets();
+Abxr.ClearModuleTargets();
 const learnerData = Abxr.GetLearnerData();
 ```
 
@@ -662,14 +721,14 @@ const nextTarget = Abxr.GetModuleTarget(); // Loads progress from storage if nee
 **Storage Details:**
 - Module progress is stored in browser's persistent storage (IndexedDB/localStorage)
 - Storage key: `"abxr_module_index"` (handled internally)
-- Automatic cleanup when `clearModuleTargets()` is called
+- Automatic cleanup when `ClearModuleTargets()` is called
 - Uses ABXRLib's storage system for reliability and offline capabilities
 - Module data comes directly from authentication response for accuracy
 
 #### Best Practices
 
-1. **Set up auth callback early**: Subscribe to `onAuthCompleted` before calling `Abxr_init()`
-2. **Handle first module**: Process the first module target from `authData.moduleTarget`
+1. **Set up auth callback early**: Subscribe to `OnAuthCompleted` before calling `Abxr_init()`
+2. **Handle module count**: Check `authData.moduleCount` and use `GetModuleTarget()` to get the next module to process
 3. **Use GetModuleTarget() sequentially**: Call after completing each module to get the next one
 4. **Validate modules**: Check if requested module exists before navigation
 5. **Progress tracking**: Use assessment events to track module completion
@@ -687,7 +746,7 @@ Subscribe to authentication events to receive user information and module target
 
 ```javascript
 // Basic authentication callback
-Abxr.onAuthCompleted((authData) => {
+Abxr.OnAuthCompleted((authData) => {
     if (authData.success) {
         console.log(`Welcome ${authData.userEmail}!`);
         
@@ -698,16 +757,19 @@ Abxr.onAuthCompleted((authData) => {
             initializeUserInterface();
         }
         
-        // Navigate to module if specified
-        if (authData.moduleTarget) {
-            navigateToModule(authData.moduleTarget);
+        // Handle modules if available
+        if (authData.moduleCount > 0) {
+            const moduleData = Abxr.GetModuleTarget();
+            if (moduleData) {
+                navigateToModule(moduleData.moduleTarget);
+            }
         }
     }
 });
 
 // Callback management
-Abxr.removeAuthCompletedCallback(authCallback);  // Remove specific callback
-Abxr.clearAuthCompletedCallbacks();              // Clear all callbacks
+Abxr.RemoveAuthCompletedCallback(authCallback);  // Remove specific callback
+Abxr.ClearAuthCompletedCallbacks();              // Clear all callbacks
 ```
 
 #### Authentication Data Structure
@@ -731,7 +793,7 @@ interface AuthCompletedData {
     userEmail?: string | null;    // User email address (extracted from userData.email)
     appId?: string;               // Application identifier
     modules?: ModuleData[];       // List of available modules
-    moduleTarget?: string | null; // Target module from first module (backward compatibility)
+    moduleCount?: number;         // Number of available modules
     isReauthentication?: boolean; // Whether this was a reauthentication (vs initial auth)
     error?: string;               // Error message when success is false
     
@@ -755,7 +817,7 @@ if (Abxr.ConnectionActive()) {
     Abxr.Event("app_ready");
 } else {
     console.log("Connection not active - waiting for API authentication");
-    Abxr.onAuthCompleted((authData) => {
+    Abxr.OnAuthCompleted((authData) => {
         if (authData.success) {
             console.log("Connection established successfully!");
         }
@@ -820,7 +882,7 @@ Trigger manual reauthentication with existing stored parameters. This method is 
 await Abxr.ReAuthenticate();
 ```
 
-**Note:** All session management methods work asynchronously and will trigger the `onAuthCompleted` callback when authentication completes, allowing you to respond to success or failure states.
+**Note:** All session management methods work asynchronously and will trigger the `OnAuthCompleted` callback when authentication completes, allowing you to respond to success or failure states.
 
 #### Debug Mode
 
@@ -831,26 +893,26 @@ For debugging authentication, network issues, or other problems, enable debug lo
 Abxr.ConnectionActive();
 
 // Enable and check debug mode Method Sigantures
-Abxr.setDebugMode(enabled)
-Abxr.getDebugMode()
+Abxr.SetDebugMode(enabled)
+Abxr.GetDebugMode()
 
 // Example usage
-Abxr.setDebugMode(true);  // Enable debug logging
-Abxr.setDebugMode(false); // Disable debug logging
+Abxr.SetDebugMode(true);  // Enable debug logging
+Abxr.SetDebugMode(false); // Disable debug logging
 
-const isDebugging = Abxr.getDebugMode();
+const isDebugging = Abxr.GetDebugMode();
 console.log('Debug mode:', isDebugging);
 
 // Conditional debug setup for development
 if (process.env.NODE_ENV === 'development') {
-    Abxr.setDebugMode(true);
+    Abxr.SetDebugMode(true);
 }
 ```
 
 **Parameters:**
 - `enabled` (boolean): Enable or disable debug mode
 
-**Returns:** `getDebugMode()` returns boolean indicating current debug state
+**Returns:** `GetDebugMode()` returns boolean indicating current debug state
 
 **Debug Mode Benefits:**
 - **Detailed error messages**: See exactly what's failing during authentication
@@ -1258,7 +1320,7 @@ Object tracking can be enabled by adding the Track Object component to any GameO
 **Problem: Library fails to authenticate**
 - **Solution**: Verify your App ID, Org ID, and Auth Secret are correct
 - **Check**: Ensure URL parameters `abxr_orgid` and `abxr_auth_secret` are properly formatted
-- **Debug**: Enable debug mode with `Abxr.setDebugMode(true)` to see detailed error messages
+- **Debug**: Enable debug mode with `Abxr.SetDebugMode(true)` to see detailed error messages
 
 **Problem: Two-step authentication not triggering**
 - **Solution**: Check that your callback is properly set before calling `Abxr_init()`
@@ -1300,7 +1362,7 @@ Object tracking can be enabled by adding the Track Object component to any GameO
 **Best Practices:**
 ```javascript
 // Always set up callbacks before initialization
-Abxr.onAuthCompleted(function(authData) {
+Abxr.OnAuthCompleted(function(authData) {
     if (authData.success) {
         // Initialize your app components here
         initializeApp();
