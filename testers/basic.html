@@ -33,56 +33,49 @@
     // You can also send orgId and Auth Secret to be set in GET parameters or cookies.
     // example: basic.html?abxr_orgid=5304ef74-423f-4bd4-87d9-cba4f19c3bdb&abxr_auth_secret=vEwWpJs5K2Kib3XeWBhXgQnQr43XNJCSyb5QJoGCU5ec590hFyb63vBSx6dX6Clj
     
-    // NEW: Subscribe to authentication completion for module targets
-    Abxr.onAuthCompleted(function(authData) {
+    // Authentication completion callback - called after complete auth process including PIN
+    Abxr.OnAuthCompleted(function(authData) {
       console.log('Authentication completed!', authData);
       
-      if (authData.success && authData.moduleTarget) {
-        // Show popup with first moduleTarget value
-        alert(`First ModuleTarget received: ${authData.moduleTarget}`);
+      // Now that authentication is fully complete, check user data and modules
+      console.log('AbxrLib: Processing user data and modules after complete authentication...');
+      
+      // Get and log user data
+      const userId = Abxr.GetUserId();
+      const userData = Abxr.GetUserData();
+      
+      console.log('AbxrLib: User ID:', userId);
+      console.log('AbxrLib: User Data:', userData);
+      
+      // Check module targets - you can use either approach:
+      // 1. Use the moduleCount from authData parameter (new consistent API)
+      console.log(`AbxrLib: Total modules available (from authData): ${authData.moduleCount}`);
+      
+      // 2. Or use the GetModuleTargetCount() method (alternative approach) 
+      const moduleCount = Abxr.GetModuleTargetCount();
+      console.log(`AbxrLib: Total modules available (from method): ${moduleCount}`);
+      
+      if (moduleCount > 0) {
+        console.log('AbxrLib: Processing all modules...');
+        let currentModule;
+        let moduleIndex = 1;
         
-        // Check for additional module targets
-        setTimeout(() => {
-          const nextModule = Abxr.GetModuleTarget();
-          if (nextModule) {
-            alert(`Next ModuleTarget available: ${nextModule.moduleTarget}`);
-          }
-        }, 1000);
+        // Loop through all modules until GetModuleTarget returns null
+        while ((currentModule = Abxr.GetModuleTarget()) !== null) {
+          console.log(`AbxrLib: Module ${moduleIndex}:`, currentModule);
+          moduleIndex++;
+        }
+        
+        console.log(`AbxrLib: Processed ${moduleIndex - 1} modules total`);
+      } else {
+        console.log('AbxrLib: No modules available (modules array is null or empty)');
       }
     });
-    
-    // Check for authentication completion and log user data
-    function checkAuthCompletion() {
-      if (Abxr.ConnectionActive()) {
-        console.log('AbxrLib: Connection established successfully!');
-        
-        // Get and log user data
-        //const userId = Abxr.getUserId();
-        //const userData = Abxr.getUserData();
-        //const moduleTarget = Abxr.GetModuleTarget();
-        
-        //console.log('AbxrLib: User ID:', userId);
-        //console.log('AbxrLib: User Data:', userData);
-        //console.log('AbxrLib: Module Target:', moduleTarget);
-        
-        // Stop checking once authenticated
-        clearInterval(authCheckInterval);
-      } else if (Abxr.hasAuthenticationFailed()) {
-        console.log('AbxrLib: Authentication failed:', Abxr.getAuthenticationError());
-        clearInterval(authCheckInterval);
-      }
-    }
-    
-    // Check authentication status every 500ms
-    const authCheckInterval = setInterval(checkAuthCompletion, 500);
-    
-    // Also check immediately in case auth completes very quickly
-    setTimeout(checkAuthCompletion, 100);
   </script>
 
   <script>
     // Enable debug mode
-    Abxr.setDebugMode(true);
+    Abxr.SetDebugMode(true);
     // Send a simple event
     function sendEvent() {
         console.log("Executing Abxr.Event()");
@@ -99,6 +92,7 @@
     function startAssessment() {
         console.log("Executing Abxr.EventAssessmentStart()");
         Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });
+
     }
 
     function completeAssessment() {
@@ -290,7 +284,7 @@
         <div>
           <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Step 4: Optional Debug Mode</h4>
           <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block;">
-            Abxr.setDebugMode(true);
+            Abxr.SetDebugMode(true);
           </code>
           <div style="margin-top: 5px; font-size: 14px; color: #6c757d;">
             <em>Enables detailed logging for troubleshooting</em>
