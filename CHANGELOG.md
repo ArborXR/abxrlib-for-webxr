@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.37] - 2025-09-09
+
+### 🔨 Other Changes
+
+- Squashed commit of the following: ([b28863f](../../commit/b28863f827a0c7b4f287bb7bed7fe706ad4459a3))
+- Squashed commit of the following: ([882ef84](../../commit/882ef846d262bbee623757263e45e0a9f57b1fea))
+
 ## [1.0.36] - 2025-09-04
 
 ### ✨ Features
