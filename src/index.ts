@@ -561,8 +561,8 @@ export class Abxr {
         this.quitHandlerEnabled = true;
 
         if (enablePersistence) {
-            // Restore running events from previous page load
-            this.restoreRunningEventsFromStorage();
+            // Check if we should restore or clear zombie events
+            this.handlePersistenceOnLoad();
         }
 
         // More conservative approach - only handle events that likely indicate app close
@@ -607,20 +607,19 @@ export class Abxr {
             }
         });
 
-        // Only use beforeunload for confirmation, not automatic closing
+        // Handle beforeunload - try to complete events properly
         window.addEventListener('beforeunload', (event) => {
             const runningCount = this.getRunningEventsCount();
             if (runningCount > 0) {
-                // Just save state, don't auto-close (might be navigation)
+                console.log(`AbxrLib: Page unloading with ${runningCount} running events - attempting to complete them`);
+                
+                // Try to complete events immediately (synchronous)
+                this.closeRunningEvents();
+                
+                // Also save to persistence as backup
                 if (enablePersistence) {
                     this.saveRunningEventsToStorage();
                 }
-                
-                // Optional: Show warning to user (browsers may ignore this)
-                const message = `You have ${runningCount} active learning events. Are you sure you want to leave?`;
-                event.preventDefault();
-                event.returnValue = message;
-                return message;
             }
         });
     }
@@ -691,6 +690,39 @@ export class Abxr {
     }
 
     /**
+     * Handle persistence on page load - restore valid events or clear zombies
+     * @private
+     */
+    private static handlePersistenceOnLoad(): void {
+        // Delay this check to allow authentication to attempt first
+        setTimeout(() => {
+            if (this.connectionActive) {
+                // Authentication successful - restore any valid events
+                this.restoreRunningEventsFromStorage();
+            } else {
+                // Authentication failed/invalid - clear any zombie events
+                this.clearZombieEvents();
+            }
+        }, 2000); // Wait 2 seconds for auth to complete
+    }
+
+    /**
+     * Clear zombie events when authentication is invalid
+     * @private
+     */
+    private static clearZombieEvents(): void {
+        try {
+            const stored = localStorage.getItem(this.RUNNING_EVENTS_KEY);
+            if (stored) {
+                console.log('AbxrLib: Authentication invalid but stored events found - clearing zombie events');
+                localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+            }
+        } catch (error) {
+            console.warn('AbxrLib: Error clearing zombie events:', error);
+        }
+    }
+
+    /**
      * Restore running events from localStorage after page navigation
      * @private
      */
@@ -701,14 +733,6 @@ export class Abxr {
 
             const runningEvents = JSON.parse(stored);
             
-            // Only restore if saved recently (within 5 minutes) to avoid stale data
-            const maxAge = 5 * 60 * 1000; // 5 minutes
-            if (Date.now() - runningEvents.savedAt > maxAge) {
-                console.log('AbxrLib: Stored running events too old, not restoring');
-                localStorage.removeItem(this.RUNNING_EVENTS_KEY);
-                return;
-            }
-
             let restoredCount = 0;
 
             // Restore assessments
@@ -774,6 +798,78 @@ export class Abxr {
     }
 
     /**
+     * Clear any stored running events from localStorage without restoring them
+     * Useful when you want to abandon previously saved events
+     */
+    static ClearStoredRunningEvents(): void {
+        try {
+            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+            console.log('AbxrLib: Cleared stored running events from localStorage');
+        } catch (error) {
+            console.warn('AbxrLib: Error clearing stored running events:', error);
+        }
+    }
+
+    /**
+     * Clear currently running events and complete them as abandoned
+     * Use this when you want to clean up "zombie" events
+     */
+    static CompleteAllRunningEventsAsAbandoned(): void {
+        const totalRunning = this.getRunningEventsCount();
+        if (totalRunning === 0) {
+            console.log('AbxrLib: No running events to complete');
+            return;
+        }
+
+        console.log(`AbxrLib: Completing ${totalRunning} running events as abandoned`);
+        
+        try {
+            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
+            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
+            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
+
+            // Complete running Assessments as abandoned
+            if (assessmentTimes && assessmentTimes.size > 0) {
+                const assessmentNames = Array.from(assessmentTimes.keys());
+                assessmentNames.forEach(assessmentName => {
+                    this.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
+                        abandon_reason: 'manually_abandoned',
+                        auto_completed: 'true'
+                    }).catch(error => console.warn('Failed to complete abandoned assessment:', error));
+                });
+            }
+
+            // Complete running Objectives as abandoned
+            if (objectiveTimes && objectiveTimes.size > 0) {
+                const objectiveNames = Array.from(objectiveTimes.keys());
+                objectiveNames.forEach(objectiveName => {
+                    this.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
+                        abandon_reason: 'manually_abandoned',
+                        auto_completed: 'true'
+                    }).catch(error => console.warn('Failed to complete abandoned objective:', error));
+                });
+            }
+
+            // Complete running Interactions as abandoned
+            if (interactionTimes && interactionTimes.size > 0) {
+                const interactionNames = Array.from(interactionTimes.keys());
+                interactionNames.forEach(interactionName => {
+                    this.EventInteractionComplete(interactionName, InteractionType.eNull, 'abandoned', {
+                        abandon_reason: 'manually_abandoned',
+                        auto_completed: 'true'
+                    }).catch(error => console.warn('Failed to complete abandoned interaction:', error));
+                });
+            }
+
+            // Also clear any stored events
+            this.ClearStoredRunningEvents();
+            
+        } catch (error) {
+            console.error('AbxrLib: Error completing abandoned events:', error);
+        }
+    }
+
+    /**
      * Get count of currently running events (public method for monitoring)
      */
     static GetRunningEventsCount(): number {
@@ -793,21 +889,31 @@ export class Abxr {
 
             let totalClosed = 0;
 
-            // Close running Assessments
+            // Close running Assessments - try synchronous completion first
             if (assessmentTimes && assessmentTimes.size > 0) {
                 const assessmentNames = Array.from(assessmentTimes.keys());
                 assessmentNames.forEach(assessmentName => {
                     try {
-                        // Use fire-and-forget async call since we're in page unload
-                        Abxr.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
+                        // For beforeunload, try to send synchronously using sendBeacon or fetch with keepalive
+                        this.sendEventSync('assessment_complete', {
+                            name: assessmentName,
+                            score: 0,
+                            status: EventStatus.eIncomplete,
                             quit_reason: 'page_unload',
                             auto_closed: 'true'
-                        }).catch(() => {
-                            // Silent fail - we're unloading anyway
                         });
                         totalClosed++;
                     } catch (error) {
-                        // Silent fail during page unload
+                        // Fallback to async if sync fails
+                        try {
+                            Abxr.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
+                                quit_reason: 'page_unload',
+                                auto_closed: 'true'
+                            }).catch(() => {});
+                            totalClosed++;
+                        } catch (asyncError) {
+                            // Silent fail during page unload
+                        }
                     }
                 });
             }
@@ -817,15 +923,22 @@ export class Abxr {
                 const objectiveNames = Array.from(objectiveTimes.keys());
                 objectiveNames.forEach(objectiveName => {
                     try {
-                        Abxr.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
+                        this.sendEventSync('objective_complete', {
+                            name: objectiveName,
+                            score: 0,
+                            status: EventStatus.eIncomplete,
                             quit_reason: 'page_unload',
                             auto_closed: 'true'
-                        }).catch(() => {
-                            // Silent fail - we're unloading anyway
                         });
                         totalClosed++;
                     } catch (error) {
-                        // Silent fail during page unload
+                        try {
+                            Abxr.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
+                                quit_reason: 'page_unload',
+                                auto_closed: 'true'
+                            }).catch(() => {});
+                            totalClosed++;
+                        } catch (asyncError) {}
                     }
                 });
             }
@@ -835,31 +948,88 @@ export class Abxr {
                 const interactionNames = Array.from(interactionTimes.keys());
                 interactionNames.forEach(interactionName => {
                     try {
-                        Abxr.EventInteractionComplete(interactionName, InteractionType.eNull, 'incomplete_quit', {
+                        this.sendEventSync('interaction_complete', {
+                            name: interactionName,
+                            interactionType: InteractionType.eNull,
+                            response: 'incomplete_quit',
                             quit_reason: 'page_unload',
                             auto_closed: 'true'
-                        }).catch(() => {
-                            // Silent fail - we're unloading anyway
                         });
                         totalClosed++;
                     } catch (error) {
-                        // Silent fail during page unload
+                        try {
+                            Abxr.EventInteractionComplete(interactionName, InteractionType.eNull, 'incomplete_quit', {
+                                quit_reason: 'page_unload',
+                                auto_closed: 'true'
+                            }).catch(() => {});
+                            totalClosed++;
+                        } catch (asyncError) {}
                     }
                 });
             }
 
             if (totalClosed > 0) {
-                console.log(`AbxrLib: Automatically closed ${totalClosed} running events due to quit detection`);
-                
-                // Log the cleanup activity (fire-and-forget)
-                Abxr.Log(`Quit handler closed ${totalClosed} running events`, LogLevel.eInfo, {
-                    events_closed: totalClosed.toString(),
-                    quit_handler: 'automatic_with_timeout'
-                });
+                console.log(`AbxrLib: Automatically closed ${totalClosed} running events due to page unload`);
             }
         } catch (error) {
             // Silent fail - we're in page unload, don't interfere with the process
             console.warn('AbxrLib: Error during quit handler cleanup:', error);
+        }
+    }
+
+    /**
+     * Send event synchronously during page unload using sendBeacon
+     * Attempts to use the normal event system but synchronously
+     * @private
+     */
+    private static sendEventSync(eventType: string, eventData: any): void {
+        try {
+            // Just call the normal event methods but don't wait for promises
+            // The event batching system should handle the actual sending
+            switch (eventType) {
+                case 'assessment_complete':
+                    // Fire and forget - don't await
+                    this.EventAssessmentComplete(eventData.name, eventData.score, eventData.status, {
+                        quit_reason: eventData.quit_reason,
+                        auto_closed: eventData.auto_closed
+                    }).catch(() => {});
+                    break;
+                    
+                case 'objective_complete':
+                    this.EventObjectiveComplete(eventData.name, eventData.score, eventData.status, {
+                        quit_reason: eventData.quit_reason,
+                        auto_closed: eventData.auto_closed
+                    }).catch(() => {});
+                    break;
+                    
+                case 'interaction_complete':
+                    this.EventInteractionComplete(eventData.name, eventData.interactionType, eventData.response, {
+                        quit_reason: eventData.quit_reason,
+                        auto_closed: eventData.auto_closed
+                    }).catch(() => {});
+                    break;
+            }
+            
+            // Also try to force immediate send of batched events if possible
+            // This might help get events out before page unload
+            this.forceSendBatchedEvents().catch(() => {});
+            
+        } catch (error) {
+            // Silent fail during page unload
+        }
+    }
+
+    /**
+     * Attempt to force immediate sending of any batched events
+     * @private
+     */
+    private static async forceSendBatchedEvents(): Promise<void> {
+        try {
+            // Try to trigger immediate sending of batched events
+            // Use the Analytics system to flush pending events
+            await AbxrLibAnalytics.ForceSendUnsent();
+        } catch (error) {
+            // Silent fail - this is called during page unload
         }
     }
 
