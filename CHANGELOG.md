@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.38] - 2025-09-10
+
+### ✨ Features
+
+- added support for packageName in auth response ([04facdd](../../commit/04facdd81b70db7b0de5d68c4403dc48917c5311))
+
+### 🐛 Bug Fixes
+
+- Fixed PIN problem with leading zeros, added QuitHandler feature ([c8a9067](../../commit/c8a9067119d6083a1f4ff4a7b4afa4263381f00b))
+
 ## [1.0.37] - 2025-09-09
 
 ### 🔨 Other Changes
