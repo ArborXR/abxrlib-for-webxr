@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.39] - 2025-09-10
+
+### 🐛 Bug Fixes
+
+- should fix zombie events issue ([513c157](../../commit/513c157ec1a84ea0a597b338400f019e175401d7))
+
 ## [1.0.38] - 2025-09-10
 
 ### ✨ Features
