@@ -423,6 +423,7 @@ export interface AuthCompletedData {
     userId?: any;                 // User identifier
     userEmail?: string | null;    // User email address (extracted from userData.email)
     appId?: string;               // Application identifier
+    packageName?: string;         // Package name identifier
     modules?: ModuleData[];       // List of available modules
     moduleCount: number;          // Total number of modules available (use GetModuleTarget() to iterate through them)
     isReauthentication?: boolean; // Whether this was a reauthentication (vs initial auth)
@@ -2280,6 +2281,15 @@ export class Abxr {
     }
 
     /**
+     * Get the package name from authentication response
+     * @returns Package name string, or null if not available
+     */
+    static GetPackageName(): string | null {
+        const authData = AbxrLibClient.getAuthResponseData();
+        return authData ? authData.packageName : null;
+    }
+
+    /**
      * Get the complete authentication data from the most recent authentication completion
      * This allows you to access user data, email, module targets, and authentication status anytime
      * Returns null if no authentication has completed yet
@@ -2625,6 +2635,7 @@ export class Abxr {
             userId: authResponseData?.userId || null,
             userEmail: authResponseData?.userEmail || null,
             appId: authResponseData?.appId || undefined,
+            packageName: authResponseData?.packageName || undefined,
             modules: moduleDataList,
             moduleCount: moduleDataList.length,
             isReauthentication,
@@ -2638,7 +2649,8 @@ export class Abxr {
                         secret: this.secret || "",
                         userData: this.userData,
                         userId: this.userId,
-                        appId: this.appId || ""
+                        appId: this.appId || "",
+                        packageName: this.packageName || ""
                     };
 
                     if (this.modules && this.modules.length > 0) {
