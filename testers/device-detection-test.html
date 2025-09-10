@@ -168,6 +168,9 @@
       // Initialize AbxrLib - this should trigger device detection
       Abxr_init(testAppId);
       
+      // Enable quit handler for demo purposes (single-page tester app)
+      Abxr.EnableQuitHandler(true);
+      
       // Monitor authentication status
       const checkInterval = setInterval(() => {
         if (Abxr.ConnectionActive()) {

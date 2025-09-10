@@ -497,10 +497,14 @@ export class Abxr {
     private static authCompletedCallbacks: AuthCompletedCallback[] = [];
     private static superProperties: Map<string, string> = new Map();
     private static readonly SUPER_PROPERTIES_KEY = 'abxr_super_properties';
+    private static quitHandlerEnabled: boolean = false;  // Disabled by default for WebXR
+    private static readonly RUNNING_EVENTS_KEY = 'abxr_running_events';
     
     // Static initialization
     static {
         Abxr.loadSuperProperties();
+        // Note: Quit handler is NOT initialized by default for WebXR due to navigation issues
+        // Call Abxr.EnableQuitHandler() explicitly if needed for single-page apps
     }
     
     // Expose commonly used types and enums for easy access
@@ -533,6 +537,353 @@ export class Abxr {
     // INTERNAL USE ONLY - Do not use in application code
     private static getAuthParams(): any {
         return { ...this.authParams };
+    }
+
+    /**
+     * Enable application quit detection for single-page WebXR applications
+     * WARNING: Do NOT use this for multi-page WebXR apps as it will incorrectly close events on navigation
+     * For multi-page apps, use manual event management or implement custom persistence
+     * @param enablePersistence If true, running events will be saved to localStorage and restored on page load
+     */
+    static EnableQuitHandler(enablePersistence: boolean = true): void {
+        if (typeof window === 'undefined') {
+            console.warn('AbxrLib: EnableQuitHandler called in non-browser environment');
+            return;
+        }
+
+        if (this.quitHandlerEnabled) {
+            console.warn('AbxrLib: Quit handler already enabled');
+            return;
+        }
+
+        console.log('AbxrLib: Enabling quit handler' + (enablePersistence ? ' with persistence' : ''));
+        this.quitHandlerEnabled = true;
+
+        if (enablePersistence) {
+            // Restore running events from previous page load
+            this.restoreRunningEventsFromStorage();
+        }
+
+        // More conservative approach - only handle events that likely indicate app close
+        // NOT beforeunload/unload which fire on navigation
+        
+        // Handle visibility change with timeout (user might come back)
+        let visibilityTimeout: NodeJS.Timeout | null = null;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('AbxrLib: Page hidden, starting quit detection timeout');
+                // Start a timeout - if page stays hidden for 30 seconds, consider it closed
+                visibilityTimeout = setTimeout(() => {
+                    console.log('AbxrLib: Page hidden for 30 seconds, closing running events');
+                    if (enablePersistence) {
+                        this.saveRunningEventsToStorage();
+                    }
+                    this.closeRunningEvents();
+                }, 30000);
+            } else {
+                // Page became visible again, cancel the timeout
+                if (visibilityTimeout) {
+                    console.log('AbxrLib: Page visible again, canceling quit detection');
+                    clearTimeout(visibilityTimeout);
+                    visibilityTimeout = null;
+                }
+            }
+        });
+
+        // Handle page freeze (mobile browsers when app goes to background)
+        document.addEventListener('freeze', () => {
+            console.log('AbxrLib: Page frozen, saving running events');
+            if (enablePersistence) {
+                this.saveRunningEventsToStorage();
+            }
+        });
+
+        // Handle page resume (mobile browsers when app comes back to foreground)
+        document.addEventListener('resume', () => {
+            console.log('AbxrLib: Page resumed');
+            if (enablePersistence) {
+                this.restoreRunningEventsFromStorage();
+            }
+        });
+
+        // Only use beforeunload for confirmation, not automatic closing
+        window.addEventListener('beforeunload', (event) => {
+            const runningCount = this.getRunningEventsCount();
+            if (runningCount > 0) {
+                // Just save state, don't auto-close (might be navigation)
+                if (enablePersistence) {
+                    this.saveRunningEventsToStorage();
+                }
+                
+                // Optional: Show warning to user (browsers may ignore this)
+                const message = `You have ${runningCount} active learning events. Are you sure you want to leave?`;
+                event.preventDefault();
+                event.returnValue = message;
+                return message;
+            }
+        });
+    }
+
+    /**
+     * Disable the quit handler (for debugging or manual control)
+     */
+    static DisableQuitHandler(): void {
+        this.quitHandlerEnabled = false;
+        console.log('AbxrLib: Quit handler disabled');
+    }
+
+    /**
+     * Check if quit handler is enabled
+     */
+    static IsQuitHandlerEnabled(): boolean {
+        return this.quitHandlerEnabled;
+    }
+
+    /**
+     * Get count of currently running events
+     * @private
+     */
+    private static getRunningEventsCount(): number {
+        try {
+            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
+            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
+            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
+
+            const assessmentCount = assessmentTimes ? assessmentTimes.size : 0;
+            const objectiveCount = objectiveTimes ? objectiveTimes.size : 0;
+            const interactionCount = interactionTimes ? interactionTimes.size : 0;
+            
+            return assessmentCount + objectiveCount + interactionCount;
+        } catch (error) {
+            console.warn('AbxrLib: Error counting running events:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Save running events to localStorage for persistence across page navigation
+     * @private
+     */
+    private static saveRunningEventsToStorage(): void {
+        try {
+            const runningEvents = {
+                assessments: Array.from(AbxrEvent.m_dictAssessmentStartTimes.entries()).map(([name, time]) => ({
+                    name,
+                    startTime: time.ToInt64()
+                })),
+                objectives: Array.from(AbxrEvent.m_dictObjectiveStartTimes.entries()).map(([name, time]) => ({
+                    name,
+                    startTime: time.ToInt64()
+                })),
+                interactions: Array.from(AbxrEvent.m_dictInteractionStartTimes.entries()).map(([name, time]) => ({
+                    name,
+                    startTime: time.ToInt64()
+                })),
+                savedAt: Date.now()
+            };
+
+            localStorage.setItem(this.RUNNING_EVENTS_KEY, JSON.stringify(runningEvents));
+            console.log(`AbxrLib: Saved ${this.getRunningEventsCount()} running events to storage`);
+        } catch (error) {
+            console.warn('AbxrLib: Error saving running events to storage:', error);
+        }
+    }
+
+    /**
+     * Restore running events from localStorage after page navigation
+     * @private
+     */
+    private static restoreRunningEventsFromStorage(): void {
+        try {
+            const stored = localStorage.getItem(this.RUNNING_EVENTS_KEY);
+            if (!stored) return;
+
+            const runningEvents = JSON.parse(stored);
+            
+            // Only restore if saved recently (within 5 minutes) to avoid stale data
+            const maxAge = 5 * 60 * 1000; // 5 minutes
+            if (Date.now() - runningEvents.savedAt > maxAge) {
+                console.log('AbxrLib: Stored running events too old, not restoring');
+                localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+                return;
+            }
+
+            let restoredCount = 0;
+
+            // Restore assessments
+            if (runningEvents.assessments) {
+                runningEvents.assessments.forEach((event: any) => {
+                    const startTime = new DateTime().FromInt64(event.startTime);
+                    AbxrEvent.m_dictAssessmentStartTimes.set(event.name, startTime);
+                    restoredCount++;
+                });
+            }
+
+            // Restore objectives
+            if (runningEvents.objectives) {
+                runningEvents.objectives.forEach((event: any) => {
+                    const startTime = new DateTime().FromInt64(event.startTime);
+                    AbxrEvent.m_dictObjectiveStartTimes.set(event.name, startTime);
+                    restoredCount++;
+                });
+            }
+
+            // Restore interactions
+            if (runningEvents.interactions) {
+                runningEvents.interactions.forEach((event: any) => {
+                    const startTime = new DateTime().FromInt64(event.startTime);
+                    AbxrEvent.m_dictInteractionStartTimes.set(event.name, startTime);
+                    restoredCount++;
+                });
+            }
+
+            if (restoredCount > 0) {
+                console.log(`AbxrLib: Restored ${restoredCount} running events from storage`);
+            }
+
+            // Clear the stored events since they've been restored
+            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+        } catch (error) {
+            console.warn('AbxrLib: Error restoring running events from storage:', error);
+            // Clear potentially corrupted data
+            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+        }
+    }
+
+    /**
+     * Manually save current running events to storage (for developer use)
+     */
+    static SaveRunningEventsToStorage(): void {
+        if (!this.quitHandlerEnabled) {
+            console.warn('AbxrLib: SaveRunningEventsToStorage called but quit handler not enabled');
+            return;
+        }
+        this.saveRunningEventsToStorage();
+    }
+
+    /**
+     * Manually restore running events from storage (for developer use) 
+     */
+    static RestoreRunningEventsFromStorage(): void {
+        if (!this.quitHandlerEnabled) {
+            console.warn('AbxrLib: RestoreRunningEventsFromStorage called but quit handler not enabled');
+            return;
+        }
+        this.restoreRunningEventsFromStorage();
+    }
+
+    /**
+     * Get count of currently running events (public method for monitoring)
+     */
+    static GetRunningEventsCount(): number {
+        return this.getRunningEventsCount();
+    }
+
+    /**
+     * Automatically complete all running Assessments, Objectives, and Interactions
+     * Used when the page is being unloaded to ensure data integrity
+     * @private
+     */
+    private static closeRunningEvents(): void {
+        try {
+            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
+            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
+            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
+
+            let totalClosed = 0;
+
+            // Close running Assessments
+            if (assessmentTimes && assessmentTimes.size > 0) {
+                const assessmentNames = Array.from(assessmentTimes.keys());
+                assessmentNames.forEach(assessmentName => {
+                    try {
+                        // Use fire-and-forget async call since we're in page unload
+                        Abxr.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
+                            quit_reason: 'page_unload',
+                            auto_closed: 'true'
+                        }).catch(() => {
+                            // Silent fail - we're unloading anyway
+                        });
+                        totalClosed++;
+                    } catch (error) {
+                        // Silent fail during page unload
+                    }
+                });
+            }
+
+            // Close running Objectives  
+            if (objectiveTimes && objectiveTimes.size > 0) {
+                const objectiveNames = Array.from(objectiveTimes.keys());
+                objectiveNames.forEach(objectiveName => {
+                    try {
+                        Abxr.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
+                            quit_reason: 'page_unload',
+                            auto_closed: 'true'
+                        }).catch(() => {
+                            // Silent fail - we're unloading anyway
+                        });
+                        totalClosed++;
+                    } catch (error) {
+                        // Silent fail during page unload
+                    }
+                });
+            }
+
+            // Close running Interactions
+            if (interactionTimes && interactionTimes.size > 0) {
+                const interactionNames = Array.from(interactionTimes.keys());
+                interactionNames.forEach(interactionName => {
+                    try {
+                        Abxr.EventInteractionComplete(interactionName, InteractionType.eNull, 'incomplete_quit', {
+                            quit_reason: 'page_unload',
+                            auto_closed: 'true'
+                        }).catch(() => {
+                            // Silent fail - we're unloading anyway
+                        });
+                        totalClosed++;
+                    } catch (error) {
+                        // Silent fail during page unload
+                    }
+                });
+            }
+
+            if (totalClosed > 0) {
+                console.log(`AbxrLib: Automatically closed ${totalClosed} running events due to quit detection`);
+                
+                // Log the cleanup activity (fire-and-forget)
+                Abxr.Log(`Quit handler closed ${totalClosed} running events`, LogLevel.eInfo, {
+                    events_closed: totalClosed.toString(),
+                    quit_handler: 'automatic_with_timeout'
+                });
+            }
+        } catch (error) {
+            // Silent fail - we're in page unload, don't interfere with the process
+            console.warn('AbxrLib: Error during quit handler cleanup:', error);
+        }
+    }
+
+    /**
+     * Log information about currently running events without closing them
+     * Used for debugging and monitoring purposes
+     * @private
+     */
+    private static logRunningEvents(): void {
+        try {
+            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
+            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
+            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
+
+            const assessmentCount = assessmentTimes ? assessmentTimes.size : 0;
+            const objectiveCount = objectiveTimes ? objectiveTimes.size : 0;
+            const interactionCount = interactionTimes ? interactionTimes.size : 0;
+            const totalRunning = assessmentCount + objectiveCount + interactionCount;
+
+            if (totalRunning > 0) {
+                console.log(`AbxrLib: Currently ${totalRunning} events running (Assessments: ${assessmentCount}, Objectives: ${objectiveCount}, Interactions: ${interactionCount})`);
+            }
+        } catch (error) {
+            console.warn('AbxrLib: Error logging running events:', error);
+        }
     }
 
     /**

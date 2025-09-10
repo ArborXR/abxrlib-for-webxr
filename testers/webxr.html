@@ -35,6 +35,11 @@
     // Initialize AbxrLib with appId (credentials come from cookies/GET parameters)
     Abxr_init(appId);
     
+    // Enable quit handler for demo purposes (single-page tester app)
+    // This will automatically close running events if user closes browser/tab
+    // NOTE: Don't use this for multi-page WebXR apps - it will interfere with navigation!
+    Abxr.EnableQuitHandler(true);
+    
     // Enable debug mode
     Abxr.SetDebugMode(true);
     

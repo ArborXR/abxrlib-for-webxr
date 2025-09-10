@@ -114,6 +114,9 @@
             Abxr_init(appId);
             Abxr.SetDebugMode(true);
             
+            // Enable quit handler for demo purposes (single-page tester app)
+            Abxr.EnableQuitHandler(true);
+            
             // Check authentication status
             setTimeout(() => {
                 if (Abxr.ConnectionActive()) {
@@ -174,6 +177,9 @@
             // Credentials come from cookies/GET parameters
             Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.SetDebugMode(true);
+            
+            // Enable quit handler for demo purposes (single-page tester app)
+            Abxr.EnableQuitHandler(true);
             
             setTimeout(() => {
                 if (Abxr.ConnectionActive()) {
@@ -237,6 +243,9 @@
             Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.SetDebugMode(true);
             
+            // Enable quit handler for demo purposes (single-page tester app)
+            Abxr.EnableQuitHandler(true);
+            
             setTimeout(() => {
                 if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully with advanced XR styling!', 'success');
@@ -280,6 +289,9 @@
             Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.SetDebugMode(true);
             
+            // Enable quit handler for demo purposes (single-page tester app)
+            Abxr.EnableQuitHandler(true);
+            
             setTimeout(() => {
                 if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully!', 'success');
@@ -319,6 +331,9 @@
             // Credentials come from cookies/GET parameters
             Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.SetDebugMode(true);
+            
+            // Enable quit handler for demo purposes (single-page tester app)
+            Abxr.EnableQuitHandler(true);
             
             setTimeout(() => {
                 if (Abxr.ConnectionActive()) {
@@ -393,6 +408,9 @@
             Abxr_init(appId, undefined, undefined, undefined, undefined, customAuthCallback);
             Abxr.SetDebugMode(true);
             
+            // Enable quit handler for demo purposes (single-page tester app)
+            Abxr.EnableQuitHandler(true);
+            
             setTimeout(() => {
                 if (Abxr.ConnectionActive()) {
                     updateBuiltinResult('Authentication completed successfully with custom callback!', 'success');
@@ -446,6 +464,9 @@
             // Credentials come from cookies/GET parameters
             Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
             Abxr.SetDebugMode(true);
+            
+            // Enable quit handler for demo purposes (single-page tester app)
+            Abxr.EnableQuitHandler(true);
             
             setTimeout(() => {
                 if (Abxr.ConnectionActive()) {

@@ -713,6 +713,12 @@ export class AbxrDictStrings extends Dictionary<string, string>
 		{
 			if (value.trim() !== '')
 			{
+				// Preserve strings that start with 0 (like PIN codes) as strings
+				// This prevents "089981" from becoming 89981
+				if (value.startsWith('0') && value.length > 1) {
+					return `"${value}"`;
+				}
+				
 				const nValue:	number = Number(value);
 
 				if (!isNaN(nValue) && isFinite(nValue))
