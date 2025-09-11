@@ -570,21 +570,42 @@ export class Abxr {
         
         // Handle visibility change with timeout (user might come back)
         let visibilityTimeout: NodeJS.Timeout | null = null;
+        let pageHiddenTime: number | null = null;
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                console.log('AbxrLib: Page hidden, starting quit detection timeout');
-                // Start a timeout - if page stays hidden for 30 seconds, consider it closed
+                pageHiddenTime = Date.now();
+                //console.log('AbxrLib: Page hidden, starting quit detection timeout');
+                // Start a timeout - if page stays hidden for 3 hours, consider it closed
                 visibilityTimeout = setTimeout(() => {
-                    console.log('AbxrLib: Page hidden for 30 seconds, closing running events');
+                    console.log('AbxrLib: Page hidden for 3 hours, closing running events');
                     if (enablePersistence) {
                         this.saveRunningEventsToStorage();
                     }
                     this.closeRunningEvents();
-                }, 30000);
+                }, 10800000); // 3 hours = 3 * 60 * 60 * 1000 milliseconds
             } else {
                 // Page became visible again, cancel the timeout
                 if (visibilityTimeout) {
-                    console.log('AbxrLib: Page visible again, canceling quit detection');
+                    if (pageHiddenTime) {
+                        const hiddenDuration = Date.now() - pageHiddenTime;
+                        const seconds = Math.round(hiddenDuration / 1000);
+                        const minutes = Math.floor(seconds / 60);
+                        const hours = Math.floor(minutes / 60);
+                        
+                        let durationText = '';
+                        if (hours > 0) {
+                            durationText = `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+                        } else if (minutes > 0) {
+                            durationText = `${minutes}m ${seconds % 60}s`;
+                        } else {
+                            durationText = `${seconds}s`;
+                        }
+                        
+                        console.log(`AbxrLib: Page visible again after ${durationText}, canceling quit detection`);
+                        pageHiddenTime = null;
+                    } else {
+                        console.log('AbxrLib: Page visible again, canceling quit detection');
+                    }
                     clearTimeout(visibilityTimeout);
                     visibilityTimeout = null;
                 }
