@@ -89,12 +89,11 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
                     font-weight: bold;
                     cursor: pointer;
                     transition: all 0.2s ease;
-                    text-transform: uppercase;
                     user-select: none;
                     margin: 0 !important;
                     padding: 0 !important;
                     box-sizing: border-box;
-                ">${key.toUpperCase()}</button>
+                ">${key}</button>
             `).join('')}
         </div>
     `).join('');
@@ -463,12 +462,12 @@ export class XRVirtualKeyboard {
             }
         }
         
-        // Update letter key labels
+        // Update letter key labels - show lowercase by default, uppercase when caps is on
         document.querySelectorAll('.abxr-key:not(.abxr-special-key)').forEach(button => {
             const keyButton = button as HTMLButtonElement;
             const key = keyButton.dataset.key;
             if (key && /^[a-z]$/.test(key)) {
-                keyButton.textContent = this.capsLock ? key.toUpperCase() : key.toUpperCase();
+                keyButton.textContent = this.capsLock ? key.toUpperCase() : key.toLowerCase();
             }
         });
     }
