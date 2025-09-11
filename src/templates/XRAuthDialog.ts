@@ -124,15 +124,14 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
             <div id="abxr-dialog-content" style="
                 background: ${colors.background};
                 color: #ffffff;
-                padding: 30px;
+                padding: 20px 0px;
                 border-radius: 15px;
                 border: 2px solid ${colors.primary};
                 box-shadow: 0 0 30px ${colors.primaryRgba};
-                max-width: 400px;
+                max-width: ${authData.type === 'assessmentPin' || authData.type === 'pin' ? '400px' : options.showVirtualKeyboard ? '550px' : '400px'};
                 width: 100%;
                 text-align: center;
                 animation: abxrGlow 2s ease-in-out infinite alternate;
-                margin-bottom: ${options.showVirtualKeyboard ? '0' : '0'};
             ">
                 <h2 style="margin: 0 0 20px 0; color: ${colors.primary}; text-shadow: 0 0 10px ${colors.primaryRgba};">
                     ${getTitle()}
@@ -182,8 +181,21 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                         ''
                     }
                 </div>
+                
+                ${options.showVirtualKeyboard ? getXRVirtualKeyboardTemplate(authData.type, {
+                    colors: {
+                        background: colors.background,
+                        primary: colors.primary,
+                        keyBg: colors.keyBg,
+                        keyText: colors.keyText,
+                        keyHover: colors.keyHover,
+                        keyActive: colors.keyActive,
+                        success: colors.success
+                    }
+                }) : ''}
+                
                 ${!options.hideDialogButtons ? `
-                <div style="display: flex; justify-content: center;">
+                <div style="display: flex; justify-content: center; margin-top: 5px;">
                     <button id="abxrlib-xr-submit" style="
                         background: ${colors.success};
                         color: white;
@@ -197,25 +209,13 @@ export function getXRDialogTemplate(authData: AuthDialogData, options: XRDialogO
                     ">Submit</button>
                 </div>` : ''}
                 <p style="
-                    margin: 20px 0 0 0;
+                    margin: 5px 0 0 0;
                     color: #888;
                     font-size: 10px;
                     font-style: italic;
                 ">
                 </p>
             </div>
-            
-            ${options.showVirtualKeyboard ? getXRVirtualKeyboardTemplate(authData.type, {
-                colors: {
-                    background: colors.background,
-                    primary: colors.primary,
-                    keyBg: colors.keyBg,
-                    keyText: colors.keyText,
-                    keyHover: colors.keyHover,
-                    keyActive: colors.keyActive,
-                    success: colors.success
-                }
-            }) : ''}
         </div>
     `;
 }

@@ -70,16 +70,18 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
         <div class="abxr-keyboard-row" style="
             display: flex;
             justify-content: center;
-            gap: 8px;
+            align-items: center;
+            gap: 4px;
             margin: 6px 0;
             box-sizing: border-box;
             padding: 0;
+            width: 100%;
         ">
             ${row.map(key => `
                 <button class="abxr-key" data-key="${key}" style="
-                    min-width: 40px;
+                    min-width: 45px;
                     height: 45px;
-                    border: 2px solid #333;
+                    border: 2px solid transparent;
                     border-radius: 8px;
                     background: ${colors.keyBg};
                     color: ${colors.keyText};
@@ -102,17 +104,19 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
         <div class="abxr-keyboard-row" style="
             display: flex;
             justify-content: center;
-            gap: 8px;
+            align-items: center;
+            gap: 6px;
             margin: 10px 0;
             flex-wrap: wrap;
             box-sizing: border-box;
             padding: 0;
+            width: 100%;
         ">
             ${specialKeys.map(({ key, display, width }) => `
                 <button class="abxr-key abxr-special-key" data-key="${key}" style="
-                    width: ${width};
+                    width: ${width === '60px' ? '70px' : width === '80px' ? '90px' : width === '120px' ? '140px' : width};
                     height: 45px;
-                    border: 2px solid #333;
+                    border: 2px solid transparent;
                     border-radius: 8px;
                     background: ${key === 'Enter' ? colors.success : colors.keyBg};
                     color: ${colors.keyText};
@@ -131,19 +135,18 @@ export function getXRVirtualKeyboardTemplate(layoutType: string = 'full', config
     
     return `
         <div id="abxr-virtual-keyboard" style="
-            background: ${colors.background};
-            border: 2px solid ${colors.primary};
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 0 30px rgba(90, 88, 235, 0.3);
-            animation: abxrGlow 2s ease-in-out infinite alternate;
+            padding: 0;
+            margin: 5px auto;
             user-select: none;
             box-sizing: border-box;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             ${layoutType === 'assessmentPin' || layoutType === 'pin'
                 ? 'max-width: 300px; width: 100%; min-width: 250px;'
-                : 'max-width: 550px; width: 100%; min-width: 450px;'}
+                : 'max-width: 100%; width: 100%;'}
         ">
             <div style="
                 text-align: center;
@@ -186,8 +189,99 @@ export class XRVirtualKeyboard {
         this.onSubmit = onSubmit || null;
         this.setupEventListeners();
         this.updateCapsLockState();
+        
+        // Make debug functions globally accessible for future troubleshooting
+        (window as any).abxrForceCleanKeyboard = () => {
+            this.forceCleanAllHoverStates();
+        };
+        (window as any).abxrCheckStuckKeys = () => {
+            this.findAndFixStuckKeys();
+        };
     }
     
+    /**
+     * Debug function to check for stuck keys (simplified)
+     */
+    private debugKeyStates(): void {
+        const stuckKeys: string[] = [];
+        document.querySelectorAll('.abxr-key').forEach(button => {
+            const keyButton = button as HTMLButtonElement;
+            const keyLabel = keyButton.dataset.key || keyButton.textContent || 'unknown';
+            const bgColor = keyButton.style.background || 'default';
+            const borderColor = keyButton.style.borderColor || 'default';
+            
+            // Check if this key appears to be in hover state
+            const isHovering = bgColor.includes(this.config.colors.keyHover) || 
+                              bgColor.includes('90, 88, 235') || 
+                              borderColor.includes(this.config.colors.primary);
+            
+            if (isHovering) {
+                stuckKeys.push(keyLabel);
+            }
+        });
+        
+        if (stuckKeys.length > 0) {
+            console.log(`🔍 Stuck keys detected: ${stuckKeys.join(', ')}`);
+        }
+    }
+
+    /**
+     * Find keys that are visually stuck and fix them - for debugging
+     */
+    public findAndFixStuckKeys(): void {
+        let fixedCount = 0;
+        
+        document.querySelectorAll('.abxr-key').forEach(button => {
+            const keyButton = button as HTMLButtonElement;
+            const keyLabel = keyButton.dataset.key || keyButton.textContent || 'unknown';
+            
+            if (!keyButton.classList.contains('abxr-special-key') || keyButton.dataset.key !== 'Enter') {
+                const computed = window.getComputedStyle(keyButton);
+                const computedBg = computed.backgroundColor;
+                const computedBorder = computed.borderColor;
+                
+                // Check if computed style suggests it's in hover state
+                const isVisuallyHovering = computedBg.includes('90, 88, 235') || 
+                                          computedBg.includes('rgba(90, 88, 235') ||
+                                          computedBorder.includes('90, 88, 235') ||
+                                          computedBorder.includes('rgb(90, 88, 235');
+                
+                if (isVisuallyHovering) {
+                    // Force fix it
+                    keyButton.style.setProperty('background', this.config.colors.keyBg, 'important');
+                    keyButton.style.setProperty('border-color', 'transparent', 'important'); 
+                    keyButton.style.setProperty('background-color', this.config.colors.keyBg, 'important');
+                    keyButton.offsetHeight; // Force reflow
+                    fixedCount++;
+                }
+            }
+        });
+        
+        console.log(`🔧 Fixed ${fixedCount} stuck keys`);
+    }
+
+    /**
+     * Force clear all hover states - for debugging
+     */
+    public forceCleanAllHoverStates(): void {
+        let clearedCount = 0;
+        
+        document.querySelectorAll('.abxr-key').forEach(button => {
+            const keyButton = button as HTMLButtonElement;
+            
+            if (!keyButton.classList.contains('abxr-special-key') || keyButton.dataset.key !== 'Enter') {
+                // Force clear with !important
+                keyButton.style.setProperty('background', this.config.colors.keyBg, 'important');
+                keyButton.style.setProperty('border-color', 'transparent', 'important');
+                keyButton.style.setProperty('background-color', this.config.colors.keyBg, 'important');
+                keyButton.style.setProperty('transform', 'scale(1)', 'important');
+                clearedCount++;
+            }
+        });
+        
+        console.log(`🧹 Force cleared ${clearedCount} keys`);
+    }
+
     /**
      * Setup event listeners for all keyboard buttons
      */
@@ -196,21 +290,35 @@ export class XRVirtualKeyboard {
         document.querySelectorAll('.abxr-key').forEach(button => {
             const keyButton = button as HTMLButtonElement;
             
+            // Check if this button already has our listeners (prevent duplicates)
+            if ((keyButton as any).__abxrListenersAttached) {
+                return;
+            }
+            
+            (keyButton as any).__abxrListenersAttached = true;
+            
             // Hover effects
             keyButton.addEventListener('mouseenter', () => {
                 if (!keyButton.classList.contains('abxr-special-key') || keyButton.dataset.key !== 'Enter') {
-                    keyButton.style.background = this.config.colors.keyHover;
-                    keyButton.style.borderColor = this.config.colors.primary;
+                    // Force apply with !important to prevent CSS cascade issues
+                    keyButton.style.setProperty('background', this.config.colors.keyHover, 'important');
+                    keyButton.style.setProperty('border-color', this.config.colors.primary, 'important');
+                    keyButton.style.setProperty('background-color', this.config.colors.keyHover, 'important');
                 }
             });
             
             keyButton.addEventListener('mouseleave', () => {
                 if (!keyButton.classList.contains('abxr-special-key') || keyButton.dataset.key !== 'Enter') {
-                    keyButton.style.background = this.config.colors.keyBg;
-                    keyButton.style.borderColor = '#333';
+                    // Force clear with !important to prevent CSS cascade issues
+                    keyButton.style.setProperty('background', this.config.colors.keyBg, 'important');
+                    keyButton.style.setProperty('border-color', 'transparent', 'important');
+                    keyButton.style.setProperty('background-color', this.config.colors.keyBg, 'important');
+                    
+                    // Force repaint to ensure visual update
+                    keyButton.offsetHeight;
                 }
             });
-            
+                       
             // Click effects
             keyButton.addEventListener('mousedown', () => {
                 keyButton.style.background = this.config.colors.keyActive;
@@ -345,11 +453,13 @@ export class XRVirtualKeyboard {
         const capsButton = document.querySelector('.abxr-special-key[data-key="CapsLock"]') as HTMLElement;
         if (capsButton) {
             if (this.capsLock) {
-                capsButton.style.background = this.config.colors.primary;
-                capsButton.style.borderColor = this.config.colors.primary;
+                capsButton.style.setProperty('background', this.config.colors.primary, 'important');
+                capsButton.style.setProperty('border-color', this.config.colors.primary, 'important');
+                capsButton.style.setProperty('background-color', this.config.colors.primary, 'important');
             } else {
-                capsButton.style.background = this.config.colors.keyBg;
-                capsButton.style.borderColor = '#333';
+                capsButton.style.setProperty('background', this.config.colors.keyBg, 'important');
+                capsButton.style.setProperty('border-color', 'transparent', 'important');
+                capsButton.style.setProperty('background-color', this.config.colors.keyBg, 'important');
             }
         }
         
