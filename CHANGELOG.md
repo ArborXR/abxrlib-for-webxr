@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.41] - 2025-09-11
+
+### 🐛 Bug Fixes
+
+- fixed console output to all have the correct prefix ([4113e09](../../commit/4113e09b735bcbf4470039b9d5fe3ef872d71b3d))
+
 ## [1.0.40] - 2025-09-11
 
 ### 🔨 Other Changes
