@@ -58,7 +58,7 @@
     
     // Initialize WebXR Environment
     function initWebXR() {
-        console.log('Initializing WebXR Environment...');
+        console.log('AbxrTester: Initializing WebXR Environment...');
         
         // Create scene
         scene = new THREE.Scene();
@@ -94,7 +94,7 @@
         // Start render loop
         renderer.setAnimationLoop(render);
         
-        console.log('WebXR Environment initialized');
+        console.log('AbxrTester: WebXR Environment initialized');
     }
     
     function setupLighting() {
@@ -330,7 +330,7 @@
             }
         });
         
-        console.log('Desktop controls initialized - WASD to move, click and drag mouse to look');
+        console.log('AbxrTester: Desktop controls initialized - WASD to move, click and drag mouse to look');
     }
     
     function onSelectStart(event) {
@@ -369,7 +369,7 @@
     
     // Send Event function (adapted for XR)
     async function sendEvent() {
-        console.log("Executing Abxr.Event() in XR");
+        console.log("AbxrTester: Executing Abxr.Event() in XR");
         updateTextMesh(eventText, 'Sending event...', 0.08, 0xffaa00);
         
         try {
@@ -412,7 +412,7 @@
     
     // Send Log function (adapted for XR)
     async function sendLog() {
-        console.log("Executing Abxr.LogDebug() in XR");
+        console.log("AbxrTester: Executing Abxr.LogDebug() in XR");
         updateTextMesh(logText, 'Sending log...', 0.08, 0xffaa00);
         
         try {

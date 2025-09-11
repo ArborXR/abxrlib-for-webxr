@@ -220,7 +220,7 @@ export class XRVirtualKeyboard {
         });
         
         if (stuckKeys.length > 0) {
-            console.log(`🔍 Stuck keys detected: ${stuckKeys.join(', ')}`);
+            console.log(`AbxrLib: Stuck keys detected: ${stuckKeys.join(', ')}`);
         }
     }
 
@@ -256,7 +256,7 @@ export class XRVirtualKeyboard {
             }
         });
         
-        console.log(`🔧 Fixed ${fixedCount} stuck keys`);
+        console.log(`AbxrLib: Fixed ${fixedCount} stuck keys`);
     }
 
     /**
@@ -278,7 +278,7 @@ export class XRVirtualKeyboard {
             }
         });
         
-        console.log(`🧹 Force cleared ${clearedCount} keys`);
+        console.log(`AbxrLib: Force cleared ${clearedCount} keys`);
     }
 
     /**

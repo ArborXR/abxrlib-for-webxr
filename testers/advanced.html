@@ -67,7 +67,7 @@
     }
 
     async function try_Event() {
-        console.log("Tester: Executing Abxr.Event()");
+        console.log("AbxrTester: Executing Abxr.Event()");
         try {
             const eventValue = document.getElementById('event_input').value;
             const dictMeta = { verb: "started", assessment_name: eventValue };
@@ -86,7 +86,7 @@
     }
 
     async function try_logDebug() {
-        console.log("Tester: Executing Abxr.LogDebug()");
+        console.log("AbxrTester: Executing Abxr.LogDebug()");
         try {
             const debugValue = document.getElementById('log_input').value;
             
@@ -105,7 +105,7 @@
 
     // XR Dialog Demo Functions
     async function initBuiltinDefault() {
-        console.log("Tester: Testing XR dialog (default)");
+        console.log("AbxrTester: Testing XR dialog (default)");
         updateBuiltinResult('Initializing with XR dialog (default behavior)...', 'info');
         
         try {
@@ -148,7 +148,7 @@
     }
 
     async function initBuiltinCustom() {
-        console.log("Tester: Testing XR dialog with custom styling");
+        console.log("AbxrTester: Testing XR dialog with custom styling");
         updateBuiltinResult('Initializing with custom-styled XR dialog...', 'info');
         
         try {
@@ -210,7 +210,7 @@
     }
 
     async function initXRDialog() {
-        console.log("Tester: Testing XR Dialog with Advanced Customization");
+        console.log("AbxrTester: Testing XR Dialog with Advanced Customization");
         updateBuiltinResult('Initializing with advanced XR dialog customization...', 'info');
         
         try {
@@ -275,7 +275,7 @@
     }
 
     async function initDesktopNoKeyboard() {
-        console.log("Tester: Testing XR dialog without virtual keyboard (desktop mode)");
+        console.log("AbxrTester: Testing XR dialog without virtual keyboard (desktop mode)");
         updateBuiltinResult('Initializing XR dialog optimized for desktop (no virtual keyboard)...', 'info');
         
         try {
@@ -321,7 +321,7 @@
     }
 
     async function initBuiltinDisabled() {
-        console.log("Tester: Testing with XR dialog disabled");
+        console.log("AbxrTester: Testing with XR dialog disabled");
         updateBuiltinResult('Initializing with XR dialog disabled...', 'info');
         
         try {
@@ -353,13 +353,13 @@
     }
 
     async function initCustomCallback() {
-        console.log("Tester: Testing with custom callback (developer-provided dialog)");
+        console.log("AbxrTester: Testing with custom callback (developer-provided dialog)");
         updateBuiltinResult('Initializing with custom callback - developer provides their own dialog...', 'info');
         
         try {
             // Custom callback function - developer implements their own dialog
             const customAuthCallback = (authData) => {
-                console.log("Tester: Custom callback received auth data:", authData);
+                console.log("AbxrTester: Custom callback received auth data:", authData);
                 updateBuiltinResult(`Custom callback triggered! Auth type: ${authData.type}, Domain: ${authData.domain || 'N/A'}`, 'warning');
                 
                 // Simulate custom dialog - in real implementation, developer would show their own UI
@@ -429,14 +429,14 @@
     }
 
     async function initCustomCallbackViaOptions() {
-        console.log("Tester: Testing with custom callback via dialogOptions");
+        console.log("AbxrTester: Testing with custom callback via dialogOptions");
         updateBuiltinResult('Initializing with custom callback via dialogOptions...', 'info');
         
         try {
             // Method 2: Pass custom callback via dialogOptions
             const dialogOptions = {
                 customCallback: (authData) => {
-                    console.log("Tester: Custom callback (via options) received auth data:", authData);
+                    console.log("AbxrTester: Custom callback (via options) received auth data:", authData);
                     updateBuiltinResult(`Custom callback (via options) triggered! Auth type: ${authData.type}`, 'warning');
                     
                     // Simple alert-based custom dialog for demonstration
@@ -516,7 +516,7 @@
 
     // Assessment Event Functions
     async function try_AssessmentStart() {
-        console.log("Tester: Executing Abxr.EventAssessmentStart()");
+        console.log("AbxrTester: Executing Abxr.EventAssessmentStart()");
         try {
             const assessmentName = document.getElementById('assessment_name').value;
             const dictMeta = { started_at: new Date().toISOString() };
@@ -535,7 +535,7 @@
     }
 
     async function try_AssessmentComplete() {
-        console.log("Tester: Executing Abxr.EventAssessmentComplete()");
+        console.log("AbxrTester: Executing Abxr.EventAssessmentComplete()");
         try {
             const assessmentName = document.getElementById('assessment_name').value;
             const score = parseInt(document.getElementById('assessment_score').value, 10);
@@ -558,7 +558,7 @@
 
     // Objective Event Functions
     async function try_ObjectiveStart() {
-        console.log("Tester: Executing Abxr.EventObjectiveStart()");
+        console.log("AbxrTester: Executing Abxr.EventObjectiveStart()");
         try {
             const objectiveName = document.getElementById('objective_name').value;
             const dictMeta = { started_at: new Date().toISOString() };
@@ -577,7 +577,7 @@
     }
 
     async function try_ObjectiveComplete() {
-        console.log("Tester: Executing Abxr.EventObjectiveComplete()");
+        console.log("AbxrTester: Executing Abxr.EventObjectiveComplete()");
         try {
             const objectiveName = document.getElementById('objective_name').value;
             const score = parseInt(document.getElementById('objective_score').value, 10);
@@ -600,7 +600,7 @@
 
     // Interaction Event Functions
     async function try_InteractionStart() {
-        console.log("Tester: Executing Abxr.EventInteractionStart()");
+        console.log("AbxrTester: Executing Abxr.EventInteractionStart()");
         try {
             const interactionName = document.getElementById('interaction_name').value;
             const dictMeta = { started_at: new Date().toISOString() };
@@ -619,7 +619,7 @@
     }
 
     async function try_InteractionComplete() {
-        console.log("Tester: Executing Abxr.EventInteractionComplete()");
+        console.log("AbxrTester: Executing Abxr.EventInteractionComplete()");
         try {
             const interactionName = document.getElementById('interaction_name').value;
             const typeValue = document.getElementById('interaction_type').value;

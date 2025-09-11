@@ -40,38 +40,38 @@
     
     // Authentication completion callback - called after complete auth process including PIN
     Abxr.OnAuthCompleted(function(authData) {
-      console.log('Authentication completed!', authData);
+      console.log('AbxrTester: Authentication completed!', authData);
       
       // Now that authentication is fully complete, check user data and modules
-      console.log('AbxrLib: Processing user data and modules after complete authentication...');
+      console.log('AbxrTester: Processing user data and modules after complete authentication...');
       
       // Get and log user data
       const userId = Abxr.GetUserId();
       const userData = Abxr.GetUserData();
       
-      console.log('AbxrLib: User ID:', userId);
-      console.log('AbxrLib: User Data:', userData);
+      console.log('AbxrTester: User ID:', userId);
+      console.log('AbxrTester: User Data:', userData);
       
       // Check module targets - you can use either approach:
       // Show moduleCount from authData parameter (new consistent API)
-      console.log(`AbxrLib: Total modules available (from authData): ${authData.moduleCount}`);
+      console.log(`AbxrTester: Total modules available (from authData): ${authData.moduleCount}`);
             
       if (authData.moduleCount > 0) {
-        console.log('AbxrLib: Processing all modules...');
+        console.log('AbxrTester: Processing all modules...');
         let currentModule;
         let moduleIndex = 1;
         
         // Loop through all modules until GetModuleTarget returns null
         while ((currentModule = Abxr.GetModuleTarget()) !== null) {
-          console.log(`AbxrLib: Module ${moduleIndex}:`, currentModule);
+          console.log(`AbxrTester: Module ${moduleIndex}:`, currentModule);
           moduleIndex++;
           let remainingModuleCount = Abxr.GetModuleTargetCount();
-          console.log(`AbxrLib: Total remaining modules available (from method): ${remainingModuleCount}`);
+          console.log(`AbxrTester: Total remaining modules available (from method): ${remainingModuleCount}`);
         }
         
-        console.log(`AbxrLib: Processed ${moduleIndex - 1} modules total`);
+        console.log(`AbxrTester: Processed ${moduleIndex - 1} modules total`);
       } else {
-        console.log('AbxrLib: No modules available (modules array is null or empty)');
+        console.log('AbxrTester: No modules available (modules array is null or empty)');
       }
     });
   </script>
@@ -81,36 +81,36 @@
     Abxr.SetDebugMode(true);
     // Send a simple event
     function sendEvent() {
-        console.log("Executing Abxr.Event()");
+        console.log("AbxrTester: Executing Abxr.Event()");
         Abxr.Event('user_action', { action: 'button_click', source: 'demo' });
     }
     
     // Send a debug log
     function sendLog() {
-        console.log("Executing Abxr.LogDebug()");
+        console.log("AbxrTester: Executing Abxr.LogDebug()");
         Abxr.LogDebug('User performed an action');
     }
 
     // Assessment Event Functions
     function startAssessment() {
-        console.log("Executing Abxr.EventAssessmentStart()");
+        console.log("AbxrTester: Executing Abxr.EventAssessmentStart()");
         Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });
 
     }
 
     function completeAssessment() {
-        console.log("Executing Abxr.EventAssessmentComplete()");
+        console.log("AbxrTester: Executing Abxr.EventAssessmentComplete()");
         Abxr.EventAssessmentComplete('Math Quiz 101', 85, Abxr.EventStatus.ePass, { questions_answered: 10 });
     }
 
     // Objective Event Functions
     function startObjective() {
-        console.log("Executing Abxr.EventObjectiveStart()");
+        console.log("AbxrTester: Executing Abxr.EventObjectiveStart()");
         Abxr.EventObjectiveStart('Learn Fractions', { module: 'basic_math' });
     }
 
     function completeObjective() {
-        console.log("Executing Abxr.EventObjectiveComplete()");
+        console.log("AbxrTester: Executing Abxr.EventObjectiveComplete()");
         Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
     }
   </script>

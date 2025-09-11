@@ -146,7 +146,7 @@
           document.getElementById('deviceInfo').className = 'info-box detected-info';
           
           document.getElementById('status').textContent = 'Status: Device detection completed successfully!';
-          console.log('Device detection test completed:', deviceInfo);
+          console.log('AbxrTester: Device detection test completed:', deviceInfo);
         } else {
           throw new Error('Device detection functions not available in bundle');
         }
@@ -154,7 +154,7 @@
         document.getElementById('status').textContent = 'Status: Device detection failed!';
         document.getElementById('deviceInfo').style.display = 'block';
         document.getElementById('deviceInfo').className = 'info-box error-info';
-        console.error('Device detection test failed:', error);
+        console.error('AbxrTester: Device detection test failed:', error);
       }
     }
 
@@ -183,7 +183,7 @@
           document.getElementById('authInfo').style.display = 'block';
           document.getElementById('authInfo').className = 'info-box detected-info';
           
-          console.log('Authentication test completed successfully');
+          console.log('AbxrTester: Authentication test completed successfully');
           
           // Try to get the device info that was set during authentication
           try {
@@ -197,9 +197,9 @@
             document.getElementById('deviceInfo').style.display = 'block';
             document.getElementById('deviceInfo').className = 'info-box detected-info';
             
-            console.log('Device info from authentication:', { osVersion, deviceModel, ipAddress });
+            console.log('AbxrTester: Device info from authentication:', { osVersion, deviceModel, ipAddress });
           } catch (error) {
-            console.warn('Could not retrieve device info from AbxrLibInit:', error);
+            console.warn('AbxrTester: Could not retrieve device info from AbxrLibInit:', error);
           }
           
         } else if (Abxr.hasAuthenticationFailed()) {
@@ -210,7 +210,7 @@
           document.getElementById('authInfo').style.display = 'block';
           document.getElementById('authInfo').className = 'info-box error-info';
           
-          console.error('Authentication test failed:', Abxr.getAuthenticationError());
+          console.error('AbxrTester: Authentication test failed:', Abxr.getAuthenticationError());
         }
       }, 1000);
       
@@ -219,7 +219,7 @@
         if (!Abxr.ConnectionActive() && !Abxr.hasAuthenticationFailed()) {
           clearInterval(checkInterval);
           document.getElementById('status').textContent = 'Status: Authentication timed out!';
-          console.error('Authentication test timed out');
+          console.error('AbxrTester: Authentication test timed out');
         }
       }, 30000);
     }
@@ -230,8 +230,8 @@
 
     // Initialize page
     document.getElementById('status').textContent = 'Status: Ready for testing';
-    console.log('Device Detection Test Page loaded');
-    console.log('User Agent:', navigator.userAgent);
+    console.log('AbxrTester: Device Detection Test Page loaded');
+    console.log('AbxrTester: User Agent:', navigator.userAgent);
   </script>
 </body>
 </html>

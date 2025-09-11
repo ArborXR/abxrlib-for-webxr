@@ -164,7 +164,7 @@ export async function AbxrDetectIpAddress(enableExternalDetection: boolean = fal
                 return data.query;
             }
         } catch (error) {
-            console.warn(`Failed to get IP from ${service}:`, error);
+            console.warn(`AbxrLib: Failed to get IP from ${service}:`, error);
             continue;
         }
     }

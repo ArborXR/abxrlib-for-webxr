@@ -835,7 +835,7 @@ export class Abxr {
                     this.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
                         abandon_reason: 'manually_abandoned',
                         auto_completed: 'true'
-                    }).catch(error => console.warn('Failed to complete abandoned assessment:', error));
+                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned assessment:', error));
                 });
             }
 
@@ -846,7 +846,7 @@ export class Abxr {
                     this.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
                         abandon_reason: 'manually_abandoned',
                         auto_completed: 'true'
-                    }).catch(error => console.warn('Failed to complete abandoned objective:', error));
+                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned objective:', error));
                 });
             }
 
@@ -857,7 +857,7 @@ export class Abxr {
                     this.EventInteractionComplete(interactionName, InteractionType.eNull, 'abandoned', {
                         abandon_reason: 'manually_abandoned',
                         auto_completed: 'true'
-                    }).catch(error => console.warn('Failed to complete abandoned interaction:', error));
+                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned interaction:', error));
                 });
             }
 
