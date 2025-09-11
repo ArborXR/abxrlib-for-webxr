@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.40] - 2025-09-11
+
+### 🔨 Other Changes
+
+- upper and lowercase is represented better ([3ea8db7](../../commit/3ea8db750f09091c81cd78737e8f6d8e1ad6fb92))
+- Merged keyboard and prompt into a single window ([0be3d60](../../commit/0be3d60386ebb2230cc2bad88943bd8e978a6512))
+
 ## [1.0.39] - 2025-09-10
 
 ### 🐛 Bug Fixes
