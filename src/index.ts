@@ -2688,7 +2688,7 @@ export class Abxr {
             if (result === AbxrResult.eOk) {
                 // Extract module targets from auth response data (similar to Unity version)
                 const authResponseData = AbxrLibClient.getAuthResponseData();
-                const moduleTargets = this.ExtractModuleTargetsFromAuthData(authResponseData?.modules || []);
+                const moduleTargets = this.ExtractModuleTargets(authResponseData?.modules || []);
                 
                 // Notify with isReauthentication=true (matching Unity's behavior)
                 this.NotifyAuthCompleted(true, true, moduleTargets);
@@ -2790,12 +2790,12 @@ export class Abxr {
        
     // Helper method to extract module targets from auth response data (similar to Unity version)
     // Note: This method is intended for internal use by the authentication system
-    static ExtractModuleTargetsFromAuthData(authResponseData: any): string[] {
+    static ExtractModuleTargets(modules: any[]): string[] {
         const moduleTargets: string[] = [];
         
-        if (authResponseData && authResponseData.modules && Array.isArray(authResponseData.modules)) {
-            // Sort modules by order field (similar to Unity ExtractModuleTargets)
-            const sortedModules = authResponseData.modules.slice().sort((a: any, b: any) => {
+        if (modules && Array.isArray(modules)) {
+            // Sort modules by order field (matching Unity ExtractModuleTargets)
+            const sortedModules = modules.slice().sort((a: any, b: any) => {
                 const orderA = parseInt(a.order) || 0;
                 const orderB = parseInt(b.order) || 0;
                 return orderA - orderB;
@@ -3410,7 +3410,7 @@ export class Abxr {
                 
                 // Extract module targets from auth response data (similar to Unity version)
                 const authResponseData = AbxrLibClient.getAuthResponseData();
-                const moduleTargets = Abxr.ExtractModuleTargetsFromAuthData(authResponseData);
+                const moduleTargets = Abxr.ExtractModuleTargets(authResponseData?.modules || []);
                 
                 Abxr.NotifyAuthCompleted(true, false, moduleTargets);
                 this.setRequiresFinalAuth(false);
@@ -3675,7 +3675,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                             
                             // Extract module targets from auth response data (similar to Unity version)
                             const authResponseData = AbxrLibClient.getAuthResponseData();
-                            const moduleTargets = Abxr.ExtractModuleTargetsFromAuthData(authResponseData);
+                            const moduleTargets = Abxr.ExtractModuleTargets(authResponseData?.modules || []);
                             
                             Abxr.NotifyAuthCompleted(true, false, moduleTargets);
                         }
