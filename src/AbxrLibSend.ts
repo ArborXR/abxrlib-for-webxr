@@ -100,6 +100,7 @@ export class AbxrLibSend
 	// Note these are all blocking because everything is in this TypeScript implementation.  In the C++ they call the EventDeferred() variations to not chunk the main thread.
 	public static async EventAssessmentStart(szAssessmentName: string, dictMeta: AbxrDictStrings): Promise<AbxrResult>
 	{
+		dictMeta.set("type", "assessment");
 		dictMeta.set("verb", "started");
 		dictMeta.set("assessment_name", szAssessmentName);
 		// Store the start time.
@@ -114,6 +115,7 @@ export class AbxrLibSend
 		var	rpStartTime:	{vRet: DateTime} = {vRet: new DateTime()};
 		var	bGotValue:		boolean;
 
+		dictMeta.set("type", "assessment");
 		dictMeta.set("verb", "completed");
 		dictMeta.set("assessment_name", szAssessmentName);
 		dictMeta.set("score", szScore);
@@ -141,6 +143,7 @@ export class AbxrLibSend
 	}
 	public static async EventObjectiveStart(szObjectiveName: string, dictMeta: AbxrDictStrings): Promise<AbxrResult>
 	{
+		dictMeta.set("type", "objective");
 		dictMeta.set("verb", "started");
 		dictMeta.set("objective_name", szObjectiveName);
 		// Store the start time.
@@ -155,6 +158,7 @@ export class AbxrLibSend
 		var	rpStartTime:	{vRet: DateTime} = {vRet: new DateTime()};
 		var	bGotValue:		boolean;
 
+		dictMeta.set("type", "objective");
 		dictMeta.set("verb", "completed");
 		dictMeta.set("objective_name", szObjectiveName);
 		dictMeta.set("score", szScore);
