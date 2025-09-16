@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.42] - 2025-09-16
+
+### 🐛 Bug Fixes
+
+- bug fix for the missing type value ([c32700d](../../commit/c32700d53df733c00e42a2221aad9e20a1319854))
+- Fixed some timeout detection settings ([0307791](../../commit/030779162b3d652e19b984c9ed89bdad9df49c95))
+
+### 🔨 Other Changes
+
+- cleanup ExtractModuleTargets ([45a216f](../../commit/45a216f774001d0147264862730a72afbaa60991))
+
 ## [1.0.41] - 2025-09-11
 
 ### 🐛 Bug Fixes
