@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.43] - 2025-09-18
+
+### ✨ Features
+
+- Added ExecuteModuleSequence and updated tester and readme files for that and for better navigation between pages ([55fc395](../../commit/55fc3950519148dbea8e7f8a09ed42bc84f3bf67))
+
 ## [1.0.42] - 2025-09-16
 
 ### 🐛 Bug Fixes
