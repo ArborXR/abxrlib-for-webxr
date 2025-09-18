@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AbxrLib Module Sequence Test</title>
+  <script src="dist/abxrlib-for-webxr.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f0f0f0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .log {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    button {
+      background: #007cba;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #005a87;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AbxrLib ExecuteModuleSequence Test</h1>
+    
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #dee2e6;">
+      <h3 style="margin: 0 0 10px 0; color: #495057; font-size: 18px;">Navigation</h3>
+      <a href="index.html" style="display: inline-block; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; font-size: 14px; margin: 0 5px; transition: background-color 0.2s;">← Back to Main Menu</a>
+    </div>
+    
+    <p>This test demonstrates the ExecuteModuleSequence functionality which automatically calls module methods based on authentication response.</p>
+    
+    <div id="status" class="status info">Initializing...</div>
+    
+    <div>
+      <button id="executeBtn" onclick="executeModules()" disabled>Execute Module Sequence</button>
+      <button onclick="clearLog()">Clear Log</button>
+      <button onclick="resetModules()">Reset Module Progress</button>
+    </div>
+    
+    <div>
+      <strong>Console Output:</strong>
+      <div id="log" class="log"></div>
+    </div>
+  </div>
+
+  <script>
+    // Cookie utility function
+    function getCookie(name) {
+      const nameEQ = name + "=";
+      const ca = document.cookie.split(';');
+      
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) {
+          return c.substring(nameEQ.length, c.length);
+        }
+      }
+      return null;
+    }
+
+    // Logging utility
+    function log(message) {
+      const logEl = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      logEl.textContent += `[${timestamp}] ${message}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(message);
+    }
+
+    function clearLog() {
+      document.getElementById('log').textContent = '';
+    }
+
+    function setStatus(message, type = 'info') {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`;
+    }
+
+    // Example training module manager class
+    class TrainingModuleManager {
+      constructor() {
+        log('TrainingModuleManager initialized');
+      }
+
+      // Example module functions that would be called by ExecuteModuleSequence
+      // These match the pattern Module_ + {moduleTarget}
+      Module_b787_baggage_load() {
+        log('Entered module: b787-baggage-load');
+        log('  - Initializing baggage loading simulation');
+        log('  - Setting up UI components');
+        log('Completed module: b787-baggage-load');
+      }
+
+      Module_b787_refuel() {
+        log('Entered module: b787-refuel');
+        log('  - Starting refueling procedures');
+        log('  - Checking fuel systems');
+        log('Completed module: b787-refuel');
+      }
+
+      Module_b787_baggage_unload() {
+        log('Entered module: b787-baggage-unload');
+        log('  - Starting baggage unloading');
+        log('  - Updating manifest');
+        log('Completed module: b787-baggage-unload');
+      }
+
+      // Example with different naming convention
+      training_safety_check() {
+        log('Entered module: safety-check (using training_ prefix)');
+        log('  - Running safety protocols');
+        log('  - Validating equipment');
+        log('Completed module: safety-check');
+      }
+
+      training_emergency_procedures() {
+        log('Entered module: emergency-procedures (using training_ prefix)');
+        log('  - Loading emergency scenarios');
+        log('  - Preparing safety equipment');
+        log('Completed module: emergency-procedures');
+      }
+    }
+
+    // Global instance for module execution
+    const moduleManager = new TrainingModuleManager();
+
+    // Get appId from cookie with fallback to default
+    const defaultAppId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
+    const appId = getCookie('abxr_appid') || defaultAppId;
+    
+    // Initialize AbxrLib
+    log(`Initializing AbxrLib with appId: ${appId}`);
+    Abxr_init(appId);
+    
+    // Enable quit handler
+    Abxr.EnableQuitHandler(true);
+
+    let authCompleted = false;
+
+    // Authentication completion callback
+    Abxr.OnAuthCompleted(function(authData) {
+      log('=== AUTHENTICATION COMPLETED ===');
+      
+      if (!authData.success) {
+        log(`Authentication failed: ${authData.error}`);
+        setStatus('Authentication failed', 'error');
+        return;
+      }
+
+      log('Authentication successful!');
+      setStatus('Authentication successful - Ready to execute modules', 'success');
+      authCompleted = true;
+      
+      // Enable the execute button
+      document.getElementById('executeBtn').disabled = false;
+      
+      // Log user information
+      log('=== USER INFORMATION ===');
+      const userData = Abxr.GetUserData();
+      if (userData) {
+        log(`User ID: ${userData.id || 'N/A'}`);
+        log(`User Name: ${userData.name || 'N/A'}`);
+        log(`User Email: ${userData.email || 'N/A'}`);
+      }
+      
+      // Log module information
+      log('=== MODULE INFORMATION ===');
+      const modules = Abxr.GetModuleTargetList();
+      if (modules && modules.length > 0) {
+        log(`Found ${modules.length} modules:`);
+        modules.forEach((module, index) => {
+          log(`  ${index + 1}. ${module.name} (${module.target}) - Order: ${module.order}`);
+        });
+      } else {
+        log('No modules defined in authentication response');
+      }
+      
+      log(`Module count available: ${Abxr.GetModuleTargetCount()}`);
+    });
+
+    function executeModules() {
+      if (!authCompleted) {
+        log('ERROR: Authentication not completed yet');
+        return;
+      }
+
+      log('=== EXECUTING MODULE SEQUENCE ===');
+      
+      // Example 1: Using default Module_ prefix (matches Unity example)
+      log('Executing with "Module_" prefix...');
+      const executedCount1 = Abxr.ExecuteModuleSequence(moduleManager, 'Module_');
+      log(`Executed ${executedCount1} modules with Module_ prefix`);
+      
+      // Reset module progress to try again with different prefix
+      Abxr.ClearModuleTargets();
+      log('Module progress reset for second example');
+      
+      // Example 2: Using custom prefix
+      log('\nExecuting with "training_" prefix...');
+      const executedCount2 = Abxr.ExecuteModuleSequence(moduleManager, 'training_');
+      log(`Executed ${executedCount2} modules with training_ prefix`);
+      
+      log('=== MODULE SEQUENCE EXECUTION COMPLETED ===');
+    }
+
+    function resetModules() {
+      if (!authCompleted) {
+        log('ERROR: Authentication not completed yet');
+        return;
+      }
+      
+      log('Resetting module progress...');
+      Abxr.ClearModuleTargets();
+      log(`Module count available: ${Abxr.GetModuleTargetCount()}`);
+    }
+
+    // Initialize status
+    setStatus('Waiting for authentication...', 'info');
+    log('Page loaded - waiting for authentication to complete');
+  </script>
+</body>
+</html>

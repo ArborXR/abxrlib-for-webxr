@@ -4,6 +4,35 @@
   <meta charset="utf-8" />
   <title>Simple AbxrLib Test</title>
   <script src="dist/abxrlib-for-webxr.js"></script>
+  <style>
+    .nav-menu {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+      border: 1px solid #dee2e6;
+    }
+    .nav-menu h3 {
+      margin: 0 0 10px 0;
+      color: #495057;
+      font-size: 18px;
+    }
+    .nav-link {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: background-color 0.2s;
+      margin: 0 5px;
+    }
+    .nav-link:hover {
+      background: #0056b3;
+    }
+  </style>
   <script>
     // Cookie utility function (same as in index.html)
     function getCookie(name) {
@@ -200,6 +229,11 @@
 <body>
   <div class="container">
     <h1>AbxrLib Testers</h1>
+    
+    <div class="nav-menu">
+      <h3>Navigation</h3>
+      <a href="index.html" class="nav-link">← Back to Main Menu</a>
+    </div>
 
     <div class="section logevents">
       <h2>Send Logs & Events</h2>

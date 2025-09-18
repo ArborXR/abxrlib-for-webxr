@@ -2614,6 +2614,49 @@ export class Abxr {
         this.moduleIndex = 0;
         this.StorageRemoveEntry(this.MODULE_INDEX_KEY);
     }
+
+    /**
+     * Execute module functions in sequence by calling methods on the specified target object.
+     * Looks for methods with the pattern: {functionPrefix}{moduleTarget}{functionPostfix} in the target object.
+     * @param targetObject The object instance to search for module methods
+     * @param functionPrefix Prefix for the function names (default: "")
+     * @param functionPostfix Postfix for the function names (default: "")
+     * @returns Number of modules successfully executed
+     */
+    static ExecuteModuleSequence(targetObject: any, functionPrefix: string = '', functionPostfix: string = ''): number {
+        if (!targetObject) {
+            console.error('AbxrLib - ExecuteModuleSequence: targetObject cannot be null or undefined');
+            return 0;
+        }
+
+        let executedCount = 0;
+        let nextModule = this.GetModuleTarget();
+        
+        while (nextModule) {
+            let methodName = `${functionPrefix}${nextModule.moduleTarget}${functionPostfix}`;
+            methodName = methodName.replace(/-/g, '_');
+            methodName = methodName.replace(/ /g, '_');
+            
+            console.log(`AbxrLib - Starting module: ${nextModule.moduleTarget} using function: ${methodName}`);
+            
+            if (typeof targetObject[methodName] === 'function') {
+                try {
+                    targetObject[methodName]();
+                    executedCount++;
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    console.error(`AbxrLib - Error executing module function ${methodName}: ${errorMessage}`);
+                }
+            } else {
+                console.log(`AbxrLib - No function found: ${methodName}, trying next module.`);
+            }
+            
+            nextModule = this.GetModuleTarget();
+        }
+        
+        console.log(`AbxrLib - Module sequence completed. ${executedCount} modules executed.`);
+        return executedCount;
+    }
     
     // AuthCompleted subscription methods
     /**

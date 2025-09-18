@@ -68,6 +68,11 @@
   <div class="container">
     <h1>AbxrLib Device Detection Test</h1>
     
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #dee2e6;">
+      <h3 style="margin: 0 0 10px 0; color: #495057; font-size: 18px;">Navigation</h3>
+      <a href="index.html" style="display: inline-block; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; font-size: 14px; margin: 0 5px; transition: background-color 0.2s;">← Back to Main Menu</a>
+    </div>
+    
     <div class="info-box">
       <h3>Test Purpose</h3>
       <p>This test verifies that AbxrLib correctly detects and sets device information (OS version, browser/device model, and IP address) during authentication.</p>
@@ -134,10 +139,10 @@
       document.getElementById('status').textContent = 'Status: Testing device detection...';
       
       try {
-        // Import the device detection functions directly
-        // Note: This assumes the functions are exported from the bundle
-        if (typeof AbxrDetectAllDeviceInfo !== 'undefined') {
-          const deviceInfo = await AbxrDetectAllDeviceInfo();
+        // Use the device detection functions from AbxrLib
+        // AbxrDetectAllDeviceInfo is available as part of the AbxrLib global object
+        if (typeof AbxrLib.AbxrDetectAllDeviceInfo !== 'undefined') {
+          const deviceInfo = await AbxrLib.AbxrDetectAllDeviceInfo();
           
           document.getElementById('osVersion').textContent = deviceInfo.osVersion;
           document.getElementById('deviceModel').textContent = deviceInfo.deviceModel;
@@ -148,7 +153,7 @@
           document.getElementById('status').textContent = 'Status: Device detection completed successfully!';
           console.log('AbxrTester: Device detection test completed:', deviceInfo);
         } else {
-          throw new Error('Device detection functions not available in bundle');
+          throw new Error('Device detection functions not available in AbxrLib bundle');
         }
       } catch (error) {
         document.getElementById('status').textContent = 'Status: Device detection failed!';
@@ -187,9 +192,10 @@
           
           // Try to get the device info that was set during authentication
           try {
-            const osVersion = AbxrLibInit.get_OsVersion();
-            const deviceModel = AbxrLibInit.get_DeviceModel();
-            const ipAddress = AbxrLibInit.get_IpAddress();
+            // AbxrLibInit is available as part of the AbxrLib global object
+            const osVersion = AbxrLib.AbxrLibInit.get_OsVersion();
+            const deviceModel = AbxrLib.AbxrLibInit.get_DeviceModel();
+            const ipAddress = AbxrLib.AbxrLibInit.get_IpAddress();
             
             document.getElementById('osVersion').textContent = osVersion || 'Not set';
             document.getElementById('deviceModel').textContent = deviceModel || 'Not set';
@@ -199,7 +205,7 @@
             
             console.log('AbxrTester: Device info from authentication:', { osVersion, deviceModel, ipAddress });
           } catch (error) {
-            console.warn('AbxrTester: Could not retrieve device info from AbxrLibInit:', error);
+            console.warn('AbxrTester: Could not retrieve device info from AbxrLib.AbxrLibInit:', error);
           }
           
         } else if (Abxr.hasAuthenticationFailed()) {

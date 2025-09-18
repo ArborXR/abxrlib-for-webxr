@@ -692,6 +692,61 @@ Abxr.ClearModuleTargets();
 const learnerData = Abxr.GetLearnerData();
 ```
 
+#### Automatic Module Execution
+
+For applications with multiple modules, the **ExecuteModuleSequence** function provides a convenient way to automatically call module functions based on the authentication response. This feature mirrors the Unity implementation and makes it easy to handle sequential module execution.
+
+```javascript
+class TrainingManager {
+    constructor() {
+        // Set up authentication completion callback to execute modules
+        Abxr.OnAuthCompleted((authData) => {
+            if (authData.success) {
+                console.log('Authentication successful, executing modules...');
+                
+                // Execute all modules automatically using default "Module_" prefix
+                const executedCount = Abxr.ExecuteModuleSequence(this, 'Module_');
+                console.log(`Executed ${executedCount} modules`);
+            }
+        });
+    }
+
+    // Define module functions that will be called automatically
+    // Pattern: {prefix}{moduleTarget} with dashes/spaces converted to underscores
+    Module_b787_baggage_load() {
+        console.log('Starting baggage loading module');
+        this.loadBaggageSimulation();
+    }
+
+    Module_b787_refuel() {
+        console.log('Starting refueling module');
+        this.loadRefuelSimulation();
+    }
+
+    Module_safety_training() {
+        console.log('Starting safety training module');
+        this.loadSafetyProtocols();
+    }
+}
+
+// Initialize the training manager
+const trainingManager = new TrainingManager();
+```
+
+The `ExecuteModuleSequence` function:
+- Takes a target object, function prefix (default: ""), and function postfix (default: "")
+- Automatically calls methods matching the pattern: `{prefix}{moduleTarget}{postfix}`
+- Converts dashes and spaces in module targets to underscores
+- Returns the number of modules successfully executed
+- Handles errors gracefully and continues with remaining modules
+
+```javascript
+// Examples of different prefix patterns
+const executedCount1 = Abxr.ExecuteModuleSequence(moduleManager, 'Module_');
+const executedCount2 = Abxr.ExecuteModuleSequence(moduleManager, 'training_', '_start');
+const executedCount3 = Abxr.ExecuteModuleSequence(moduleManager); // No prefix/postfix
+```
+
 **Use Cases:**
 - **Reset state**: Reset module progress when starting a new experience
 - **Error recovery**: Clear module progress and restart from beginning
