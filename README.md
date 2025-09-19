@@ -857,30 +857,29 @@ interface AuthCompletedData {
 }
 ```
 
-#### Connection Status Check
+#### Getting Notified When Ready
 
-You can check if AbxrLib has an active connection to the server at any time:
+The recommended way to know when AbxrLib is ready to send data is to use the authentication completion callback:
 
 ```javascript
-// JavaScript Method Signature
-Abxr.ConnectionActive()
-
-// Example usage
-// Check app-level connection status  
-if (Abxr.ConnectionActive()) {
-    console.log("ABXR is connected and ready to send data");
-    Abxr.Event("app_ready");
-} else {
-    console.log("Connection not active - waiting for API authentication");
-    Abxr.OnAuthCompleted((authData) => {
-        if (authData.success) {
-            console.log("Connection established successfully!");
-        }
-    });
-}
+// Subscribe to authentication completion - the recommended approach
+Abxr.OnAuthCompleted((authData) => {
+    if (authData.success) {
+        console.log("Authentication successful - AbxrLib is ready!");       
+        StartGameFlow();    }
+    } else {
+        console.error("Authentication failed:", authData.error);
+        StartGameFlow();    }
+});
 ```
 
-**Returns:** Boolean indicating if the library has an active connection and can communicate with the server
+**Why OnAuthCompleted is better:**
+- **Event-driven**: No need to poll or check status repeatedly
+- **Immediate notification**: Called as soon as authentication completes
+- **Rich data**: Provides user info, modules, and detailed authentication data
+- **Error handling**: Includes specific error information when authentication fails
+
+**Note:** `Abxr.ConnectionActive()` is still available for advanced use cases, but `OnAuthCompleted` is the recommended approach for most developers.
 
 #### Accessing Learner Data
 
