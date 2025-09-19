@@ -849,14 +849,14 @@ export class Abxr {
             const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
             const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
 
-            // Complete running Assessments as abandoned
-            if (assessmentTimes && assessmentTimes.size > 0) {
-                const assessmentNames = Array.from(assessmentTimes.keys());
-                assessmentNames.forEach(assessmentName => {
-                    this.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
+            // Complete running Interactions as abandoned
+            if (interactionTimes && interactionTimes.size > 0) {
+                const interactionNames = Array.from(interactionTimes.keys());
+                interactionNames.forEach(interactionName => {
+                    this.EventInteractionComplete(interactionName, InteractionType.eNull, 'abandoned', {
                         abandon_reason: 'manually_abandoned',
                         auto_completed: 'true'
-                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned assessment:', error));
+                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned interaction:', error));
                 });
             }
 
@@ -871,14 +871,14 @@ export class Abxr {
                 });
             }
 
-            // Complete running Interactions as abandoned
-            if (interactionTimes && interactionTimes.size > 0) {
-                const interactionNames = Array.from(interactionTimes.keys());
-                interactionNames.forEach(interactionName => {
-                    this.EventInteractionComplete(interactionName, InteractionType.eNull, 'abandoned', {
+            // Complete running Assessments as abandoned
+            if (assessmentTimes && assessmentTimes.size > 0) {
+                const assessmentNames = Array.from(assessmentTimes.keys());
+                assessmentNames.forEach(assessmentName => {
+                    this.EventAssessmentComplete(assessmentName, 0, EventStatus.eFail, {
                         abandon_reason: 'manually_abandoned',
                         auto_completed: 'true'
-                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned interaction:', error));
+                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned assessment:', error));
                 });
             }
 
