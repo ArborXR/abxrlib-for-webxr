@@ -58,14 +58,14 @@
 </head>
 <body>
   <div class="container">
-    <h1>AbxrLib ExecuteModuleSequence Test</h1>
+    <h1>AbxrLib OnModuleTarget Event Test</h1>
     
     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #dee2e6;">
       <h3 style="margin: 0 0 10px 0; color: #495057; font-size: 18px;">Navigation</h3>
       <a href="index.html" style="display: inline-block; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; font-size: 14px; margin: 0 5px; transition: background-color 0.2s;">← Back to Main Menu</a>
     </div>
     
-    <p>This test demonstrates the ExecuteModuleSequence functionality which automatically calls module methods based on authentication response.</p>
+    <p>This test demonstrates the OnModuleTarget event system which provides flexible module handling similar to Unity's deep link integration.</p>
     
     <div id="status" class="status info">Initializing...</div>
     
@@ -116,53 +116,48 @@
       statusEl.className = `status ${type}`;
     }
 
-    // Example training module manager class
-    class TrainingModuleManager {
-      constructor() {
-        log('TrainingModuleManager initialized');
-      }
-
-      // Example module functions that would be called by ExecuteModuleSequence
-      // These match the pattern Module_ + {moduleTarget}
-      Module_b787_baggage_load() {
-        log('Entered module: b787-baggage-load');
-        log('  - Initializing baggage loading simulation');
-        log('  - Setting up UI components');
-        log('Completed module: b787-baggage-load');
-      }
-
-      Module_b787_refuel() {
-        log('Entered module: b787-refuel');
-        log('  - Starting refueling procedures');
-        log('  - Checking fuel systems');
-        log('Completed module: b787-refuel');
-      }
-
-      Module_b787_baggage_unload() {
-        log('Entered module: b787-baggage-unload');
-        log('  - Starting baggage unloading');
-        log('  - Updating manifest');
-        log('Completed module: b787-baggage-unload');
-      }
-
-      // Example with different naming convention
-      training_safety_check() {
-        log('Entered module: safety-check (using training_ prefix)');
-        log('  - Running safety protocols');
-        log('  - Validating equipment');
-        log('Completed module: safety-check');
-      }
-
-      training_emergency_procedures() {
-        log('Entered module: emergency-procedures (using training_ prefix)');
-        log('  - Loading emergency scenarios');
-        log('  - Preparing safety equipment');
-        log('Completed module: emergency-procedures');
+    // Module handler function (similar to Unity's deep link handler)
+    function handleModuleTarget(moduleTarget) {
+      log(`Handling module target: ${moduleTarget}`);
+      
+      // Your existing routing logic works here too
+      switch (moduleTarget) {
+        case 'b787-baggage-load':
+          log('Entered module: b787-baggage-load');
+          log('  - Initializing baggage loading simulation');
+          log('  - Setting up UI components');
+          log('Completed module: b787-baggage-load');
+          break;
+        case 'b787-refuel':
+          log('Entered module: b787-refuel');
+          log('  - Starting refueling procedures');
+          log('  - Checking fuel systems');
+          log('Completed module: b787-refuel');
+          break;
+        case 'b787-baggage-unload':
+          log('Entered module: b787-baggage-unload');
+          log('  - Starting baggage unloading');
+          log('  - Updating manifest');
+          log('Completed module: b787-baggage-unload');
+          break;
+        case 'safety-check':
+          log('Entered module: safety-check');
+          log('  - Running safety protocols');
+          log('  - Validating equipment');
+          log('Completed module: safety-check');
+          break;
+        case 'emergency-procedures':
+          log('Entered module: emergency-procedures');
+          log('  - Loading emergency scenarios');
+          log('  - Preparing safety equipment');
+          log('Completed module: emergency-procedures');
+          break;
+        default:
+          log(`Unknown module target: ${moduleTarget}`);
+          log('  - Loading default scene');
+          break;
       }
     }
-
-    // Global instance for module execution
-    const moduleManager = new TrainingModuleManager();
 
     // Get appId from cookie with fallback to default
     const defaultAppId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
@@ -176,6 +171,9 @@
     Abxr.EnableQuitHandler(true);
 
     let authCompleted = false;
+
+    // Subscribe to module target events (similar to Unity's OnModuleTarget)
+    Abxr.OnModuleTarget(handleModuleTarget);
 
     // Authentication completion callback
     Abxr.OnAuthCompleted(function(authData) {
@@ -226,19 +224,10 @@
 
       log('=== EXECUTING MODULE SEQUENCE ===');
       
-      // Example 1: Using default Module_ prefix (matches Unity example)
-      log('Executing with "Module_" prefix...');
-      const executedCount1 = Abxr.ExecuteModuleSequence(moduleManager, 'Module_');
-      log(`Executed ${executedCount1} modules with Module_ prefix`);
-      
-      // Reset module progress to try again with different prefix
-      Abxr.ClearModuleTargets();
-      log('Module progress reset for second example');
-      
-      // Example 2: Using custom prefix
-      log('\nExecuting with "training_" prefix...');
-      const executedCount2 = Abxr.ExecuteModuleSequence(moduleManager, 'training_');
-      log(`Executed ${executedCount2} modules with training_ prefix`);
+      // Execute all modules using the event-based approach
+      log('Executing modules using OnModuleTarget events...');
+      const executedCount = Abxr.ExecuteModuleSequence();
+      log(`Executed ${executedCount} modules via OnModuleTarget events`);
       
       log('=== MODULE SEQUENCE EXECUTION COMPLETED ===');
     }

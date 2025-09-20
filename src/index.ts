@@ -357,8 +357,10 @@ export {
     AbxrAIProxy,
     LogLevel as AbxrLogLevel,
     Partner as AbxrPartner,
-    InteractionType,
-    EventStatus,
+    EventStatus as AbxrEventStatus,
+    InteractionType as AbxrInteractionType,
+    StorageScope as AbxrStorageScope,
+    StoragePolicy as AbxrStoragePolicy,
     hasApiVersion,
     addApiVersion,
     AbxrDetectAllDeviceInfo,
@@ -437,14 +439,15 @@ export interface AuthCompletedData {
 }
 
 export type AuthCompletedCallback = (data: AuthCompletedData) => void;
+export type ModuleTargetCallback = (moduleTarget: string) => void;
 
 // Storage enums for enhanced storage control
-export enum StorageScope {
+enum StorageScope {
     device = 'device',
     user = 'user'
 }
 
-export enum StoragePolicy {
+enum StoragePolicy {
     keepLatest = 'keepLatest',
     appendHistory = 'appendHistory'
 }
@@ -496,6 +499,7 @@ export class Abxr {
     private static readonly MODULE_INDEX_KEY = 'abxr_module_index';
     private static latestAuthCompletedData: AuthCompletedData | null = null;
     private static authCompletedCallbacks: AuthCompletedCallback[] = [];
+    private static moduleTargetCallbacks: ModuleTargetCallback[] = [];
     private static superProperties: Map<string, string> = new Map();
     private static readonly SUPER_PROPERTIES_KEY = 'abxr_super_properties';
     private static quitHandlerEnabled: boolean = false;  // Disabled by default for WebXR
@@ -2616,16 +2620,14 @@ export class Abxr {
     }
 
     /**
-     * Execute module functions in sequence by calling methods on the specified target object.
-     * Looks for methods with the pattern: {functionPrefix}{moduleTarget}{functionPostfix} in the target object.
-     * @param targetObject The object instance to search for module methods
-     * @param functionPrefix Prefix for the function names (default: "")
-     * @param functionPostfix Postfix for the function names (default: "")
+     * Execute module sequence by triggering the OnModuleTarget event for each available module.
+     * Developers should subscribe to OnModuleTarget to handle module targets with their own logic.
+     * This approach gives developers full control over how to handle each module target.
      * @returns Number of modules successfully executed
      */
-    static ExecuteModuleSequence(targetObject: any, functionPrefix: string = '', functionPostfix: string = ''): number {
-        if (!targetObject) {
-            console.error('AbxrLib - ExecuteModuleSequence: targetObject cannot be null or undefined');
+    static ExecuteModuleSequence(): number {
+        if (this.moduleTargetCallbacks.length === 0) {
+            console.warn('AbxrLib - ExecuteModuleSequence: No subscribers to OnModuleTarget event. Subscribe to OnModuleTarget to handle module targets.');
             return 0;
         }
 
@@ -2633,22 +2635,17 @@ export class Abxr {
         let nextModule = this.GetModuleTarget();
         
         while (nextModule) {
-            let methodName = `${functionPrefix}${nextModule.moduleTarget}${functionPostfix}`;
-            methodName = methodName.replace(/-/g, '_');
-            methodName = methodName.replace(/ /g, '_');
+            console.log(`AbxrLib - Triggering OnModuleTarget event for module: ${nextModule.moduleTarget}`);
             
-            console.log(`AbxrLib - Starting module: ${nextModule.moduleTarget} using function: ${methodName}`);
-            
-            if (typeof targetObject[methodName] === 'function') {
-                try {
-                    targetObject[methodName]();
+            try {
+                if (nextModule.moduleTarget) {
+                    this.notifyModuleTargetCallbacks(nextModule.moduleTarget);
+                    console.log(`AbxrLib - Module ${nextModule.moduleTarget} executed via OnModuleTarget event`);
                     executedCount++;
-                } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    console.error(`AbxrLib - Error executing module function ${methodName}: ${errorMessage}`);
                 }
-            } else {
-                console.log(`AbxrLib - No function found: ${methodName}, trying next module.`);
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.error(`AbxrLib - Error executing OnModuleTarget event for module ${nextModule.moduleTarget}: ${errorMessage}`);
             }
             
             nextModule = this.GetModuleTarget();
@@ -2703,6 +2700,129 @@ export class Abxr {
      */
     static ClearAuthCompletedCallbacks(): void {
         this.authCompletedCallbacks = [];
+    }
+    
+    // Module Target Event Methods
+    
+    /**
+     * Subscribe to module target events for handling module navigation
+     * Perfect for deep link handling, scene navigation, or custom module routing
+     * @param callback Function to call when a module target should be handled
+     * 
+     * @example
+     * Abxr.OnModuleTarget((moduleTarget) => {
+     *     console.log(`Handling module: ${moduleTarget}`);
+     *     switch (moduleTarget) {
+     *         case 'safety-training':
+     *             loadScene('SafetyTrainingScene');
+     *             break;
+     *         case 'equipment-check':
+     *             loadScene('EquipmentCheckScene');
+     *             break;
+     *         default:
+     *             console.warn(`Unknown module target: ${moduleTarget}`);
+     *             loadScene('MainMenuScene');
+     *     }
+     * });
+     */
+    static OnModuleTarget(callback: ModuleTargetCallback): void {
+        if (typeof callback !== 'function') {
+            console.warn('AbxrLib: ModuleTarget callback must be a function');
+            return;
+        }
+        
+        this.moduleTargetCallbacks.push(callback);
+    }
+    
+    /**
+     * Remove a specific module target callback
+     * @param callback The callback function to remove
+     */
+    static RemoveModuleTargetCallback(callback: ModuleTargetCallback): void {
+        const index = this.moduleTargetCallbacks.indexOf(callback);
+        if (index > -1) {
+            this.moduleTargetCallbacks.splice(index, 1);
+        }
+    }
+    
+    /**
+     * Clear all module target callbacks
+     */
+    static ClearModuleTargetCallbacks(): void {
+        this.moduleTargetCallbacks = [];
+    }
+    
+    // URL/Anchor System for Web Apps
+    
+    /**
+     * Get module target from URL hash (similar to Android deep links)
+     * Supports URLs like: https://yourapp.com/#module=safety-training
+     * @returns Module target string if found in URL, null otherwise
+     */
+    static GetModuleFromUrl(): string | null {
+        if (typeof window === 'undefined') {
+            return null; // Not in browser environment
+        }
+        
+        const hash = window.location.hash;
+        if (!hash) {
+            return null;
+        }
+        
+        // Parse hash for module parameter
+        const params = new URLSearchParams(hash.substring(1)); // Remove # symbol
+        return params.get('module');
+    }
+    
+    /**
+     * Set module target in URL hash (similar to Android deep links)
+     * Updates URL to: https://yourapp.com/#module={moduleTarget}
+     * @param moduleTarget The module target to set in URL
+     */
+    static SetModuleInUrl(moduleTarget: string): void {
+        if (typeof window === 'undefined') {
+            return; // Not in browser environment
+        }
+        
+        const url = new URL(window.location.href);
+        url.hash = `module=${encodeURIComponent(moduleTarget)}`;
+        window.history.replaceState(null, '', url.toString());
+    }
+    
+    /**
+     * Clear module target from URL hash
+     */
+    static ClearModuleFromUrl(): void {
+        if (typeof window === 'undefined') {
+            return; // Not in browser environment
+        }
+        
+        const url = new URL(window.location.href);
+        url.hash = '';
+        window.history.replaceState(null, '', url.toString());
+    }
+    
+    /**
+     * Subscribe to URL hash changes for module targeting
+     * Useful for handling browser back/forward navigation
+     * @param callback Function to call when URL module changes
+     */
+    static OnUrlModuleChange(callback: ModuleTargetCallback): void {
+        if (typeof window === 'undefined') {
+            return; // Not in browser environment
+        }
+        
+        const handleHashChange = () => {
+            const moduleTarget = this.GetModuleFromUrl();
+            if (moduleTarget) {
+                callback(moduleTarget);
+            }
+        };
+        
+        window.addEventListener('hashchange', handleHashChange);
+        
+        // Also check initial hash on page load
+        setTimeout(handleHashChange, 0);
     }
     
     // Session Management Methods
@@ -2827,6 +2947,21 @@ export class Abxr {
                 callback(authData);
             } catch (error) {
                 console.error('AbxrLib: Error in authCompleted callback:', error);
+            }
+        }
+    }
+    
+    // Internal method to notify all module target subscribers
+    private static notifyModuleTargetCallbacks(moduleTarget: string): void {
+        if (this.moduleTargetCallbacks.length === 0) {
+            return;
+        }
+        
+        for (const callback of this.moduleTargetCallbacks) {
+            try {
+                callback(moduleTarget);
+            } catch (error) {
+                console.error('AbxrLib: Error in moduleTarget callback:', error);
             }
         }
     }
@@ -3574,9 +3709,13 @@ if (typeof window !== 'undefined') {
     (window as any).AbxrDetectDeviceModel = AbxrDetectDeviceModel;
     (window as any).AbxrDetectIpAddress = AbxrDetectIpAddress;
     
-    // Expose prefixed versions of LogLevel and Partner
+    // Expose prefixed versions of all enums
     (window as any).AbxrLogLevel = LogLevel;
     (window as any).AbxrPartner = Partner;
+    (window as any).AbxrEventStatus = EventStatus;
+    (window as any).AbxrInteractionType = InteractionType;
+    (window as any).AbxrStorageScope = StorageScope;
+    (window as any).AbxrStoragePolicy = StoragePolicy;
     console.log('AbxrLib: Loaded into global scope. Use Abxr for simple API or AbxrLib for advanced features.');
 }
 

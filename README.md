@@ -169,19 +169,18 @@ For information on implementing your own backend service or using other compatib
 ### Events
 ```javascript
 // JavaScript Event Method Signatures
-Abxr.Event(name)
-Abxr.Event(name, meta = null)
+static async Event(name: string, meta?: any): Promise<number>
 
-// Example Usage - Basic Event
+// Example Usage - Basic Event (fire-and-forget)
 Abxr.Event('button_pressed');
 
-// Example Usage - Event with Metadata
+// Example Usage - Event with Metadata (fire-and-forget)
 Abxr.Event('item_collected', {
     'item_type': 'coin',
     'item_value': '100'
 });
 
-// Example Usage - Event with Metadata
+// Example Usage - Event with Metadata (fire-and-forget)
 Abxr.Event('player_teleported', {
     'destination': 'spawn_point',
     'method': 'instant'
@@ -192,7 +191,9 @@ Abxr.Event('player_teleported', {
 - `name` (string): The name of the event. Use snake_case for better analytics processing.
 - `meta` (object): Optional. Additional key-value pairs describing the event.
 
-Logs a named event with optional metadata and spatial context. Timestamps and origin (`user` or `system`) are automatically appended.
+**Returns:** `Promise<number>` - Event ID or 0 if not authenticated (typically not awaited).
+
+Logs a named event with optional metadata and spatial context. Timestamps and origin (`user` or `system`) are automatically appended. **Recommended usage is fire-and-forget** - no need to await the result.
 
 ### Metadata Formats
 
@@ -304,15 +305,17 @@ These three event types work together to provide comprehensive tracking of user 
 // Status enumeration for all analytics events
 Abxr.EventStatus.ePass, Abxr.EventStatus.eFail, Abxr.EventStatus.eComplete, Abxr.EventStatus.eIncomplete, Abxr.EventStatus.eBrowsed
 
-Abxr.InteractionType.eNull, Abxr.InteractionType.eBool, Abxr.InteractionType.eSelect, Abxr.InteractionType.eText, Abxr.InteractionType.eRating, Abxr.InteractionType.eNumber, Abxr.InteractionType.eMatching, Abxr.InteractionType.ePerformance, Abxr.InteractionType.eSequencing
+Abxr.InteractionType.eNull, Abxr.InteractionType.eBool, Abxr.InteractionType.eSelect, Abxr.InteractionType.eText, Abxr.InteractionType.eRating, Abxr.InteractionType.eNumber
+
+> **Note:** Enums are also available in the global namespace as `AbxrEventStatus`, `AbxrInteractionType`, `AbxrLogLevel`, `AbxrStorageScope`, and `AbxrStoragePolicy` for compatibility, but the recommended approach is to use the `Abxr.*` namespace to avoid conflicts.
 
 // JavaScript Method Signatures
-Abxr.EventAssessmentStart(assessmentName, meta = null)
-Abxr.EventAssessmentComplete(assessmentName, score, status, meta = null)
-Abxr.EventObjectiveStart(objectiveName, meta = null)
-Abxr.EventObjectiveComplete(objectiveName, score, status, meta = null)
-Abxr.EventInteractionStart(interactionName, meta = null)
-Abxr.EventInteractionComplete(interactionName, type, result, meta = null)
+static async EventAssessmentStart(assessmentName: string, meta?: any): Promise<number>
+static async EventAssessmentComplete(assessmentName: string, score: number | string, eventStatus: Abxr.EventStatus, meta?: any): Promise<number>
+static async EventObjectiveStart(objectiveName: string, meta?: any): Promise<number>
+static async EventObjectiveComplete(objectiveName: string, score: number | string, eventStatus: Abxr.EventStatus, meta?: any): Promise<number>
+static async EventInteractionStart(interactionName: string, meta?: any): Promise<number>
+static async EventInteractionComplete(interactionName: string, interactionType: Abxr.InteractionType, response: string = "", meta?: any): Promise<number>
 
 // Assessment tracking (overall course/curriculum performance)
 Abxr.EventAssessmentStart('final_exam');
@@ -330,11 +333,11 @@ Abxr.EventInteractionComplete('select_option_a', Abxr.InteractionType.eSelect, '
 #### Additional Event Wrappers
 ```javascript
 // JavaScript Method Signatures
-Abxr.EventLevelStart(levelName, meta = null)
-Abxr.EventLevelComplete(levelName, score, meta = null)
-Abxr.EventCritical(eventName, meta = null)
+static async EventLevelStart(levelName: string, meta?: any): Promise<number>
+static async EventLevelComplete(levelName: string, score: number | string, meta?: any): Promise<number>
+static async EventCritical(label: string, meta?: any): Promise<number>
 
-// Level tracking 
+// Level tracking
 Abxr.EventLevelStart('level_1');
 Abxr.EventLevelComplete('level_1', 85);
 
@@ -408,11 +411,11 @@ Perfect for user attributes, app state, and device information that should be in
 The Log Methods provide straightforward logging functionality, similar to syslogs. These functions are available to developers by default, even across enterprise users, allowing for consistent and accessible logging across different deployment scenarios.
 
 ```javascript
-// JavaScript Event Method Signatures
-Abxr.Log(message, level = LogLevel.eInfo, meta = null)
+// JavaScript Method Signatures
+static Log(message: string, level: Abxr.LogLevel = Abxr.LogLevel.eInfo, meta?: any): void
 
 // Example usage
-Abxr.Log('Module started'); // Defaults to LogLevel.eInfo
+Abxr.Log('Module started'); // Defaults to Abxr.LogLevel.eInfo
 Abxr.Log('Module started', Abxr.LogLevel.eInfo);
 Abxr.Log('Debug information', Abxr.LogLevel.eDebug);
 ```
@@ -420,11 +423,11 @@ Abxr.Log('Debug information', Abxr.LogLevel.eDebug);
 Use standard or severity-specific logging:
 ```javascript
 // JavaScript Method Signatures
-Abxr.LogDebug(message, meta = null)
-Abxr.LogInfo(message, meta = null)
-Abxr.LogWarn(message, meta = null)
-Abxr.LogError(message, meta = null)
-Abxr.LogCritical(message, meta = null)
+static LogDebug(message: string, meta?: any): void
+static LogInfo(message: string, meta?: any): void
+static LogWarn(message: string, meta?: any): void
+static LogError(message: string, meta?: any): void
+static LogCritical(message: string, meta?: any): void
 
 // Example usage
 Abxr.LogError('Critical error in assessment phase');
@@ -441,19 +444,21 @@ The Storage API enables developers to store and retrieve learner/player progress
 
 ```javascript
 // JavaScript Method Signatures
-static async StorageSetEntry(name, entry, scope, policy = StoragePolicy.keepLatest): Promise<number>
-static async StorageSetDefaultEntry(entry, scope, policy = StoragePolicy.keepLatest): Promise<number>
-static async StorageGetEntry(name, scope): Promise<{[key: string]: string}[]>
-static async StorageGetDefaultEntry(scope): Promise<{[key: string]: string}[]>
-static StorageRemoveEntry(name, scope)
+static async StorageSetEntry(name: string, entry: {[key: string]: string}, scope: Abxr.StorageScope, policy: Abxr.StoragePolicy = Abxr.StoragePolicy.keepLatest): Promise<number>
+static async StorageSetDefaultEntry(entry: {[key: string]: string}, scope: Abxr.StorageScope, policy: Abxr.StoragePolicy = Abxr.StoragePolicy.keepLatest): Promise<number>
+static async StorageGetEntry(name: string, scope: Abxr.StorageScope): Promise<{[key: string]: string}[]>
+static async StorageGetDefaultEntry(scope: Abxr.StorageScope): Promise<{[key: string]: string}[]>
+static async StorageRemoveEntry(name: string = "state", scope: Abxr.StorageScope = Abxr.StorageScope.user): Promise<number>
+static async StorageRemoveDefaultEntry(scope: Abxr.StorageScope = Abxr.StorageScope.user): Promise<number>
+static async StorageRemoveMultipleEntries(scope: Abxr.StorageScope = Abxr.StorageScope.user): Promise<number>
 
 // Save progress data
-await Abxr.StorageSetEntry("state", {"progress": "75%"}, Abxr.StorageScope.user);
-await Abxr.StorageSetDefaultEntry({"progress": "75%"}, Abxr.StorageScope.user);
+Abxr.StorageSetEntry("state", {"progress": "75%"}, Abxr.StorageScope.user);
+Abxr.StorageSetDefaultEntry({"progress": "75%"}, Abxr.StorageScope.user);
 
 // Using StoragePolicy enum explicitly
-await Abxr.StorageSetEntry("state", {"progress": "75%"}, Abxr.StorageScope.user, Abxr.StoragePolicy.keepLatest);
-await Abxr.StorageSetEntry("history", {"action": "completed_level_1"}, Abxr.StorageScope.user, Abxr.StoragePolicy.appendHistory);
+Abxr.StorageSetEntry("state", {"progress": "75%"}, Abxr.StorageScope.user, Abxr.StoragePolicy.keepLatest);
+Abxr.StorageSetEntry("history", {"action": "completed_level_1"}, Abxr.StorageScope.user, Abxr.StoragePolicy.appendHistory);
 
 // Retrieve progress data (returns array of dictionaries, matching Unity's List<Dictionary<string, string>>)
 const result = await Abxr.StorageGetEntry("state", Abxr.StorageScope.user);
@@ -491,17 +496,19 @@ The Telemetry Methods provide comprehensive tracking of the XR environment. By d
 
 ```javascript
 // JavaScript Method Signatures
-Abxr.TelemetryEntry(name, meta)
+static async Telemetry(name: string, data: any): Promise<number>
 
-// Custom telemetry logging
-Abxr.TelemetryEntry("headset_position", { 
+// Custom telemetry logging (fire-and-forget)
+Abxr.Telemetry("headset_position", { 
     "x": "1.23", "y": "4.56", "z": "7.89" 
 });
 ```
 
 **Parameters:**
 - `name` (string): The type of telemetry data (e.g., "headset_position", "frame_rate", "battery_level").
-- `meta` (object): Key-value pairs of telemetry measurements.
+- `data` (object): Key-value pairs of telemetry measurements.
+
+**Returns:** `Promise<number>` - Telemetry entry ID or 0 if not authenticated (typically not awaited).
 
 ### AI Integration
 The AI Integration methods provide access to AI services for enhanced user interactions and experiences within XR environments. WebXR uses a Promise-based approach that allows developers to choose between blocking and non-blocking patterns.
@@ -610,7 +617,7 @@ Abxr.Event("level_complete", {
 Abxr.LogInfo("Player action", { "action": "jump" });
 // Result includes: app_version=1.2.3, user_type=premium, action=jump
 
-Abxr.TelemetryEntry("frame_rate", { "fps": "60" });
+Abxr.Telemetry("frame_rate", { "fps": "60" });
 // Result includes: app_version=1.2.3, user_type=premium, fps=60
 ```
 
@@ -625,7 +632,7 @@ Abxr.Event("puzzle_solving"); // Automatically includes {"duration": "30"}
 // Event wrapper functions automatically handle duration
 Abxr.EventAssessmentStart("final_exam");
 // ... 45 seconds later ...
-Abxr.EventAssessmentComplete("final_exam", 95, Abxr.EventStatus.Pass); // Automatically includes duration
+Abxr.EventAssessmentComplete("final_exam", 95, Abxr.EventStatus.ePass); // Automatically includes duration
 
 // Works for all start/complete pairs:
 // - EventAssessmentStart/Complete
@@ -645,9 +652,65 @@ Abxr.EventAssessmentComplete("final_exam", 95, Abxr.EventStatus.Pass); // Automa
 
 The **Module Target** feature enables developers to create single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application can automatically direct the user to that module within the application. Individual grades and results are then tracked for that specific assignment in the LMS.
 
-#### Getting Module Target Information
+#### Event-Based Module Handling (Recommended)
 
-You can process module targets sequentially:
+The recommended way to handle modules is using the `OnModuleTarget` event, which gives you full control over how to handle each module target. This event works perfectly with existing URL anchor handlers - you can use the same routing logic for both external URL anchors and LMS module targets:
+
+```javascript
+// Subscribe to authentication completion
+Abxr.OnAuthCompleted((authData) => {
+    if (authData.success) {
+        // Execute all available modules in sequence
+        const executedCount = Abxr.ExecuteModuleSequence();
+        console.log(`Executed ${executedCount} modules`);
+    }
+});
+
+// Subscribe to module target events
+Abxr.OnModuleTarget(handleModuleOrUrlTarget);
+
+// This method can handle BOTH external URL anchors AND module targets
+function handleModuleOrUrlTarget(moduleTarget) {
+    console.log(`Handling module target: ${moduleTarget}`);
+    
+    // Your existing URL anchor routing logic works here too
+    switch (moduleTarget) {
+        case 'safety-training':
+            loadScene('SafetyTrainingScene');
+            break;
+        case 'equipment-check':
+            loadScene('EquipmentCheckScene');
+            break;
+        default:
+            console.warn(`Unknown module target: ${moduleTarget}`);
+            loadScene('MainMenuScene');
+            break;
+    }
+}
+
+// Your existing URL anchor handler can call the same method
+function onUrlAnchorReceived(urlAnchor) {
+    const target = extractTargetFromUrl(urlAnchor); // "myapp.com/#module=safety-training" -> "safety-training"
+    handleModuleOrUrlTarget(target);
+}
+```
+
+**Method Signature:**
+```javascript
+static ExecuteModuleSequence(): number
+```
+
+**Features:**
+- **Event-Driven**: Uses the `OnModuleTarget` event for maximum flexibility
+- **Developer Control**: You decide how to handle each module target
+- **URL Anchor Integration**: Perfect for connecting to existing URL anchor handlers
+- **Unified Handling**: One method handles both external URL anchors and LMS module targets
+- **Error Handling**: Continues to next module if an event handler throws an exception
+- **Return Count**: Returns the number of successfully executed modules
+
+#### Manual Module Processing
+
+For more control, you can manually process modules:
 
 ```javascript
 // Get the next module target from available modules
@@ -664,95 +727,71 @@ if (nextTarget) {
 // Check remaining module count
 const remaining = Abxr.GetModuleTargetCount();
 console.log(`Modules remaining: ${remaining}`);
-
-// Get current user information
-const userId = Abxr.GetUserId();
-const userData = Abxr.GetUserData();
-const userEmail = Abxr.GetUserEmail();
 ```
 
-#### Module Target Management
-
-You can manage module progress and access rich module data:
+#### Module Management
 
 ```javascript
-// Check remaining modules and preview current
-const remaining = Abxr.GetModuleTargetCount();
-const nextModule = Abxr.GetModuleTarget();
-if (nextModule) {
-    console.log(`Next: ${nextModule.moduleTarget} (${remaining} remaining)`);
-}
-
 // Get all available modules
 const allModules = Abxr.GetModuleTargetList();
 console.log(`Total modules: ${allModules.length}`);
 
-// Reset progress or access learner data
+// Reset progress
 Abxr.ClearModuleTargets();
-const learnerData = Abxr.GetLearnerData();
+
+// Get current user information
+const userData = Abxr.GetUserData();
 ```
 
-#### Automatic Module Execution
+#### URL/Anchor System for Web Apps
 
-For applications with multiple modules, the **ExecuteModuleSequence** function provides a convenient way to automatically call module functions based on the authentication response. This feature mirrors the Unity implementation and makes it easy to handle sequential module execution.
+Web applications support URL-based module targeting (similar to Android deep links):
 
 ```javascript
-class TrainingManager {
-    constructor() {
-        // Set up authentication completion callback to execute modules
-        Abxr.OnAuthCompleted((authData) => {
-            if (authData.success) {
-                console.log('Authentication successful, executing modules...');
-                
-                // Execute all modules automatically using default "Module_" prefix
-                const executedCount = Abxr.ExecuteModuleSequence(this, 'Module_');
-                console.log(`Executed ${executedCount} modules`);
-            }
-        });
-    }
+// URL-based module targeting
+// Example URLs:
+// https://yourapp.com/#module=safety-training
+// https://yourapp.com/#module=equipment-check&user=john.doe
 
-    // Define module functions that will be called automatically
-    // Pattern: {prefix}{moduleTarget} with dashes/spaces converted to underscores
-    Module_b787_baggage_load() {
-        console.log('Starting baggage loading module');
-        this.loadBaggageSimulation();
-    }
-
-    Module_b787_refuel() {
-        console.log('Starting refueling module');
-        this.loadRefuelSimulation();
-    }
-
-    Module_safety_training() {
-        console.log('Starting safety training module');
-        this.loadSafetyProtocols();
-    }
+// Get module from URL
+const urlModule = Abxr.GetModuleFromUrl();
+if (urlModule) {
+    console.log(`Module from URL: ${urlModule}`);
 }
 
-// Initialize the training manager
-const trainingManager = new TrainingManager();
+// Set module in URL
+Abxr.SetModuleInUrl('safety-training');
+
+// Clear module from URL
+Abxr.ClearModuleFromUrl();
+
+// Subscribe to URL changes
+Abxr.OnUrlModuleChange((moduleTarget) => {
+    console.log(`URL module changed to: ${moduleTarget}`);
+    handleModuleOrUrlTarget(moduleTarget);
+});
+
+// Integration with authentication
+Abxr.OnAuthCompleted((authData) => {
+    if (authData.success) {
+        // Check URL for module target first
+        const urlModule = Abxr.GetModuleFromUrl();
+        if (urlModule) {
+            // Handle URL-based module targeting
+            handleModuleOrUrlTarget(urlModule);
+        } else {
+            // Fall back to normal module sequence
+            Abxr.ExecuteModuleSequence();
+        }
+    }
+});
 ```
 
-The `ExecuteModuleSequence` function:
-- Takes a target object, function prefix (default: ""), and function postfix (default: "")
-- Automatically calls methods matching the pattern: `{prefix}{moduleTarget}{postfix}`
-- Converts dashes and spaces in module targets to underscores
-- Returns the number of modules successfully executed
-- Handles errors gracefully and continues with remaining modules
-
-```javascript
-// Examples of different prefix patterns
-const executedCount1 = Abxr.ExecuteModuleSequence(moduleManager, 'Module_');
-const executedCount2 = Abxr.ExecuteModuleSequence(moduleManager, 'training_', '_start');
-const executedCount3 = Abxr.ExecuteModuleSequence(moduleManager); // No prefix/postfix
-```
-
-**Use Cases:**
-- **Reset state**: Reset module progress when starting a new experience
-- **Error recovery**: Clear module progress and restart from beginning
-- **Testing**: Reset module sequence during development
-- **Session management**: Clean up between different users
-- **Rich module data**: Access complete module information including names, IDs, and ordering
+**URL Anchor Benefits:**
+- **Bookmarkable URLs**: Users can bookmark specific modules
+- **Direct linking**: Share links to specific training modules
+- **Browser history**: Back/forward navigation works naturally
+- **Deep link compatibility**: Similar to Android deep links but web-native
 
 #### Persistence and Recovery
 
@@ -782,14 +821,14 @@ const nextTarget = Abxr.GetModuleTarget(); // Loads progress from storage if nee
 
 #### Best Practices
 
-1. **Set up auth callback early**: Subscribe to `OnAuthCompleted` before calling `Abxr_init()`
-2. **Handle module count**: Check `authData.moduleCount` and use `GetModuleTarget()` to get the next module to process
-3. **Use GetModuleTarget() sequentially**: Call after completing each module to get the next one
-4. **Validate modules**: Check if requested module exists before navigation
-5. **Progress tracking**: Use assessment events to track module completion
-6. **Error handling**: Handle cases where navigation fails or module is invalid
-7. **User feedback**: Show loading indicators during module transitions
-8. **Check completion**: Use `GetModuleTarget()` returning null to detect when all modules are done
+1. **Use OnModuleTarget Event**: Subscribe to `OnModuleTarget` for flexible module handling
+2. **Subscribe to OnAuthCompleted**: Subscribe before authentication starts
+3. **Connect to URL Anchors**: Use `OnModuleTarget` to connect to your existing URL anchor handling
+4. **Error Handling**: Handle cases where modules don't exist or fail
+5. **Progress Tracking**: Use assessment events to track module completion
+6. **Unsubscribe on Cleanup**: Always unsubscribe from events to prevent memory leaks
+7. **URL Integration**: Use URL anchor system for bookmarkable modules and direct linking
+8. **Unified Routing**: One method handles both external URL anchors and LMS module targets
 
 ### Authentication
 
@@ -1005,8 +1044,7 @@ The ABXRLib SDK provides full compatibility with Mixpanel's JavaScript SDK, maki
 
 ```javascript
 // JavaScript Method Signatures
-Abxr.Track(eventName)
-Abxr.Track(eventName, properties)
+static async Track(eventName: string, properties?: any): Promise<number>
 
 // Abxr compatibility methods for Mixpanel users
 Abxr.Track("user_signup");
@@ -1131,7 +1169,7 @@ Abxr.Register("user_type", "technician");
 Cognitive3D.Log("Assessment started");
 
 // After (ABXRLib):
-Abxr.Log("Assessment started"); // Defaults to LogLevel.eInfo
+Abxr.Log("Assessment started"); // Defaults to Abxr.LogLevel.eInfo
 // Or with specific levels:
 Abxr.Log("Assessment started", Abxr.LogLevel.eInfo);
 Abxr.Log("Error occurred", Abxr.LogLevel.eError);
@@ -1202,12 +1240,12 @@ The ABXRLib compatibility layer automatically converts common Cognitive3D result
 **Migration Path:**
 ```typescript
 // Phase 1: Direct replacement (immediate compatibility)
-await Abxr.StartEvent("training_module");        // Works immediately
-await Abxr.EndEvent("training_module", "pass");  // Automatic conversion
+Abxr.StartEvent("training_module");        // Works immediately
+Abxr.EndEvent("training_module", "pass");  // Automatic conversion
 
 // Phase 2: Enhanced features (recommended)  
-await Abxr.EventAssessmentStart("training_module");
-await Abxr.EventAssessmentComplete("training_module", 92, Abxr.EventStatus.ePass);
+Abxr.EventAssessmentStart("training_module");
+Abxr.EventAssessmentComplete("training_module", 92, Abxr.EventStatus.ePass);
 ```
 
 #### XR Dialog Customization
