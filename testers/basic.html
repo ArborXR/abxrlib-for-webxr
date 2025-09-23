@@ -129,7 +129,7 @@
 
     function completeAssessment() {
         console.log("AbxrTester: Executing Abxr.EventAssessmentComplete()");
-        Abxr.EventAssessmentComplete('Math Quiz 101', 85, Abxr.EventStatus.ePass, { questions_answered: 10 });
+        Abxr.EventAssessmentComplete('Math Quiz 101', 85, Abxr.EventStatus.Pass, { questions_answered: 10 });
     }
 
     // Objective Event Functions
@@ -140,7 +140,7 @@
 
     function completeObjective() {
         console.log("AbxrTester: Executing Abxr.EventObjectiveComplete()");
-        Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
+        Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.Pass, { attempts: 2 });
     }
   </script>
   <style>
@@ -262,11 +262,11 @@
       </code>
       <button onclick="completeObjective()">Objective Complete</button>
       <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
-        Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
+        Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.Pass, { attempts: 2 });
       </code>
       <button onclick="completeAssessment()">Assessment Complete</button>
       <code style="background: #e9ecef; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
-        Abxr.EventAssessmentComplete('Math Quiz 101', 85, Abxr.EventStatus.ePass, { questions_answered: 10 });
+        Abxr.EventAssessmentComplete('Math Quiz 101', 85, Abxr.EventStatus.Pass, { questions_answered: 10 });
       </code>
     </div>
     
@@ -312,9 +312,9 @@
             Abxr.Event('user_action', { action: 'button_click' });<br/>
             Abxr.LogDebug('User clicked button');<br/>
             Abxr.EventAssessmentStart('Math Quiz 101', { difficulty: 'intermediate' });<br/>
-            Abxr.EventAssessmentComplete('Math Quiz 101', 85, Abxr.EventStatus.ePass, { questions_answered: 10 });<br/>
+            Abxr.EventAssessmentComplete('Math Quiz 101', 85, Abxr.EventStatus.Pass, { questions_answered: 10 });<br/>
             Abxr.EventObjectiveStart('Learn Fractions', { module: 'basic_math' });<br/>
-            Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.ePass, { attempts: 2 });
+            Abxr.EventObjectiveComplete('Learn Fractions', '92', Abxr.EventStatus.Pass, { attempts: 2 });
           </code>
         </div>
 
