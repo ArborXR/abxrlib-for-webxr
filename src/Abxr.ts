@@ -30,10 +30,6 @@ import { getXRDialogTemplate, getXRDialogStyles, XRDialogConfig, XRVirtualKeyboa
 // Import device detection utilities
 import { AbxrDetectAllDeviceInfo, AbxrDetectOsVersion, AbxrDetectDeviceModel, AbxrDetectIpAddress } from './network/utils/AbxrDeviceDetection';
 
-/**
- * @region Private Fields and Constants
- */
-
 // Initialize all static members
 AbxrLibInit.InitStatics();
 AbxrLibStorage.InitStatics();
@@ -46,10 +42,11 @@ declare const __ABXR_PACKAGE_VERSION__: string;
 
 /**
  * @region Utility Functions
+ * WebXR only support functions in global scope
  */
 
 // Utility function to generate a GUID
-function generateGuid(): string {
+function AbxrGenerateGuid(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -58,7 +55,7 @@ function generateGuid(): string {
 }
 
 // Utility function to get package version safely
-function getPackageVersion(): string {
+function AbxrGetPackageVersion(): string {
     // Webpack replaces __ABXR_PACKAGE_VERSION__ with actual version at build time
     if (typeof __ABXR_PACKAGE_VERSION__ !== 'undefined') {
         return __ABXR_PACKAGE_VERSION__;
@@ -76,7 +73,7 @@ function getPackageVersion(): string {
 }
 
 // Utility function to get URL parameters
-function getUrlParameter(name: string): string | null {
+function AbxrGetUrlParameter(name: string): string | null {
     if (typeof window === 'undefined') return null;
     
     const urlParams = new URLSearchParams(window.location.search);
@@ -84,7 +81,7 @@ function getUrlParameter(name: string): string | null {
 }
 
 // Cookie utility functions
-function setCookie(name: string, value: string, days: number = 30): void {
+function AbxrSetCookie(name: string, value: string, days: number = 30): void {
     if (typeof document === 'undefined') return;
     
     const expires = new Date();
@@ -95,7 +92,7 @@ function setCookie(name: string, value: string, days: number = 30): void {
     document.cookie = `${name}=${value}; expires=${expiresStr}; path=/; SameSite=Lax`;
 }
 
-function getCookie(name: string): string | null {
+function AbxrGetCookie(name: string): string | null {
     if (typeof document === 'undefined') return null;
     
     const nameEQ = name + "=";
@@ -112,7 +109,7 @@ function getCookie(name: string): string | null {
 }
 
 // Security validation functions
-function isValidUrl(url: string): boolean {
+function AbxrIsValidUrl(url: string): boolean {
     try {
         const parsedUrl = new URL(url);
         // Only allow HTTP and HTTPS protocols
@@ -122,7 +119,7 @@ function isValidUrl(url: string): boolean {
     }
 }
 
-function isValidAlphanumericId(value: string): boolean {
+function AbxrIsValidAlphanumericId(value: string): boolean {
     // Allow alphanumeric characters plus hyphens and underscores, reasonable length
     // Used for appId, orgId, and authSecret validation
     const pattern = /^[A-Za-z0-9_-]{8,128}$/;
@@ -130,7 +127,7 @@ function isValidAlphanumericId(value: string): boolean {
 }
 
 // URL version handling utilities
-function hasApiVersion(url: string): boolean {
+function AbxrHasApiVersion(url: string): boolean {
     try {
         const parsedUrl = new URL(url);
         // Check if path contains version pattern like /v1/, /v2/, /api/v1/, etc.
@@ -141,7 +138,7 @@ function hasApiVersion(url: string): boolean {
     }
 }
 
-function addApiVersion(url: string, version: string = 'v1'): string {
+function AbxrAddApiVersion(url: string, version: string = 'v1'): string {
     try {
         const parsedUrl = new URL(url);
         // Ensure the path ends with /
@@ -149,7 +146,7 @@ function addApiVersion(url: string, version: string = 'v1'): string {
             parsedUrl.pathname += '/';
         }
         // Add version if not already present
-        if (!hasApiVersion(url)) {
+        if (!AbxrHasApiVersion(url)) {
             parsedUrl.pathname += `${version}/`;
         }
         return parsedUrl.toString();
@@ -160,7 +157,7 @@ function addApiVersion(url: string, version: string = 'v1'): string {
     }
 }
 
-function sanitizeForXml(value: string): string {
+function AbxrSanitizeForXml(value: string): string {
     return value
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -169,7 +166,7 @@ function sanitizeForXml(value: string): string {
         .replace(/'/g, '&#39;');
 }
 
-function sanitizeForLog(value: string): string {
+function AbxrSanitizeForLog(value: string): string {
     // Remove potential log injection characters and limit length
     return value
         .replace(/[\r\n\t]/g, ' ')
@@ -177,7 +174,7 @@ function sanitizeForLog(value: string): string {
         .substring(0, 200); // Limit length
 }
 
-function validateAndSanitizeParameter(name: string, value: string): string | null {
+function AbxrValidateAndSanitizeParameter(name: string, value: string): string | null {
     if (!value || value.length === 0) {
         return null;
     }
@@ -185,8 +182,8 @@ function validateAndSanitizeParameter(name: string, value: string): string | nul
     // Validate based on parameter type
     switch (name) {
         case 'abxr_rest_url':
-            if (!isValidUrl(value)) {
-                console.warn(`AbxrLib: Invalid REST URL format: ${sanitizeForLog(value)}`);
+            if (!AbxrIsValidUrl(value)) {
+                console.warn(`AbxrLib: Invalid REST URL format: ${AbxrSanitizeForLog(value)}`);
                 return null;
             }
             break;
@@ -194,8 +191,8 @@ function validateAndSanitizeParameter(name: string, value: string): string | nul
         case 'abxr_orgid':
         case 'abxr_appid':
         case 'abxr_auth_secret':
-            if (!isValidAlphanumericId(value)) {
-                console.warn(`AbxrLib: Invalid format for ${name}: ${sanitizeForLog(value)}`);
+            if (!AbxrIsValidAlphanumericId(value)) {
+                console.warn(`AbxrLib: Invalid format for ${name}: ${AbxrSanitizeForLog(value)}`);
                 return null;
             }
             break;
@@ -213,7 +210,7 @@ function validateAndSanitizeParameter(name: string, value: string): string | nul
 }
 
 // Helper function to determine if we should try version fallback for URL errors
-function shouldTryVersionFallback(errorMessage: string): boolean {
+function AbxrShouldTryVersionFallback(errorMessage: string): boolean {
     if (!errorMessage) return false;
     
     // Look for common CORS/redirect error indicators
@@ -233,9 +230,9 @@ function shouldTryVersionFallback(errorMessage: string): boolean {
 }
 
 // Enhanced function to handle REST URL with automatic version fallback
-function getAbxrRestUrlWithFallback(fallback?: string): string {
+function AbxrGetRestUrlWithFallback(fallback?: string): string {
     // Get the URL using normal priority
-    const restUrl = getAbxrParameter('abxr_rest_url', fallback);
+    const restUrl = AbxrGetParameter('abxr_rest_url', fallback);
     
     // For REST URLs, we might need to add version fallback logic later
     // For now, just return the URL as-is
@@ -243,22 +240,22 @@ function getAbxrRestUrlWithFallback(fallback?: string): string {
 }
 
 // Utility function to get abxr parameter with priority: GET params -> cookies -> fallback
-function getAbxrParameter(name: string, fallback?: string): string | undefined {
+function AbxrGetParameter(name: string, fallback?: string): string | undefined {
     // Priority 1: GET parameters
-    const urlParam = getUrlParameter(name);
+    const urlParam = AbxrGetUrlParameter(name);
     if (urlParam) {
-        const sanitizedParam = validateAndSanitizeParameter(name, urlParam);
+        const sanitizedParam = AbxrValidateAndSanitizeParameter(name, urlParam);
         if (sanitizedParam) {
             // Save to cookie for future use
-            setCookie(name, sanitizedParam);
+            AbxrSetCookie(name, sanitizedParam);
             return sanitizedParam;
         }
     }
     
     // Priority 2: Cookies
-    const cookieParam = getCookie(name);
+    const cookieParam = AbxrGetCookie(name);
     if (cookieParam) {
-        const sanitizedParam = validateAndSanitizeParameter(name, cookieParam);
+        const sanitizedParam = AbxrValidateAndSanitizeParameter(name, cookieParam);
         if (sanitizedParam) {
             return sanitizedParam;
         }
@@ -269,17 +266,17 @@ function getAbxrParameter(name: string, fallback?: string): string | undefined {
 }
 
 // Utility function to get or create device ID
-function getOrCreateDeviceId(): string {
+function AbxrGetOrCreateDeviceId(): string {
     if (typeof window === 'undefined') {
         // Not in browser environment, generate a new GUID
-        return generateGuid();
+        return AbxrGenerateGuid();
     }
     
     const storageKey = 'abxr_device_id';
     let deviceId = localStorage.getItem(storageKey);
     
     if (!deviceId) {
-        deviceId = generateGuid();
+        deviceId = AbxrGenerateGuid();
         localStorage.setItem(storageKey, deviceId);
     }
     
@@ -287,7 +284,7 @@ function getOrCreateDeviceId(): string {
 }
 
 // Utility function to detect if virtual keyboard should be shown by default
-function shouldShowVirtualKeyboardByDefault(): boolean {
+function AbxrShouldShowVirtualKeyboardByDefault(): boolean {
     if (typeof window === 'undefined') {
         return false; // Non-browser environment
     }
@@ -320,12 +317,12 @@ function shouldShowVirtualKeyboardByDefault(): boolean {
 class AbxrLibBaseSetup {
     public static SetAppConfig(customConfig?: string): void
     {
-        const restUrl = getAbxrParameter('abxr_rest_url', 'https://lib-backend.xrdm.app/v1/') || 'https://lib-backend.xrdm.app/v1/';
-        if (getUrlParameter('abxr_rest_url')) {
-            console.log(`AbxrLib: Using REST URL from GET parameter: ${sanitizeForLog(restUrl)}`);
+        const restUrl = AbxrGetParameter('abxr_rest_url', 'https://lib-backend.xrdm.app/v1/') || 'https://lib-backend.xrdm.app/v1/';
+        if (AbxrGetUrlParameter('abxr_rest_url')) {
+            console.log(`AbxrLib: Using REST URL from GET parameter: ${AbxrSanitizeForLog(restUrl)}`);
         }
-        else if (getCookie('abxr_rest_url')) {
-            console.log(`AbxrLib: Using REST URL from cookie: ${sanitizeForLog(restUrl)}`);
+        else if (AbxrGetCookie('abxr_rest_url')) {
+            console.log(`AbxrLib: Using REST URL from cookie: ${AbxrSanitizeForLog(restUrl)}`);
         }
         else {
             //console.log(`AbxrLib: Using default REST URL: ${restUrl}`);
@@ -333,7 +330,7 @@ class AbxrLibBaseSetup {
         const defaultConfig: string = '<?xml version="1.0" encoding="utf-8" ?>' +
             '<configuration>' +
                 '<appSettings>' +
-                    `<add key="REST_URL" value="${sanitizeForXml(restUrl)}"/>` +
+                    `<add key="REST_URL" value="${AbxrSanitizeForXml(restUrl)}"/>` +
                     '<add key="SendRetriesOnFailure" value="3"/>' +
                     '<!-- Bandwidth config parameters. -->' +
                     '<add key="SendRetryInterval" value="00:00:03"/>' +
@@ -380,8 +377,8 @@ export {
     AbxrStorage,
     AbxrTelemetry,
     AbxrAIProxy,
-    hasApiVersion,
-    addApiVersion,
+    AbxrHasApiVersion,
+    AbxrAddApiVersion,
     AbxrDetectAllDeviceInfo,
     AbxrDetectOsVersion,
     AbxrDetectDeviceModel,
@@ -484,6 +481,10 @@ interface AbxrCurrentSessionData {
 export class Abxr {
     private static readonly RUNNING_EVENTS_KEY = 'abxr_running_events';
     
+    /**
+     * @region Constructor
+     */
+
     // Static initialization
     static {
         Abxr.loadSuperMetaData();
@@ -491,6 +492,10 @@ export class Abxr {
         // Call Abxr.EnableQuitHandler() explicitly if needed for single-page apps
     }
     
+    /**
+     * @region Specialized Dictionary
+     */
+
     // Expose commonly used types and enums for easy access
     static readonly AbxrDictStrings = AbxrDictStrings;
     
@@ -756,551 +761,6 @@ export class Abxr {
      */
     static GetLearnerData(): any | null {
         return this.latestAuthCompletedData?.userData || null;
-    }
-
-    /**
-     * @region Quit Handler
-     */
-
-    // Quit handler state
-    private static quitHandlerEnabled: boolean = false;  // Disabled by default for WebXR
-
-    /**
-     * Enable application quit detection for single-page WebXR applications
-     * WARNING: Do NOT use this for multi-page WebXR apps as it will incorrectly close events on navigation
-     * For multi-page apps, use manual event management or implement custom persistence
-     * @param enablePersistence If true, running events will be saved to localStorage and restored on page load
-     */
-    static EnableQuitHandler(enablePersistence: boolean = true): void {
-        if (typeof window === 'undefined') {
-            console.warn('AbxrLib: EnableQuitHandler called in non-browser environment');
-            return;
-        }
-
-        if (this.quitHandlerEnabled) {
-            console.warn('AbxrLib: Quit handler already enabled');
-            return;
-        }
-
-        console.log('AbxrLib: Enabling quit handler' + (enablePersistence ? ' with persistence' : ''));
-        this.quitHandlerEnabled = true;
-
-        if (enablePersistence) {
-            // Check if we should restore or clear zombie events
-            this.handlePersistenceOnLoad();
-        }
-
-        // More conservative approach - only handle events that likely indicate app close
-        // NOT beforeunload/unload which fire on navigation
-        
-        // Handle visibility change with timeout (user might come back)
-        let visibilityTimeout: NodeJS.Timeout | null = null;
-        let pageHiddenTime: number | null = null;
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                pageHiddenTime = Date.now();
-                //console.log('AbxrLib: Page hidden, starting quit detection timeout');
-                // Start a timeout - if page stays hidden for 3 hours, consider it closed
-                visibilityTimeout = setTimeout(() => {
-                    console.log('AbxrLib: Page hidden for 3 hours, closing running events');
-                    if (enablePersistence) {
-                        this.saveRunningEventsToStorage();
-                    }
-                    this.closeRunningEvents();
-                }, 10800000); // 3 hours = 3 * 60 * 60 * 1000 milliseconds
-            } else {
-                // Page became visible again, cancel the timeout
-                if (visibilityTimeout) {
-                    if (pageHiddenTime) {
-                        const hiddenDuration = Date.now() - pageHiddenTime;
-                        const seconds = Math.round(hiddenDuration / 1000);
-                        const minutes = Math.floor(seconds / 60);
-                        const hours = Math.floor(minutes / 60);
-                        
-                        let durationText = '';
-                        if (hours > 0) {
-                            durationText = `${hours}h ${minutes % 60}m ${seconds % 60}s`;
-                        } else if (minutes > 0) {
-                            durationText = `${minutes}m ${seconds % 60}s`;
-                        } else {
-                            durationText = `${seconds}s`;
-                        }
-                        
-                        console.log(`AbxrLib: Page visible again after ${durationText}, canceling quit detection`);
-                        pageHiddenTime = null;
-                    } else {
-                        console.log('AbxrLib: Page visible again, canceling quit detection');
-                    }
-                    clearTimeout(visibilityTimeout);
-                    visibilityTimeout = null;
-                }
-            }
-        });
-
-        // Handle page freeze (mobile browsers when app goes to background)
-        document.addEventListener('freeze', () => {
-            console.log('AbxrLib: Page frozen, saving running events');
-            if (enablePersistence) {
-                this.saveRunningEventsToStorage();
-            }
-        });
-
-        // Handle page resume (mobile browsers when app comes back to foreground)
-        document.addEventListener('resume', () => {
-            console.log('AbxrLib: Page resumed');
-            if (enablePersistence) {
-                this.restoreRunningEventsFromStorage();
-            }
-        });
-
-        // Handle beforeunload - try to complete events properly
-        window.addEventListener('beforeunload', (event) => {
-            const runningCount = this.getRunningEventsCount();
-            if (runningCount > 0) {
-                console.log(`AbxrLib: Page unloading with ${runningCount} running events - attempting to complete them`);
-                
-                // Try to complete events immediately (synchronous)
-                this.closeRunningEvents();
-                
-                // Also save to persistence as backup
-                if (enablePersistence) {
-                    this.saveRunningEventsToStorage();
-                }
-            }
-        });
-    }
-
-    /**
-     * Disable the quit handler (for debugging or manual control)
-     */
-    static DisableQuitHandler(): void {
-        this.quitHandlerEnabled = false;
-        console.log('AbxrLib: Quit handler disabled');
-    }
-
-    /**
-     * Check if quit handler is enabled
-     */
-    static IsQuitHandlerEnabled(): boolean {
-        return this.quitHandlerEnabled;
-    }
-
-    /**
-     * Get count of currently running events
-     * @private
-     */
-    private static getRunningEventsCount(): number {
-        try {
-            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
-            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
-            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
-
-            const assessmentCount = assessmentTimes ? assessmentTimes.size : 0;
-            const objectiveCount = objectiveTimes ? objectiveTimes.size : 0;
-            const interactionCount = interactionTimes ? interactionTimes.size : 0;
-            
-            return assessmentCount + objectiveCount + interactionCount;
-        } catch (error) {
-            console.warn('AbxrLib: Error counting running events:', error);
-            return 0;
-        }
-    }
-
-    /**
-     * Save running events to localStorage for persistence across page navigation
-     * @private
-     */
-    private static saveRunningEventsToStorage(): void {
-        try {
-            const runningEvents = {
-                assessments: Array.from(AbxrEvent.m_dictAssessmentStartTimes.entries()).map(([name, time]) => ({
-                    name,
-                    startTime: time.ToInt64()
-                })),
-                objectives: Array.from(AbxrEvent.m_dictObjectiveStartTimes.entries()).map(([name, time]) => ({
-                    name,
-                    startTime: time.ToInt64()
-                })),
-                interactions: Array.from(AbxrEvent.m_dictInteractionStartTimes.entries()).map(([name, time]) => ({
-                    name,
-                    startTime: time.ToInt64()
-                })),
-                savedAt: Date.now()
-            };
-
-            localStorage.setItem(this.RUNNING_EVENTS_KEY, JSON.stringify(runningEvents));
-            console.log(`AbxrLib: Saved ${this.getRunningEventsCount()} running events to storage`);
-        } catch (error) {
-            console.warn('AbxrLib: Error saving running events to storage:', error);
-        }
-    }
-
-    /**
-     * Handle persistence on page load - restore valid events or clear zombies
-     * @private
-     */
-    private static handlePersistenceOnLoad(): void {
-        // Delay this check to allow authentication to attempt first
-        setTimeout(() => {
-            if (this.connectionActive) {
-                // Authentication successful - restore any valid events
-                this.restoreRunningEventsFromStorage();
-            } else {
-                // Authentication failed/invalid - clear any zombie events
-                this.clearZombieEvents();
-            }
-        }, 2000); // Wait 2 seconds for auth to complete
-    }
-
-    /**
-     * Clear zombie events when authentication is invalid
-     * @private
-     */
-    private static clearZombieEvents(): void {
-        try {
-            const stored = localStorage.getItem(this.RUNNING_EVENTS_KEY);
-            if (stored) {
-                console.log('AbxrLib: Authentication invalid but stored events found - clearing zombie events');
-                localStorage.removeItem(this.RUNNING_EVENTS_KEY);
-            }
-        } catch (error) {
-            console.warn('AbxrLib: Error clearing zombie events:', error);
-        }
-    }
-
-    /**
-     * Restore running events from localStorage after page navigation
-     * @private
-     */
-    private static restoreRunningEventsFromStorage(): void {
-        try {
-            const stored = localStorage.getItem(this.RUNNING_EVENTS_KEY);
-            if (!stored) return;
-
-            const runningEvents = JSON.parse(stored);
-            
-            let restoredCount = 0;
-
-            // Restore assessments
-            if (runningEvents.assessments) {
-                runningEvents.assessments.forEach((event: any) => {
-                    const startTime = new DateTime().FromInt64(event.startTime);
-                    AbxrEvent.m_dictAssessmentStartTimes.set(event.name, startTime);
-                    restoredCount++;
-                });
-            }
-
-            // Restore objectives
-            if (runningEvents.objectives) {
-                runningEvents.objectives.forEach((event: any) => {
-                    const startTime = new DateTime().FromInt64(event.startTime);
-                    AbxrEvent.m_dictObjectiveStartTimes.set(event.name, startTime);
-                    restoredCount++;
-                });
-            }
-
-            // Restore interactions
-            if (runningEvents.interactions) {
-                runningEvents.interactions.forEach((event: any) => {
-                    const startTime = new DateTime().FromInt64(event.startTime);
-                    AbxrEvent.m_dictInteractionStartTimes.set(event.name, startTime);
-                    restoredCount++;
-                });
-            }
-
-            if (restoredCount > 0) {
-                console.log(`AbxrLib: Restored ${restoredCount} running events from storage`);
-            }
-
-            // Clear the stored events since they've been restored
-            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
-        } catch (error) {
-            console.warn('AbxrLib: Error restoring running events from storage:', error);
-            // Clear potentially corrupted data
-            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
-        }
-    }
-
-    /**
-     * Manually save current running events to storage (for developer use)
-     */
-    static SaveRunningEventsToStorage(): void {
-        if (!this.quitHandlerEnabled) {
-            console.warn('AbxrLib: SaveRunningEventsToStorage called but quit handler not enabled');
-            return;
-        }
-        this.saveRunningEventsToStorage();
-    }
-
-    /**
-     * Manually restore running events from storage (for developer use) 
-     */
-    static RestoreRunningEventsFromStorage(): void {
-        if (!this.quitHandlerEnabled) {
-            console.warn('AbxrLib: RestoreRunningEventsFromStorage called but quit handler not enabled');
-            return;
-        }
-        this.restoreRunningEventsFromStorage();
-    }
-
-    /**
-     * Clear any stored running events from localStorage without restoring them
-     * Useful when you want to abandon previously saved events
-     */
-    static ClearStoredRunningEvents(): void {
-        try {
-            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
-            console.log('AbxrLib: Cleared stored running events from localStorage');
-        } catch (error) {
-            console.warn('AbxrLib: Error clearing stored running events:', error);
-        }
-    }
-
-    /**
-     * Clear currently running events and complete them as abandoned
-     * Use this when you want to clean up "zombie" events
-     */
-    static CompleteAllRunningEventsAsAbandoned(): void {
-        const totalRunning = this.getRunningEventsCount();
-        if (totalRunning === 0) {
-            console.log('AbxrLib: No running events to complete');
-            return;
-        }
-
-        console.log(`AbxrLib: Completing ${totalRunning} running events as abandoned`);
-        
-        try {
-            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
-            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
-            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
-
-            // Complete running Interactions as abandoned
-            if (interactionTimes && interactionTimes.size > 0) {
-                const interactionNames = Array.from(interactionTimes.keys());
-                interactionNames.forEach(interactionName => {
-                    this.EventInteractionComplete(interactionName, InteractionType.eNull, 'abandoned', {
-                        abandon_reason: 'manually_abandoned',
-                        auto_completed: 'true'
-                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned interaction:', error));
-                });
-            }
-
-            // Complete running Objectives as abandoned
-            if (objectiveTimes && objectiveTimes.size > 0) {
-                const objectiveNames = Array.from(objectiveTimes.keys());
-                objectiveNames.forEach(objectiveName => {
-                    this.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
-                        abandon_reason: 'manually_abandoned',
-                        auto_completed: 'true'
-                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned objective:', error));
-                });
-            }
-
-            // Complete running Assessments as abandoned
-            if (assessmentTimes && assessmentTimes.size > 0) {
-                const assessmentNames = Array.from(assessmentTimes.keys());
-                assessmentNames.forEach(assessmentName => {
-                    this.EventAssessmentComplete(assessmentName, 0, EventStatus.eFail, {
-                        abandon_reason: 'manually_abandoned',
-                        auto_completed: 'true'
-                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned assessment:', error));
-                });
-            }
-
-            // Also clear any stored events
-            this.ClearStoredRunningEvents();
-            
-        } catch (error) {
-            console.error('AbxrLib: Error completing abandoned events:', error);
-        }
-    }
-
-    /**
-     * Get count of currently running events (public method for monitoring)
-     */
-    static GetRunningEventsCount(): number {
-        return this.getRunningEventsCount();
-    }
-
-    /**
-     * Automatically complete all running Assessments, Objectives, and Interactions
-     * Used when the page is being unloaded to ensure data integrity
-     * @private
-     */
-    private static closeRunningEvents(): void {
-        try {
-            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
-            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
-            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
-
-            let totalClosed = 0;
-
-            // Close running Assessments - try synchronous completion first
-            if (assessmentTimes && assessmentTimes.size > 0) {
-                const assessmentNames = Array.from(assessmentTimes.keys());
-                assessmentNames.forEach(assessmentName => {
-                    try {
-                        // For beforeunload, try to send synchronously using sendBeacon or fetch with keepalive
-                        this.sendEventSync('assessment_complete', {
-                            name: assessmentName,
-                            score: 0,
-                            status: EventStatus.eIncomplete,
-                            quit_reason: 'page_unload',
-                            auto_closed: 'true'
-                        });
-                        totalClosed++;
-                    } catch (error) {
-                        // Fallback to async if sync fails
-                        try {
-                            Abxr.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
-                                quit_reason: 'page_unload',
-                                auto_closed: 'true'
-                            }).catch(() => {});
-                            totalClosed++;
-                        } catch (asyncError) {
-                            // Silent fail during page unload
-                        }
-                    }
-                });
-            }
-
-            // Close running Objectives  
-            if (objectiveTimes && objectiveTimes.size > 0) {
-                const objectiveNames = Array.from(objectiveTimes.keys());
-                objectiveNames.forEach(objectiveName => {
-                    try {
-                        this.sendEventSync('objective_complete', {
-                            name: objectiveName,
-                            score: 0,
-                            status: EventStatus.eIncomplete,
-                            quit_reason: 'page_unload',
-                            auto_closed: 'true'
-                        });
-                        totalClosed++;
-                    } catch (error) {
-                        try {
-                            Abxr.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
-                                quit_reason: 'page_unload',
-                                auto_closed: 'true'
-                            }).catch(() => {});
-                            totalClosed++;
-                        } catch (asyncError) {}
-                    }
-                });
-            }
-
-            // Close running Interactions
-            if (interactionTimes && interactionTimes.size > 0) {
-                const interactionNames = Array.from(interactionTimes.keys());
-                interactionNames.forEach(interactionName => {
-                    try {
-                        this.sendEventSync('interaction_complete', {
-                            name: interactionName,
-                            interactionType: InteractionType.eNull,
-                            response: 'incomplete_quit',
-                            quit_reason: 'page_unload',
-                            auto_closed: 'true'
-                        });
-                        totalClosed++;
-                    } catch (error) {
-                        try {
-                            Abxr.EventInteractionComplete(interactionName, InteractionType.eNull, 'incomplete_quit', {
-                                quit_reason: 'page_unload',
-                                auto_closed: 'true'
-                            }).catch(() => {});
-                            totalClosed++;
-                        } catch (asyncError) {}
-                    }
-                });
-            }
-
-            if (totalClosed > 0) {
-                console.log(`AbxrLib: Automatically closed ${totalClosed} running events due to page unload`);
-            }
-        } catch (error) {
-            // Silent fail - we're in page unload, don't interfere with the process
-            console.warn('AbxrLib: Error during quit handler cleanup:', error);
-        }
-    }
-
-    /**
-     * Send event synchronously during page unload using sendBeacon
-     * Attempts to use the normal event system but synchronously
-     * @private
-     */
-    private static sendEventSync(eventType: string, eventData: any): void {
-        try {
-            // Just call the normal event methods but don't wait for promises
-            // The event batching system should handle the actual sending
-            switch (eventType) {
-                case 'assessment_complete':
-                    // Fire and forget - don't await
-                    this.EventAssessmentComplete(eventData.name, eventData.score, eventData.status, {
-                        quit_reason: eventData.quit_reason,
-                        auto_closed: eventData.auto_closed
-                    }).catch(() => {});
-                    break;
-                    
-                case 'objective_complete':
-                    this.EventObjectiveComplete(eventData.name, eventData.score, eventData.status, {
-                        quit_reason: eventData.quit_reason,
-                        auto_closed: eventData.auto_closed
-                    }).catch(() => {});
-                    break;
-                    
-                case 'interaction_complete':
-                    this.EventInteractionComplete(eventData.name, eventData.interactionType, eventData.response, {
-                        quit_reason: eventData.quit_reason,
-                        auto_closed: eventData.auto_closed
-                    }).catch(() => {});
-                    break;
-            }
-            
-            // Also try to force immediate send of batched events if possible
-            // This might help get events out before page unload
-            this.forceSendBatchedEvents().catch(() => {});
-            
-        } catch (error) {
-            // Silent fail during page unload
-        }
-    }
-
-    /**
-     * Attempt to force immediate sending of any batched events
-     * @private
-     */
-    private static async forceSendBatchedEvents(): Promise<void> {
-        try {
-            // Try to trigger immediate sending of batched events
-            // Use the Analytics system to flush pending events
-            await AbxrLibAnalytics.ForceSendUnsent();
-        } catch (error) {
-            // Silent fail - this is called during page unload
-        }
-    }
-
-    /**
-     * Log information about currently running events without closing them
-     * Used for debugging and monitoring purposes
-     * @private
-     */
-    private static DebugLogRunningEvents(): void {
-        try {
-            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
-            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
-            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
-
-            const assessmentCount = assessmentTimes ? assessmentTimes.size : 0;
-            const objectiveCount = objectiveTimes ? objectiveTimes.size : 0;
-            const interactionCount = interactionTimes ? interactionTimes.size : 0;
-            const totalRunning = assessmentCount + objectiveCount + interactionCount;
-
-            if (totalRunning > 0) {
-                console.log(`AbxrLib: Currently ${totalRunning} events running (Assessments: ${assessmentCount}, Objectives: ${objectiveCount}, Interactions: ${interactionCount})`);
-            }
-        } catch (error) {
-            console.warn('AbxrLib: Error logging running events:', error);
-        }
     }
 
     /**
@@ -1794,6 +1254,45 @@ export class Abxr {
         this.Log(message, LogLevel.eCritical, meta);
     }
 
+    /**
+     * @region Telemetry
+     */
+    
+    /**
+     * Send spatial, hardware, or system telemetry data for XR analytics
+     * Captures headset/controller movements, performance metrics, and environmental data
+     * @param name Type of telemetry data (e.g., "headset_position", "frame_rate", "battery_level")
+     * @param data Key-value pairs of telemetry measurements
+     * @returns Promise<number> Telemetry entry ID or 0 if not authenticated
+     */
+    static async Telemetry(name: string, data: any): Promise<number> {
+        if (!this.connectionActive) {
+            if (this.enableDebug) {
+                console.log('AbxrLib: Telemetry not sent - not authenticated');
+            }
+            return 0;
+        }
+        
+        // Add super metadata to all telemetry entries
+        data = this.mergeSuperMetaData(data);
+        
+        const telemetry = new AbxrTelemetry();
+        telemetry.Construct(name, data);
+        
+        // Fire-and-forget async sending
+        AbxrLibSend.AddTelemetryEntryCore(telemetry).catch(error => {
+            if (this.enableDebug) {
+                console.error('AbxrLib: Failed to send telemetry:', error);
+            }
+        });
+        
+        return 1; // Return success immediately without waiting for server response
+    }
+
+    /**
+     * @region Storage
+     */
+
     // Storage enums for enhanced storage control
     static readonly StorageScope = {
         device: 'device',
@@ -1804,10 +1303,6 @@ export class Abxr {
         keepLatest: 'keepLatest',
         appendHistory: 'appendHistory'
     } as const;
-
-    /**
-     * @region Storage
-     */
 
     /**
      * Get the session data with the default name 'state'
@@ -2110,42 +1605,7 @@ export class Abxr {
         
         return 1; // Return success immediately - data is removed locally
     }
-    
-    /**
-     * @region Telemetry
-     */
-    
-    /**
-     * Send spatial, hardware, or system telemetry data for XR analytics
-     * Captures headset/controller movements, performance metrics, and environmental data
-     * @param name Type of telemetry data (e.g., "headset_position", "frame_rate", "battery_level")
-     * @param data Key-value pairs of telemetry measurements
-     * @returns Promise<number> Telemetry entry ID or 0 if not authenticated
-     */
-    static async Telemetry(name: string, data: any): Promise<number> {
-        if (!this.connectionActive) {
-            if (this.enableDebug) {
-                console.log('AbxrLib: Telemetry not sent - not authenticated');
-            }
-            return 0;
-        }
         
-        // Add super metadata to all telemetry entries
-        data = this.mergeSuperMetaData(data);
-        
-        const telemetry = new AbxrTelemetry();
-        telemetry.Construct(name, data);
-        
-        // Fire-and-forget async sending
-        AbxrLibSend.AddTelemetryEntryCore(telemetry).catch(error => {
-            if (this.enableDebug) {
-                console.error('AbxrLib: Failed to send telemetry:', error);
-            }
-        });
-        
-        return 1; // Return success immediately without waiting for server response
-    }
-    
     /**
      * @region AI Proxy
      */
@@ -3206,7 +2666,7 @@ export class Abxr {
         const options = this.getDialogOptions();
         const showVirtualKeyboard = options.showVirtualKeyboard !== undefined 
             ? options.showVirtualKeyboard 
-            : shouldShowVirtualKeyboardByDefault();
+            : AbxrShouldShowVirtualKeyboardByDefault();
         
         // Generate XR dialog HTML from template
         const dialogHTML = getXRDialogTemplate(authData, { 
@@ -3420,22 +2880,22 @@ export class Abxr {
      */
     static async attemptVersionFallback(): Promise<boolean> {
         try {
-            const currentRestUrl = getAbxrParameter('abxr_rest_url') || 'https://lib-backend.xrdm.app/v1/';
+            const currentRestUrl = AbxrGetParameter('abxr_rest_url') || 'https://lib-backend.xrdm.app/v1/';
             
-            console.log(`AbxrLib: Attempting version fallback for URL: ${sanitizeForLog(currentRestUrl)}`);
+            console.log(`AbxrLib: Attempting version fallback for URL: ${AbxrSanitizeForLog(currentRestUrl)}`);
             
             // Check if URL already has a version
-            if (hasApiVersion(currentRestUrl)) {
+            if (AbxrHasApiVersion(currentRestUrl)) {
                 console.log(`AbxrLib: URL already has version, skipping fallback`);
                 return false;
             }
             
             // Add /v1/ to the URL
-            const versionedUrl = addApiVersion(currentRestUrl, 'v1');
-            console.log(`AbxrLib: Saving versioned URL to cookie: ${sanitizeForLog(versionedUrl)}`);
+            const versionedUrl = AbxrAddApiVersion(currentRestUrl, 'v1');
+            console.log(`AbxrLib: Saving versioned URL to cookie: ${AbxrSanitizeForLog(versionedUrl)}`);
             
             // Save the versioned URL to cookies for persistence
-            setCookie('abxr_rest_url', versionedUrl);
+            AbxrSetCookie('abxr_rest_url', versionedUrl);
             
             // Force page refresh to reload with new cookie value
             if (typeof window !== 'undefined') {
@@ -3459,7 +2919,7 @@ export class Abxr {
         
         try {
             // Get the device ID that was used during initial authentication
-            const deviceId = getOrCreateDeviceId();
+            const deviceId = AbxrGetOrCreateDeviceId();
             
             // Get the sessionId and app_id from the stored authentication object
             const sessionId = AbxrLibInit.m_abxrLibAuthentication.m_szSessionId;
@@ -3593,6 +3053,7 @@ export class Abxr {
 
     /**
      * @region Mixpanel Compatibility Methods
+     * Equal to code in AbxrCompatibility.cs, but for WebXR
      */
     
     /**
@@ -3624,6 +3085,7 @@ export class Abxr {
 
     /**
      * @region Cognitive3D Compatibility Methods
+     * Equal to code in AbxrCompatibility.cs, but for WebXR
      */
     
     /**
@@ -3788,6 +3250,558 @@ export class Abxr {
         }
         return null;
     }
+
+    /**
+     * @region Quit Handler
+     * Equal to code in ApplicationQuitHandler.cs, but for WebXR
+     */
+
+    // Quit handler state
+    private static quitHandlerEnabled: boolean = false;  // Disabled by default for WebXR
+
+    /**
+     * Enable application quit detection for single-page WebXR applications
+     * WARNING: Do NOT use this for multi-page WebXR apps as it will incorrectly close events on navigation
+     * For multi-page apps, use manual event management or implement custom persistence
+     * @param enablePersistence If true, running events will be saved to localStorage and restored on page load
+     */
+    static EnableQuitHandler(enablePersistence: boolean = true): void {
+        if (typeof window === 'undefined') {
+            console.warn('AbxrLib: EnableQuitHandler called in non-browser environment');
+            return;
+        }
+
+        if (this.quitHandlerEnabled) {
+            console.warn('AbxrLib: Quit handler already enabled');
+            return;
+        }
+
+        console.log('AbxrLib: Enabling quit handler' + (enablePersistence ? ' with persistence' : ''));
+        this.quitHandlerEnabled = true;
+
+        if (enablePersistence) {
+            // Check if we should restore or clear zombie events
+            this.handlePersistenceOnLoad();
+        }
+
+        // More conservative approach - only handle events that likely indicate app close
+        // NOT beforeunload/unload which fire on navigation
+        
+        // Handle visibility change with timeout (user might come back)
+        let visibilityTimeout: NodeJS.Timeout | null = null;
+        let pageHiddenTime: number | null = null;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pageHiddenTime = Date.now();
+                //console.log('AbxrLib: Page hidden, starting quit detection timeout');
+                // Start a timeout - if page stays hidden for 3 hours, consider it closed
+                visibilityTimeout = setTimeout(() => {
+                    console.log('AbxrLib: Page hidden for 3 hours, closing running events');
+                    if (enablePersistence) {
+                        this.saveRunningEventsToStorage();
+                    }
+                    this.closeRunningEvents();
+                }, 10800000); // 3 hours = 3 * 60 * 60 * 1000 milliseconds
+            } else {
+                // Page became visible again, cancel the timeout
+                if (visibilityTimeout) {
+                    if (pageHiddenTime) {
+                        const hiddenDuration = Date.now() - pageHiddenTime;
+                        const seconds = Math.round(hiddenDuration / 1000);
+                        const minutes = Math.floor(seconds / 60);
+                        const hours = Math.floor(minutes / 60);
+                        
+                        let durationText = '';
+                        if (hours > 0) {
+                            durationText = `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+                        } else if (minutes > 0) {
+                            durationText = `${minutes}m ${seconds % 60}s`;
+                        } else {
+                            durationText = `${seconds}s`;
+                        }
+                        
+                        console.log(`AbxrLib: Page visible again after ${durationText}, canceling quit detection`);
+                        pageHiddenTime = null;
+                    } else {
+                        console.log('AbxrLib: Page visible again, canceling quit detection');
+                    }
+                    clearTimeout(visibilityTimeout);
+                    visibilityTimeout = null;
+                }
+            }
+        });
+
+        // Handle page freeze (mobile browsers when app goes to background)
+        document.addEventListener('freeze', () => {
+            console.log('AbxrLib: Page frozen, saving running events');
+            if (enablePersistence) {
+                this.saveRunningEventsToStorage();
+            }
+        });
+
+        // Handle page resume (mobile browsers when app comes back to foreground)
+        document.addEventListener('resume', () => {
+            console.log('AbxrLib: Page resumed');
+            if (enablePersistence) {
+                this.restoreRunningEventsFromStorage();
+            }
+        });
+
+        // Handle beforeunload - try to complete events properly
+        window.addEventListener('beforeunload', (event) => {
+            const runningCount = this.getRunningEventsCount();
+            if (runningCount > 0) {
+                console.log(`AbxrLib: Page unloading with ${runningCount} running events - attempting to complete them`);
+                
+                // Try to complete events immediately (synchronous)
+                this.closeRunningEvents();
+                
+                // Also save to persistence as backup
+                if (enablePersistence) {
+                    this.saveRunningEventsToStorage();
+                }
+            }
+        });
+    }
+
+    /**
+     * Disable the quit handler (for debugging or manual control)
+     */
+    static DisableQuitHandler(): void {
+        this.quitHandlerEnabled = false;
+        console.log('AbxrLib: Quit handler disabled');
+    }
+
+    /**
+     * Check if quit handler is enabled
+     */
+    static IsQuitHandlerEnabled(): boolean {
+        return this.quitHandlerEnabled;
+    }
+
+    /**
+     * @region Persistence & Storage
+     * WebXR only supports localStorage for persistence
+     */
+
+    /**
+     * Get count of currently running events
+     * @private
+     */
+    private static getRunningEventsCount(): number {
+        try {
+            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
+            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
+            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
+
+            const assessmentCount = assessmentTimes ? assessmentTimes.size : 0;
+            const objectiveCount = objectiveTimes ? objectiveTimes.size : 0;
+            const interactionCount = interactionTimes ? interactionTimes.size : 0;
+            
+            return assessmentCount + objectiveCount + interactionCount;
+        } catch (error) {
+            console.warn('AbxrLib: Error counting running events:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Save running events to localStorage for persistence across page navigation
+     * @private
+     */
+    private static saveRunningEventsToStorage(): void {
+        try {
+            const runningEvents = {
+                assessments: Array.from(AbxrEvent.m_dictAssessmentStartTimes.entries()).map(([name, time]) => ({
+                    name,
+                    startTime: time.ToInt64()
+                })),
+                objectives: Array.from(AbxrEvent.m_dictObjectiveStartTimes.entries()).map(([name, time]) => ({
+                    name,
+                    startTime: time.ToInt64()
+                })),
+                interactions: Array.from(AbxrEvent.m_dictInteractionStartTimes.entries()).map(([name, time]) => ({
+                    name,
+                    startTime: time.ToInt64()
+                })),
+                savedAt: Date.now()
+            };
+
+            localStorage.setItem(this.RUNNING_EVENTS_KEY, JSON.stringify(runningEvents));
+            console.log(`AbxrLib: Saved ${this.getRunningEventsCount()} running events to storage`);
+        } catch (error) {
+            console.warn('AbxrLib: Error saving running events to storage:', error);
+        }
+    }
+
+    /**
+     * Handle persistence on page load - restore valid events or clear zombies
+     * @private
+     */
+    private static handlePersistenceOnLoad(): void {
+        // Delay this check to allow authentication to attempt first
+        setTimeout(() => {
+            if (this.connectionActive) {
+                // Authentication successful - restore any valid events
+                this.restoreRunningEventsFromStorage();
+            } else {
+                // Authentication failed/invalid - clear any zombie events
+                this.clearZombieEvents();
+            }
+        }, 2000); // Wait 2 seconds for auth to complete
+    }
+
+    /**
+     * Clear zombie events when authentication is invalid
+     * @private
+     */
+    private static clearZombieEvents(): void {
+        try {
+            const stored = localStorage.getItem(this.RUNNING_EVENTS_KEY);
+            if (stored) {
+                console.log('AbxrLib: Authentication invalid but stored events found - clearing zombie events');
+                localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+            }
+        } catch (error) {
+            console.warn('AbxrLib: Error clearing zombie events:', error);
+        }
+    }
+
+    /**
+     * Restore running events from localStorage after page navigation
+     * @private
+     */
+    private static restoreRunningEventsFromStorage(): void {
+        try {
+            const stored = localStorage.getItem(this.RUNNING_EVENTS_KEY);
+            if (!stored) return;
+
+            const runningEvents = JSON.parse(stored);
+            
+            let restoredCount = 0;
+
+            // Restore assessments
+            if (runningEvents.assessments) {
+                runningEvents.assessments.forEach((event: any) => {
+                    const startTime = new DateTime().FromInt64(event.startTime);
+                    AbxrEvent.m_dictAssessmentStartTimes.set(event.name, startTime);
+                    restoredCount++;
+                });
+            }
+
+            // Restore objectives
+            if (runningEvents.objectives) {
+                runningEvents.objectives.forEach((event: any) => {
+                    const startTime = new DateTime().FromInt64(event.startTime);
+                    AbxrEvent.m_dictObjectiveStartTimes.set(event.name, startTime);
+                    restoredCount++;
+                });
+            }
+
+            // Restore interactions
+            if (runningEvents.interactions) {
+                runningEvents.interactions.forEach((event: any) => {
+                    const startTime = new DateTime().FromInt64(event.startTime);
+                    AbxrEvent.m_dictInteractionStartTimes.set(event.name, startTime);
+                    restoredCount++;
+                });
+            }
+
+            if (restoredCount > 0) {
+                console.log(`AbxrLib: Restored ${restoredCount} running events from storage`);
+            }
+
+            // Clear the stored events since they've been restored
+            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+        } catch (error) {
+            console.warn('AbxrLib: Error restoring running events from storage:', error);
+            // Clear potentially corrupted data
+            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+        }
+    }
+
+    /**
+     * Manually save current running events to storage (for developer use)
+     */
+    static SaveRunningEventsToStorage(): void {
+        if (!this.quitHandlerEnabled) {
+            console.warn('AbxrLib: SaveRunningEventsToStorage called but quit handler not enabled');
+            return;
+        }
+        this.saveRunningEventsToStorage();
+    }
+
+    /**
+     * Manually restore running events from storage (for developer use) 
+     */
+    static RestoreRunningEventsFromStorage(): void {
+        if (!this.quitHandlerEnabled) {
+            console.warn('AbxrLib: RestoreRunningEventsFromStorage called but quit handler not enabled');
+            return;
+        }
+        this.restoreRunningEventsFromStorage();
+    }
+
+    /**
+     * Clear any stored running events from localStorage without restoring them
+     * Useful when you want to abandon previously saved events
+     */
+    static ClearStoredRunningEvents(): void {
+        try {
+            localStorage.removeItem(this.RUNNING_EVENTS_KEY);
+            console.log('AbxrLib: Cleared stored running events from localStorage');
+        } catch (error) {
+            console.warn('AbxrLib: Error clearing stored running events:', error);
+        }
+    }
+
+    /**
+     * Clear currently running events and complete them as abandoned
+     * Use this when you want to clean up "zombie" events
+     */
+    static CompleteAllRunningEventsAsAbandoned(): void {
+        const totalRunning = this.getRunningEventsCount();
+        if (totalRunning === 0) {
+            console.log('AbxrLib: No running events to complete');
+            return;
+        }
+
+        console.log(`AbxrLib: Completing ${totalRunning} running events as abandoned`);
+        
+        try {
+            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
+            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
+            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
+
+            // Complete running Interactions as abandoned
+            if (interactionTimes && interactionTimes.size > 0) {
+                const interactionNames = Array.from(interactionTimes.keys());
+                interactionNames.forEach(interactionName => {
+                    this.EventInteractionComplete(interactionName, InteractionType.eNull, 'abandoned', {
+                        abandon_reason: 'manually_abandoned',
+                        auto_completed: 'true'
+                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned interaction:', error));
+                });
+            }
+
+            // Complete running Objectives as abandoned
+            if (objectiveTimes && objectiveTimes.size > 0) {
+                const objectiveNames = Array.from(objectiveTimes.keys());
+                objectiveNames.forEach(objectiveName => {
+                    this.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
+                        abandon_reason: 'manually_abandoned',
+                        auto_completed: 'true'
+                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned objective:', error));
+                });
+            }
+
+            // Complete running Assessments as abandoned
+            if (assessmentTimes && assessmentTimes.size > 0) {
+                const assessmentNames = Array.from(assessmentTimes.keys());
+                assessmentNames.forEach(assessmentName => {
+                    this.EventAssessmentComplete(assessmentName, 0, EventStatus.eFail, {
+                        abandon_reason: 'manually_abandoned',
+                        auto_completed: 'true'
+                    }).catch(error => console.warn('AbxrLib: Failed to complete abandoned assessment:', error));
+                });
+            }
+
+            // Also clear any stored events
+            this.ClearStoredRunningEvents();
+            
+        } catch (error) {
+            console.error('AbxrLib: Error completing abandoned events:', error);
+        }
+    }
+
+    /**
+     * Get count of currently running events (public method for monitoring)
+     */
+    static GetRunningEventsCount(): number {
+        return this.getRunningEventsCount();
+    }
+
+    /**
+     * Automatically complete all running Assessments, Objectives, and Interactions
+     * Used when the page is being unloaded to ensure data integrity
+     * @private
+     */
+    private static closeRunningEvents(): void {
+        try {
+            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
+            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
+            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
+
+            let totalClosed = 0;
+
+            // Close running Assessments - try synchronous completion first
+            if (assessmentTimes && assessmentTimes.size > 0) {
+                const assessmentNames = Array.from(assessmentTimes.keys());
+                assessmentNames.forEach(assessmentName => {
+                    try {
+                        // For beforeunload, try to send synchronously using sendBeacon or fetch with keepalive
+                        this.sendEventSync('assessment_complete', {
+                            name: assessmentName,
+                            score: 0,
+                            status: EventStatus.eIncomplete,
+                            quit_reason: 'page_unload',
+                            auto_closed: 'true'
+                        });
+                        totalClosed++;
+                    } catch (error) {
+                        // Fallback to async if sync fails
+                        try {
+                            Abxr.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
+                                quit_reason: 'page_unload',
+                                auto_closed: 'true'
+                            }).catch(() => {});
+                            totalClosed++;
+                        } catch (asyncError) {
+                            // Silent fail during page unload
+                        }
+                    }
+                });
+            }
+
+            // Close running Objectives  
+            if (objectiveTimes && objectiveTimes.size > 0) {
+                const objectiveNames = Array.from(objectiveTimes.keys());
+                objectiveNames.forEach(objectiveName => {
+                    try {
+                        this.sendEventSync('objective_complete', {
+                            name: objectiveName,
+                            score: 0,
+                            status: EventStatus.eIncomplete,
+                            quit_reason: 'page_unload',
+                            auto_closed: 'true'
+                        });
+                        totalClosed++;
+                    } catch (error) {
+                        try {
+                            Abxr.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
+                                quit_reason: 'page_unload',
+                                auto_closed: 'true'
+                            }).catch(() => {});
+                            totalClosed++;
+                        } catch (asyncError) {}
+                    }
+                });
+            }
+
+            // Close running Interactions
+            if (interactionTimes && interactionTimes.size > 0) {
+                const interactionNames = Array.from(interactionTimes.keys());
+                interactionNames.forEach(interactionName => {
+                    try {
+                        this.sendEventSync('interaction_complete', {
+                            name: interactionName,
+                            interactionType: InteractionType.eNull,
+                            response: 'incomplete_quit',
+                            quit_reason: 'page_unload',
+                            auto_closed: 'true'
+                        });
+                        totalClosed++;
+                    } catch (error) {
+                        try {
+                            Abxr.EventInteractionComplete(interactionName, InteractionType.eNull, 'incomplete_quit', {
+                                quit_reason: 'page_unload',
+                                auto_closed: 'true'
+                            }).catch(() => {});
+                            totalClosed++;
+                        } catch (asyncError) {}
+                    }
+                });
+            }
+
+            if (totalClosed > 0) {
+                console.log(`AbxrLib: Automatically closed ${totalClosed} running events due to page unload`);
+            }
+        } catch (error) {
+            // Silent fail - we're in page unload, don't interfere with the process
+            console.warn('AbxrLib: Error during quit handler cleanup:', error);
+        }
+    }
+
+    /**
+     * Send event synchronously during page unload using sendBeacon
+     * Attempts to use the normal event system but synchronously
+     * @private
+     */
+    private static sendEventSync(eventType: string, eventData: any): void {
+        try {
+            // Just call the normal event methods but don't wait for promises
+            // The event batching system should handle the actual sending
+            switch (eventType) {
+                case 'assessment_complete':
+                    // Fire and forget - don't await
+                    this.EventAssessmentComplete(eventData.name, eventData.score, eventData.status, {
+                        quit_reason: eventData.quit_reason,
+                        auto_closed: eventData.auto_closed
+                    }).catch(() => {});
+                    break;
+                    
+                case 'objective_complete':
+                    this.EventObjectiveComplete(eventData.name, eventData.score, eventData.status, {
+                        quit_reason: eventData.quit_reason,
+                        auto_closed: eventData.auto_closed
+                    }).catch(() => {});
+                    break;
+                    
+                case 'interaction_complete':
+                    this.EventInteractionComplete(eventData.name, eventData.interactionType, eventData.response, {
+                        quit_reason: eventData.quit_reason,
+                        auto_closed: eventData.auto_closed
+                    }).catch(() => {});
+                    break;
+            }
+            
+            // Also try to force immediate send of batched events if possible
+            // This might help get events out before page unload
+            this.forceSendBatchedEvents().catch(() => {});
+            
+        } catch (error) {
+            // Silent fail during page unload
+        }
+    }
+
+    /**
+     * Attempt to force immediate sending of any batched events
+     * @private
+     */
+    private static async forceSendBatchedEvents(): Promise<void> {
+        try {
+            // Try to trigger immediate sending of batched events
+            // Use the Analytics system to flush pending events
+            await AbxrLibAnalytics.ForceSendUnsent();
+        } catch (error) {
+            // Silent fail - this is called during page unload
+        }
+    }
+
+    /**
+     * Log information about currently running events without closing them
+     * Used for debugging and monitoring purposes
+     * @private
+     */
+    private static DebugLogRunningEvents(): void {
+        try {
+            const assessmentTimes = AbxrEvent.m_dictAssessmentStartTimes;
+            const objectiveTimes = AbxrEvent.m_dictObjectiveStartTimes;
+            const interactionTimes = AbxrEvent.m_dictInteractionStartTimes;
+
+            const assessmentCount = assessmentTimes ? assessmentTimes.size : 0;
+            const objectiveCount = objectiveTimes ? objectiveTimes.size : 0;
+            const interactionCount = interactionTimes ? interactionTimes.size : 0;
+            const totalRunning = assessmentCount + objectiveCount + interactionCount;
+
+            if (totalRunning > 0) {
+                console.log(`AbxrLib: Currently ${totalRunning} events running (Assessments: ${assessmentCount}, Objectives: ${objectiveCount}, Interactions: ${interactionCount})`);
+            }
+        } catch (error) {
+            console.warn('AbxrLib: Error logging running events:', error);
+        }
+    }
+
 }
 
 // Global scope setup - happens immediately when library loads
@@ -3875,11 +3889,11 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
     
     // Get parameters with priority: GET params -> cookies -> function params
     // Note: appId is always taken from function parameter only (not from GET/cookies)
-    const finalOrgId = getAbxrParameter('abxr_orgid', orgId);
-    const finalAuthSecret = getAbxrParameter('abxr_auth_secret', authSecret);
+    const finalOrgId = AbxrGetParameter('abxr_orgid', orgId);
+    const finalAuthSecret = AbxrGetParameter('abxr_auth_secret', authSecret);
     
     // Generate or retrieve device ID
-    const deviceId = getOrCreateDeviceId();
+    const deviceId = AbxrGetOrCreateDeviceId();
     
     // Store auth parameters (without deviceId since it's handled internally)
     Abxr.setAuthParams({ appId: appId, orgId: finalOrgId, authSecret: finalAuthSecret });
@@ -3914,7 +3928,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                     AbxrLibInit.set_IpAddress(deviceInfo.ipAddress);
                     // Set library type and version
                     AbxrLibInit.set_LibType('webxr');
-                    AbxrLibInit.set_LibVersion(getPackageVersion());
+                    AbxrLibInit.set_LibVersion(AbxrGetPackageVersion());
                     
                     // Now attempt initial authentication with device info set
                     return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
@@ -3927,7 +3941,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                     AbxrLibInit.set_IpAddress('NA');
                     // Set library type and version even when device detection fails
                     AbxrLibInit.set_LibType('webxr');
-                    AbxrLibInit.set_LibVersion(getPackageVersion());
+                    AbxrLibInit.set_LibVersion(AbxrGetPackageVersion());
                     
                     // Still attempt authentication even if device detection failed
                     return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
@@ -3985,7 +3999,7 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                         const errorMessage = detailedError || `Authentication failed with code ${result}`;
                         
                         // Check if this looks like a CORS/redirect error and try version fallback
-                        if (shouldTryVersionFallback(errorMessage)) {
+                        if (AbxrShouldTryVersionFallback(errorMessage)) {
                             console.log(`AbxrLib: Authentication failed with CORS/redirect error, attempting version fallback`);
                             
                             // Attempt version fallback (this will save cookie and refresh page if successful)
