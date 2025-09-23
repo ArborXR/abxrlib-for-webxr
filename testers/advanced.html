@@ -512,6 +512,11 @@
         document.getElementById('objectiveCompleteBtn').disabled = false;
         document.getElementById('interactionStartBtn').disabled = false;
         document.getElementById('interactionCompleteBtn').disabled = false;
+        
+        // Enable exit poll buttons
+        document.getElementById('thumbsPollBtn').disabled = false;
+        document.getElementById('ratingPollBtn').disabled = false;
+        document.getElementById('multiPollBtn').disabled = false;
     }
 
     // Assessment Event Functions
@@ -638,6 +643,130 @@
         } catch (error) {
             document.getElementById('interaction_result').textContent = 'Error: ' + error.message;
         }
+    }
+
+    // Exit Polls Functions
+    function try_ThumbsPoll() {
+        console.log("AbxrTester: Executing Abxr.PollUser() - Thumbs");
+        try {
+            const prompt = document.getElementById('thumbs_prompt').value;
+            
+            if (!prompt || prompt.trim().length === 0) {
+                document.getElementById('thumbs_result').textContent = 'Error: Poll prompt cannot be empty';
+                return;
+            }
+
+            Abxr.PollUser(
+                prompt,
+                "Thumbs",
+                undefined,
+                (response) => {
+                    document.getElementById('thumbs_result').textContent = 
+                        `Thumbs Poll Response: ${response}\n` +
+                        `Question: ${prompt}`;
+                    showPollResponse(prompt, response, "Thumbs");
+                }
+            );
+            
+            document.getElementById('thumbs_result').textContent = 'Thumbs poll displayed - waiting for user response...';
+                
+        } catch (error) {
+            document.getElementById('thumbs_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    function try_RatingPoll() {
+        console.log("AbxrTester: Executing Abxr.PollUser() - Rating");
+        try {
+            const prompt = document.getElementById('rating_prompt').value;
+            
+            if (!prompt || prompt.trim().length === 0) {
+                document.getElementById('rating_result').textContent = 'Error: Poll prompt cannot be empty';
+                return;
+            }
+
+            Abxr.PollUser(
+                prompt,
+                "Rating",
+                undefined,
+                (response) => {
+                    document.getElementById('rating_result').textContent = 
+                        `Rating Poll Response: ${response} star${response > 1 ? 's' : ''}\n` +
+                        `Question: ${prompt}`;
+                    showPollResponse(prompt, response, "Rating");
+                }
+            );
+            
+            document.getElementById('rating_result').textContent = 'Rating poll displayed - waiting for user response...';
+                
+        } catch (error) {
+            document.getElementById('rating_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    function try_MultipleChoicePoll() {
+        console.log("AbxrTester: Executing Abxr.PollUser() - MultipleChoice");
+        try {
+            const prompt = document.getElementById('multi_prompt').value;
+            const responsesText = document.getElementById('multi_responses').value;
+            
+            if (!prompt || prompt.trim().length === 0) {
+                document.getElementById('multi_result').textContent = 'Error: Poll prompt cannot be empty';
+                return;
+            }
+
+            if (!responsesText || responsesText.trim().length === 0) {
+                document.getElementById('multi_result').textContent = 'Error: Response options cannot be empty';
+                return;
+            }
+
+            // Parse responses from textarea (one per line)
+            const responses = responsesText.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+
+            if (responses.length < 2 || responses.length > 8) {
+                document.getElementById('multi_result').textContent = 'Error: Multiple choice poll must have between 2 and 8 responses';
+                return;
+            }
+
+            Abxr.PollUser(
+                prompt,
+                "MultipleChoice",
+                responses,
+                (response) => {
+                    document.getElementById('multi_result').textContent = 
+                        `Multiple Choice Poll Response: ${response}\n` +
+                        `Question: ${prompt}\n` +
+                        `Available Options: ${responses.join(', ')}`;
+                    showPollResponse(prompt, response, "MultipleChoice");
+                }
+            );
+            
+            document.getElementById('multi_result').textContent = 'Multiple choice poll displayed - waiting for user response...';
+                
+        } catch (error) {
+            document.getElementById('multi_result').textContent = 'Error: ' + error.message;
+        }
+    }
+
+    function showPollResponse(prompt, response, pollType) {
+        const display = document.getElementById('poll_response_display');
+        const text = document.getElementById('poll_response_text');
+        
+        text.innerHTML = `
+            <strong>Poll Response:</strong><br>
+            <strong>Question:</strong> ${prompt}<br>
+            <strong>Answer:</strong> ${response}<br>
+            <strong>Type:</strong> ${pollType}
+        `;
+        
+        display.style.display = 'block';
+        
+        // Auto-hide after 8 seconds
+        setTimeout(() => {
+            display.style.display = 'none';
+        }, 8000);
     }
 
 
@@ -931,6 +1060,79 @@
           <button class="action-button" onclick="try_InteractionComplete()" disabled id="interactionCompleteBtn">Complete Interaction</button>
         </div>
         <div id="interaction_result" class="result">Initialize first to enable</div>
+      </div>
+    </div>
+
+    <!-- Exit Polls Section -->
+    <div class="section shared-section">
+      <h2>Exit Polls</h2>
+      <p>Test the Exit Polls functionality for user feedback collection:</p>
+      
+      <!-- Thumbs Poll -->
+      <div style="margin-bottom: 30px; padding: 15px; background: #fff8f0; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: #495057;">👍👎 Thumbs Up/Down Poll</h3>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: end;">
+          <div style="flex: 1;">
+            <label for="thumbs_prompt" style="display: block; margin-bottom: 5px; font-weight: bold;">Poll Question:</label>
+            <input type="text" id="thumbs_prompt" value="How would you rate this training experience?" placeholder="Enter poll question">
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="action-button" onclick="try_ThumbsPoll()" disabled id="thumbsPollBtn">Show Thumbs Poll</button>
+        </div>
+        <div id="thumbs_result" class="result">Initialize first to enable</div>
+      </div>
+
+      <!-- Rating Poll -->
+      <div style="margin-bottom: 30px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: #495057;">⭐ Star Rating Poll</h3>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: end;">
+          <div style="flex: 1;">
+            <label for="rating_prompt" style="display: block; margin-bottom: 5px; font-weight: bold;">Poll Question:</label>
+            <input type="text" id="rating_prompt" value="Please rate the quality of this content from 1 to 5 stars" placeholder="Enter poll question">
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="action-button" onclick="try_RatingPoll()" disabled id="ratingPollBtn">Show Rating Poll</button>
+        </div>
+        <div id="rating_result" class="result">Initialize first to enable</div>
+      </div>
+
+      <!-- Multiple Choice Poll -->
+      <div style="margin-bottom: 30px; padding: 15px; background: #f8f0ff; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: #495057;">📝 Multiple Choice Poll</h3>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: end;">
+          <div style="flex: 1;">
+            <label for="multi_prompt" style="display: block; margin-bottom: 5px; font-weight: bold;">Poll Question:</label>
+            <input type="text" id="multi_prompt" value="What was your favorite part of this training?" placeholder="Enter poll question">
+          </div>
+        </div>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: end;">
+          <div style="flex: 1;">
+            <label for="multi_responses" style="display: block; margin-bottom: 5px; font-weight: bold;">Response Options (one per line):</label>
+            <textarea id="multi_responses" rows="5" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;">The interactive elements
+The visual design
+The content quality
+The user interface
+The overall experience</textarea>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="action-button" onclick="try_MultipleChoicePoll()" disabled id="multiPollBtn">Show Multiple Choice Poll</button>
+        </div>
+        <div id="multi_result" class="result">Initialize first to enable</div>
+      </div>
+
+      <!-- Poll Response Display -->
+      <div id="poll_response_display" style="
+        background: rgba(5, 218, 152, 0.1);
+        border: 1px solid #05DA98;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 15px 0;
+        display: none;
+      ">
+        <div id="poll_response_text" style="color: #05DA98; font-weight: bold;"></div>
       </div>
     </div>
   </div>

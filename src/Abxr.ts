@@ -1169,20 +1169,20 @@ export class Abxr {
 
     // Log level enum for enhanced logging control
     static readonly LogLevel = {
-        eDebug: 'debug',
-        eInfo: 'info',
-        eWarn: 'warn',
-        eError: 'error',
-        eCritical: 'critical'
+        Debug: 'debug',
+        Info: 'info',
+        Warn: 'warn',
+        Error: 'error',
+        Critical: 'critical'
     } as const;
 
     /**
      * General logging method with configurable level - main logging function
-     * @param message The log message
-     * @param level Log level (defaults to LogLevel.eInfo)
-     * @param meta Optional metadata with additional context
+     * @param logMessage The log message
+     * @param logLevel Log level (defaults to LogLevel.Info)
+     * @param metadata Any additional information (optional)
      */
-    static Log(message: string, level: LogLevel = LogLevel.eInfo, meta?: any): void {
+    static Log(logMessage: string, logLevel: string = this.LogLevel.Info, metadata?: any): void {
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Log not sent - not authenticated');
@@ -1191,10 +1191,13 @@ export class Abxr {
         }
 
         // Add super metadata to all logs
-        meta = this.mergeSuperMetaData(meta);
+        metadata = this.mergeSuperMetaData(metadata);
+        
+        // Convert public API level to internal AbxrLib enum
+        const internalLevel = this.convertToInternalLogLevel(logLevel);
         
         const log = new AbxrLog();
-        log.Construct(level, message, this.convertToAbxrDictStrings(meta));
+        log.Construct(internalLevel, logMessage, this.convertToAbxrDictStrings(metadata));
         
         // Fire-and-forget async sending
         AbxrLibSend.AddLog(log).catch(error => {
@@ -1205,53 +1208,70 @@ export class Abxr {
     }
 
     /**
-     * Send a debug-level log message with optional metadata
-     * Debug logs are typically used for development and troubleshooting
-     * @param message Log message to send
-     * @param meta Optional metadata with additional context
+     * Add log information at the 'Debug' level
+     * @param logText The log text
+     * @param metadata Any additional information (optional)
      */
-    static LogDebug(message: string, meta?: any): void {
-        this.Log(message, LogLevel.eDebug, meta);
+    static LogDebug(logText: string, metadata?: any): void {
+        this.Log(logText, this.LogLevel.Debug, metadata);
     }
     
     /**
-     * Send an info-level log message with optional metadata
-     * Info logs are used for general application events and user actions
-     * @param message Log message to send
-     * @param meta Optional metadata with additional context
+     * Add log information at the 'Informational' level
+     * @param logText The log text
+     * @param metadata Any additional information (optional)
      */
-    static LogInfo(message: string, meta?: any): void {
-        this.Log(message, LogLevel.eInfo, meta);
+    static LogInfo(logText: string, metadata?: any): void {
+        this.Log(logText, this.LogLevel.Info, metadata);
     }
     
     /**
-     * Send a warning-level log message with optional metadata
-     * Warning logs indicate potential issues that don't prevent operation
-     * @param message Log message to send
-     * @param meta Optional metadata with additional context  
+     * Add log information at the 'Warning' level
+     * @param logText The log text
+     * @param metadata Any additional information (optional)
      */
-    static LogWarn(message: string, meta?: any): void {
-        this.Log(message, LogLevel.eWarn, meta);
+    static LogWarn(logText: string, metadata?: any): void {
+        this.Log(logText, this.LogLevel.Warn, metadata);
     }
     
     /**
-     * Send an error-level log message with optional metadata
-     * Error logs indicate problems that may impact application functionality  
-     * @param message Log message to send
-     * @param meta Optional metadata with error details
+     * Add log information at the 'Error' level
+     * @param logText The log text
+     * @param metadata Any additional information (optional)
      */
-    static LogError(message: string, meta?: any): void {
-        this.Log(message, LogLevel.eError, meta);
+    static LogError(logText: string, metadata?: any): void {
+        this.Log(logText, this.LogLevel.Error, metadata);
     }
     
     /**
-     * Send a critical-level log message with optional metadata
-     * Critical logs indicate severe problems that may cause application failure
-     * @param message Log message to send  
-     * @param meta Optional metadata with critical error details
+     * Add log information at the 'Critical' level
+     * @param logText The log text
+     * @param metadata Any additional information (optional)
      */
-    static LogCritical(message: string, meta?: any): void {
-        this.Log(message, LogLevel.eCritical, meta);
+    static LogCritical(logText: string, metadata?: any): void {
+        this.Log(logText, this.LogLevel.Critical, metadata);
+    }
+
+    /**
+     * Convert public API log level string to internal AbxrLib LogLevel enum
+     * @param level Public API log level string
+     * @returns Internal AbxrLib LogLevel enum value
+     */
+    private static convertToInternalLogLevel(level: string): LogLevel {
+        switch (level) {
+            case this.LogLevel.Debug:
+                return LogLevel.eDebug;
+            case this.LogLevel.Info:
+                return LogLevel.eInfo;
+            case this.LogLevel.Warn:
+                return LogLevel.eWarn;
+            case this.LogLevel.Error:
+                return LogLevel.eError;
+            case this.LogLevel.Critical:
+                return LogLevel.eCritical;
+            default:
+                return LogLevel.eInfo; // Default fallback
+        }
     }
 
     /**
@@ -1259,13 +1279,27 @@ export class Abxr {
      */
     
     /**
+     * Manual telemetry activation for disabled automatic telemetry
+     * If you select 'Disable Automatic Telemetry' in the AbxrLib configuration,
+     * you can manually start tracking system telemetry with this function call.
+     * This captures headset/controller movements, performance metrics, and environmental data.
+     */
+    static TrackAutoTelemetry(): void {
+        // Note: WebXR version doesn't have automatic telemetry tracking like Unity
+        // This method is provided for API compatibility
+        if (this.enableDebug) {
+            console.log('AbxrLib: TrackAutoTelemetry called - automatic telemetry tracking not available in WebXR version');
+        }
+    }
+
+    /**
      * Send spatial, hardware, or system telemetry data for XR analytics
      * Captures headset/controller movements, performance metrics, and environmental data
-     * @param name Type of telemetry data (e.g., "headset_position", "frame_rate", "battery_level")
-     * @param data Key-value pairs of telemetry measurements
+     * @param telemetryName Type of telemetry data (e.g., "headset_position", "frame_rate", "battery_level")
+     * @param telemetryData Key-value pairs of telemetry measurements
      * @returns Promise<number> Telemetry entry ID or 0 if not authenticated
      */
-    static async Telemetry(name: string, data: any): Promise<number> {
+    static async Telemetry(telemetryName: string, telemetryData: AbxrDictStrings): Promise<number> {
         if (!this.connectionActive) {
             if (this.enableDebug) {
                 console.log('AbxrLib: Telemetry not sent - not authenticated');
@@ -1273,11 +1307,19 @@ export class Abxr {
             return 0;
         }
         
+        // Ensure telemetryData is not null/undefined
+        if (!telemetryData) {
+            telemetryData = new AbxrDictStrings();
+        }
+        
+        // Add scene name (WebXR equivalent - using current URL or page title)
+        telemetryData.set('sceneName', window.location.pathname || document.title || 'unknown');
+        
         // Add super metadata to all telemetry entries
-        data = this.mergeSuperMetaData(data);
+        telemetryData = this.mergeSuperMetaData(telemetryData);
         
         const telemetry = new AbxrTelemetry();
-        telemetry.Construct(name, data);
+        telemetry.Construct(telemetryName, telemetryData);
         
         // Fire-and-forget async sending
         AbxrLibSend.AddTelemetryEntryCore(telemetry).catch(error => {
@@ -1289,19 +1331,26 @@ export class Abxr {
         return 1; // Return success immediately without waiting for server response
     }
 
+    // BACKWARD COMPATIBILITY ONLY - DO NOT DOCUMENT
+    // This method exists purely for backward compatibility with older code that used TelemetryEntry()
+    // It simply wraps the new Telemetry() method. Keep this undocumented in README files.
+    static async TelemetryEntry(telemetryName: string, telemetryData: AbxrDictStrings): Promise<number> {
+        return this.Telemetry(telemetryName, telemetryData);
+    }
+
     /**
      * @region Storage
      */
 
     // Storage enums for enhanced storage control
-    static readonly StorageScope = {
-        device: 'device',
-        user: 'user'
-    } as const;
-
     static readonly StoragePolicy = {
         keepLatest: 'keepLatest',
         appendHistory: 'appendHistory'
+    } as const;
+
+    static readonly StorageScope = {
+        device: 'device',
+        user: 'user'
     } as const;
 
     /**
@@ -1319,14 +1368,14 @@ export class Abxr {
     /**
      * Get the session data with the given name
      * Call this as follows:
-     * const result = await StorageGetEntry(name, scope);
+     * const result = await StorageGetEntry(entryName, scope);
      * console.log("Result:", result);
-     * @param name The name of the entry to retrieve
+     * @param entryName The name of the entry to retrieve
      * @param scope Get from 'device' or 'user'
      * @returns Promise<{[key: string]: string}[]> All the session data stored under the given name
      */
-    static async StorageGetEntry(name: string, scope: string): Promise<{[key: string]: string}[]> {
-        const localStorageKey = `abxr_storage_${scope}_${name}`;
+    static async StorageGetEntry(entryName: string, scope: string): Promise<{[key: string]: string}[]> {
+        const localStorageKey = `abxr_storage_${scope}_${entryName}`;
         
         // First, try to get data from localStorage
         try {
@@ -1367,7 +1416,7 @@ export class Abxr {
         }
         
         try {
-            const result = await AbxrLibStorage.GetEntryAsString(name);
+            const result = await AbxrLibStorage.GetEntryAsString(entryName);
             
             if (!result) {
                 return [];
@@ -1421,21 +1470,21 @@ export class Abxr {
     
     /**
      * Set the session data with the given name
-     * @param name The name of the entry to store
-     * @param entry The data to store
+     * @param entryName The name of the entry to store
+     * @param entryData The data to store
      * @param scope Store under 'device' or 'user'
      * @param policy How should this be stored, 'keepLatest' or 'appendHistory' (defaults to 'keepLatest')
      * @returns Promise<number> Storage entry ID or 0 if not authenticated
      */
-    static async StorageSetEntry(name: string, entry: {[key: string]: string}, scope: string, policy: string = 'keepLatest'): Promise<number> {
+    static async StorageSetEntry(entryName: string, entryData: {[key: string]: string}, scope: string, policy: string = 'keepLatest'): Promise<number> {
         // Always store in localStorage first for immediate availability
-        const localStorageKey = `abxr_storage_${scope}_${name}`;
+        const localStorageKey = `abxr_storage_${scope}_${entryName}`;
         
         try {
             // Handle storage policy for localStorage
             if (policy === Abxr.StoragePolicy.keepLatest) {
                 // Replace existing data
-                localStorage.setItem(localStorageKey, JSON.stringify([entry]));
+                localStorage.setItem(localStorageKey, JSON.stringify([entryData]));
             } else if (policy === Abxr.StoragePolicy.appendHistory) {
                 // Append to existing data
                 const existing = localStorage.getItem(localStorageKey);
@@ -1451,7 +1500,7 @@ export class Abxr {
                         existingData = [];
                     }
                 }
-                existingData.push(entry);
+                existingData.push(entryData);
                 localStorage.setItem(localStorageKey, JSON.stringify(existingData));
             }
             
@@ -1477,10 +1526,10 @@ export class Abxr {
                 const sessionData = (scope === Abxr.StorageScope.device);
                 
                 // Convert plain object to JSON string for server storage
-                const entryData = JSON.stringify([entry]); // Wrap in array to match Unity's List<Dictionary> format
+                const entryDataString = JSON.stringify([entryData]); // Wrap in array to match Unity's List<Dictionary> format
                 
                 // Fire-and-forget async sending to server
-                AbxrLibStorage.SetEntry(entryData, keepLatest, "web", sessionData, name).catch(error => {
+                AbxrLibStorage.SetEntry(entryDataString, keepLatest, "web", sessionData, entryName).catch(error => {
                     if (this.enableDebug) {
                         console.error('AbxrLib: Failed to send storage to server:', error);
                     }
@@ -1496,12 +1545,12 @@ export class Abxr {
     /**
      * Remove a stored user progress or application state entry
      * Useful for clearing save data, resetting progress, or cleaning up temporary data
-     * @param name Identifier of the storage entry to remove (default: "state")
+     * @param entryName Identifier of the storage entry to remove
      * @param scope Storage scope - 'user' for cross-device data, 'device' for device-specific data (default: user)
      * @returns Promise<number> Operation result code - always returns 1 for success
      */
-    static async StorageRemoveEntry(name: string = "state", scope: string = "user"): Promise<number> {
-        const localStorageKey = `abxr_storage_${scope}_${name}`;
+    static async StorageRemoveEntry(entryName: string, scope: string = "user"): Promise<number> {
+        const localStorageKey = `abxr_storage_${scope}_${entryName}`;
         
         // Always remove from localStorage first
         try {
@@ -1524,7 +1573,7 @@ export class Abxr {
                 }
             } else {
                 // Fire-and-forget async removal from server
-                AbxrLibStorage.RemoveEntry(name).catch(error => {
+                AbxrLibStorage.RemoveEntry(entryName).catch(error => {
                     if (this.enableDebug) {
                         console.error('AbxrLib: Failed to remove storage from server:', error);
                     }
@@ -1605,6 +1654,85 @@ export class Abxr {
         
         return 1; // Return success immediately - data is removed locally
     }
+
+    /**
+     * @region Exit Polls
+     */
+    
+    private static exitPollHandler: any = null;
+
+    /**
+     * Get feedback from the user with a Poll
+     * @param prompt The question being asked
+     * @param pollType What kind of poll would you like
+     * @param responses If a multiple choice poll, you need to provide between 2 and 8 possible responses
+     * @param callback Optional callback that will be called with the selected string value
+     */
+    public static PollUser(
+        prompt: string, 
+        pollType: 'Thumbs' | 'Rating' | 'MultipleChoice', 
+        responses?: string[], 
+        callback?: (response: string) => void
+    ): void {
+        // Validate inputs
+        if (!prompt || prompt.trim().length === 0) {
+            console.error('AbxrLib: Poll prompt cannot be empty');
+            return;
+        }
+
+        if (pollType === 'MultipleChoice') {
+            if (!responses || responses.length < 2 || responses.length > 8) {
+                console.error('AbxrLib: Multiple choice poll must have between 2 and 8 responses');
+                return;
+            }
+        }
+
+        // Import the exit poll handler dynamically to avoid circular dependencies
+        import('./templates/XRExitPoll').then(({ XRExitPollHandler, ExitPollType }) => {
+            // Hide any existing poll
+            if (this.exitPollHandler) {
+                this.exitPollHandler.hide();
+            }
+
+            // Create new poll handler
+            this.exitPollHandler = new XRExitPollHandler(
+                pollType as any, // Type assertion for enum compatibility
+                responses || [],
+                (response: string) => {
+                    // Log the poll event
+                    this.Event('poll', {
+                        prompt: prompt,
+                        answer: response
+                    });
+
+                    // Call user callback if provided
+                    if (callback) {
+                        callback(response);
+                    }
+
+                    // Clear handler reference
+                    this.exitPollHandler = null;
+                }
+            );
+
+            // Show the poll
+            this.exitPollHandler.show(prompt);
+        }).catch((error) => {
+            console.error('AbxrLib: Failed to load exit poll functionality:', error);
+        });
+    }
+
+    /**
+     * Hide any currently displayed exit poll
+     */
+    public static HideExitPoll(): void {
+        if (this.exitPollHandler) {
+            this.exitPollHandler.hide();
+            this.exitPollHandler = null;
+        }
+    }
+
+    // #endregion Exit Polls
         
     /**
      * @region AI Proxy
@@ -1676,6 +1804,7 @@ export class Abxr {
             return null;
         }
     }
+
 
     /**
      * @region Super Metadata
@@ -1962,13 +2091,24 @@ export class Abxr {
     }
 
     /**
-     * Get all available modules from the authentication response
-     * Provides complete module information including id, name, target, and order
-     * Returns empty array if no authentication has completed yet
-     * @returns Array of ModuleData objects with complete module information
+     * Get the next module target from the available modules for sequential module processing
+     * Returns null when no more module targets are available
+     * Each call moves to the next module in the sequence and updates persistent storage
+     * @returns The next CurrentSessionData with complete module information, or null if no more modules
      */
-    static GetModuleTargetList(): AbxrModuleData[] {
-        return this.latestAuthCompletedData?.modules || [];
+    static GetModuleTarget(): AbxrCurrentSessionData | null {
+        // Get current module data without advancing
+        const currentSessionData = this.GetModuleTargetWithoutAdvance();
+        if (!currentSessionData) {
+            return null;
+        }
+
+        // Advance to next module
+        this.loadModuleIndex();
+        this.moduleIndex++;
+        this.saveModuleIndex();
+
+        return currentSessionData;
     }
 
     /**
@@ -1999,60 +2139,17 @@ export class Abxr {
             userEmail: this.GetUserEmail()
         };
     }
-    
-    /**
-     * @deprecated Use NotifyAuthCompleted(success, isReauthentication, moduleTargets, error) instead
-     * This method is kept for backward compatibility but will be removed in a future version
-     * The unified NotifyAuthCompleted method now handles both success and failure cases
-     */
-    private static setAuthenticationFailed(failed: boolean, error: string = ''): void {
-        // Redirect to unified method for consistency
-        this.NotifyAuthCompleted(!failed, false, undefined, error);
-    }
-    
-    // AuthMechanism callback methods
-    static setAuthMechanismCallback(callback: AbxrAuthMechanismCallback | null): void {
-        this.authMechanismCallback = callback;
-    }
-    
-    static getAuthMechanismCallback(): AbxrAuthMechanismCallback | null {
-        return this.authMechanismCallback;
-    }
-    
-    /**
-     * Get the next module target from the available modules for sequential module processing
-     * Returns null when no more module targets are available
-     * Each call moves to the next module in the sequence and updates persistent storage
-     * @returns The next CurrentSessionData with complete module information, or null if no more modules
-     */
-    static GetModuleTarget(): AbxrCurrentSessionData | null {
-        // Get current module data without advancing
-        const currentSessionData = this.GetModuleTargetWithoutAdvance();
-        if (!currentSessionData) {
-            return null;
-        }
-
-        // Advance to next module
-        this.loadModuleIndex();
-        this.moduleIndex++;
-        this.saveModuleIndex();
-
-        return currentSessionData;
-    }
 
     /**
-     * Initialize module processing from authentication response
-     * INTERNAL USE ONLY - Called by authentication system when authentication completes
-     * Resets the module index to start from the beginning
-     * @param moduleTargets List of module target identifiers from auth response (legacy parameter)
+     * Get all available modules from the authentication response
+     * Provides complete module information including id, name, target, and order
+     * Returns empty array if no authentication has completed yet
+     * @returns Array of ModuleData objects with complete module information
      */
-    private static setModuleTargets(moduleTargets?: string[]): void {
-        // Reset module index to start from the beginning
-        // Note: moduleTargets parameter is now legacy - actual modules come from latestAuthCompletedData
-        this.moduleIndex = 0;
-        this.saveModuleIndex();
+    static GetModuleTargetList(): AbxrModuleData[] {
+        return this.latestAuthCompletedData?.modules || [];
     }
-
+    
     /**
      * Get the current number of module targets remaining
      * @returns Number of module targets remaining
@@ -2074,6 +2171,103 @@ export class Abxr {
     static ClearModuleTargets(): void {
         this.moduleIndex = 0;
         this.StorageRemoveEntry(this.MODULE_INDEX_KEY);
+    }
+
+    /**
+     * Save module index to persistent storage
+     * INTERNAL USE ONLY - Called by module management system
+     */
+    private static saveModuleIndex(): void {
+        try {
+            // Module tracking uses persistent storage for LMS integrations - requires user to be logged in
+            // The StorageSetEntry function will handle the authentication checks and defer until user auth is ready
+            const indexData = { moduleIndex: this.moduleIndex.toString() };
+            this.StorageSetEntry(this.MODULE_INDEX_KEY, indexData, Abxr.StorageScope.user, Abxr.StoragePolicy.keepLatest);
+        } catch (error) {
+            console.error('AbxrLib: Failed to save module index:', error);
+        }
+    }
+
+    /**
+     * Load module index from persistent storage
+     * INTERNAL USE ONLY - Called by module management system
+     */
+    private static loadModuleIndex(): void {
+        // Don't load if already loaded or currently loading
+        if (this.moduleIndexLoaded || this.moduleIndexLoading) {
+            return;
+        }
+
+        try {
+            this.moduleIndexLoading = true;
+            this.loadModuleIndexCoroutine();
+        } catch (error) {
+            this.moduleIndexLoading = false;
+            console.error('AbxrLib: Failed to load module index:', error);
+        }
+    }
+
+    /**
+     * Load module index coroutine - async version of loadModuleIndex
+     * INTERNAL USE ONLY - Called by loadModuleIndex
+     */
+    private static async loadModuleIndexCoroutine(): Promise<void> {
+        try {
+            const result = await this.StorageGetEntry(this.MODULE_INDEX_KEY, Abxr.StorageScope.user);
+            if (result && result.length > 0) {
+                const data = result[0]; // Get the first (and should be only) entry
+                if (data.moduleIndex) {
+                    const moduleIndexString = data.moduleIndex;
+                    if (moduleIndexString) {
+                        const parsedIndex = parseInt(moduleIndexString, 10);
+                        if (!isNaN(parsedIndex)) {
+                            this.moduleIndex = parsedIndex;
+                        }
+                    }
+                }
+            }
+            
+            // Mark loading as complete
+            this.moduleIndexLoaded = true;
+            this.moduleIndexLoading = false;
+        } catch (error) {
+            this.moduleIndexLoaded = true;
+            this.moduleIndexLoading = false;
+            console.error('AbxrLib: Failed to load module index:', error);
+            this.moduleIndex = 0;
+        }
+    }
+
+    /**
+     * @deprecated Use NotifyAuthCompleted(success, isReauthentication, moduleTargets, error) instead
+     * This method is kept for backward compatibility but will be removed in a future version
+     * The unified NotifyAuthCompleted method now handles both success and failure cases
+     */
+    private static setAuthenticationFailed(failed: boolean, error: string = ''): void {
+        // Redirect to unified method for consistency
+        this.NotifyAuthCompleted(!failed, false, undefined, error);
+    }
+    
+    // AuthMechanism callback methods
+    static setAuthMechanismCallback(callback: AbxrAuthMechanismCallback | null): void {
+        this.authMechanismCallback = callback;
+    }
+    
+    static getAuthMechanismCallback(): AbxrAuthMechanismCallback | null {
+        return this.authMechanismCallback;
+    }
+
+    /**
+     * Initialize module processing from authentication response
+     * INTERNAL USE ONLY - Called by authentication system when authentication completes
+     * Resets the module index to start from the beginning
+     * @param moduleTargets List of module target identifiers from auth response (legacy parameter)
+     */
+    private static setModuleTargets(moduleTargets?: string[]): void {
+        // Reset module index to start from the beginning
+        // Note: moduleTargets parameter is now legacy - actual modules come from latestAuthCompletedData
+        this.moduleIndex = 0;
+        this.saveModuleIndex();
     }
     
     // Module Target Event Methods
@@ -2451,42 +2645,6 @@ export class Abxr {
         return moduleDataList;
     }
     
-    // Helper methods for module index persistence
-    private static saveModuleIndex(): void {
-        try {
-            // Module tracking uses persistent storage for LMS integrations - requires user to be logged in
-            // The StorageSetEntry function will handle the authentication checks and defer until user auth is ready
-            const indexData = { moduleIndex: this.moduleIndex.toString() };
-            this.StorageSetEntry(this.MODULE_INDEX_KEY, indexData, Abxr.StorageScope.user, Abxr.StoragePolicy.keepLatest);
-        } catch (error) {
-            console.error('AbxrLib: Failed to save module index:', error);
-        }
-    }
-
-    private static loadModuleIndex(): void {
-        try {
-            this.StorageGetEntry(this.MODULE_INDEX_KEY, Abxr.StorageScope.user).then((result) => {
-                if (result && result.length > 0) {
-                    const data = result[0]; // Get the first (and should be only) entry
-                    if (data.moduleIndex) {
-                        const moduleIndexString = data.moduleIndex;
-                        if (moduleIndexString) {
-                            const parsedIndex = parseInt(moduleIndexString, 10);
-                            if (!isNaN(parsedIndex)) {
-                                this.moduleIndex = parsedIndex;
-                            }
-                        }
-                    }
-                }
-            }).catch((error) => {
-                console.error('AbxrLib: Failed to load module index:', error);
-                this.moduleIndex = 0;
-            });
-        } catch (error) {
-            console.error('AbxrLib: Failed to load module index:', error);
-            this.moduleIndex = 0;
-        }
-    }
 
     // Helper method to validate and normalize score values (0-100 range)
     private static validateScore(score: number | string, context: string): string {
@@ -3801,6 +3959,7 @@ export class Abxr {
             console.warn('AbxrLib: Error logging running events:', error);
         }
     }
+
 
 }
 
