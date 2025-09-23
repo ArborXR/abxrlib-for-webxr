@@ -10,7 +10,7 @@ The name "ABXR" stands for "Analytics Backbone for XR"—a flexible, open-source
    - [Events](#events)
    - [Analytics Event Wrappers](#analytics-event-wrappers-essential-for-all-developers)
    - [Timed Events](#timed-events)
-   - [Super Properties](#super-properties)
+   - [Super Metadata](#super-metadata)
    - [Logging](#logging)
    - [Storage](#storage)
    - [Telemetry](#telemetry)
@@ -151,7 +151,7 @@ import { Abxr_init, Abxr, AbxrLib } from 'abxrlib-for-webxr';
 
 **Option 3: Browser global scope (no import needed)**
 ```html
-<script src="node_modules/abxrlib-for-webxr/index.js"></script>
+<script src="node_modules/abxrlib-for-webxr/Abxr.js"></script>
 <script>
     // Abxr_init and Abxr are available globally
     Abxr_init('app123', 'org456', 'secret789');
@@ -384,7 +384,7 @@ Abxr.Track("User Session"); // Duration automatically included
 
 **Note:** The timer automatically adds a `duration` field (in seconds) to any subsequent event with the same name. The timer is automatically removed after the first matching event.
 
-### Super Properties
+### Super Metadata
 
 Global properties automatically included in all events, logs, and telemetry data:
 
@@ -402,7 +402,7 @@ Abxr.RegisterOnce("user_tier", "free");
 
 // Management
 Abxr.Unregister("device_type");  // Remove specific property
-Abxr.Reset();                    // Clear all super properties
+Abxr.Reset();                    // Clear all super metadata
 ```
 
 Perfect for user attributes, app state, and device information that should be included with every event, log entry, and telemetry data point.
@@ -599,21 +599,21 @@ Abxr.Event("app_started");
 
 The ABXRLib SDK automatically enhances your data with additional context and metadata without requiring explicit configuration:
 
-#### Super Properties Auto-Merge
-Super properties are automatically merged into **every** event, log, and telemetry entry's metadata. Data-specific properties take precedence when keys conflict:
+#### Super Metadata Auto-Merge
+Super metadata are automatically merged into **every** event, log, and telemetry entry's metadata. Data-specific properties take precedence when keys conflict:
 ```javascript
-// Set super properties
+// Set super metadata
 Abxr.Register("app_version", "1.2.3");
 Abxr.Register("user_type", "premium");
 
-// Every event automatically includes super properties
+// Every event automatically includes super metadata
 Abxr.Event("level_complete", {
     "level": "3", 
-    "user_type": "trial"  // This overrides the super property
+    "user_type": "trial"  // This overrides the super metadata
 });
 // Result includes: app_version=1.2.3, user_type=trial, level=3
 
-// Logs and telemetry also automatically include super properties
+// Logs and telemetry also automatically include super metadata
 Abxr.LogInfo("Player action", { "action": "jump" });
 // Result includes: app_version=1.2.3, user_type=premium, action=jump
 
@@ -1031,7 +1031,7 @@ The ABXRLib SDK provides full compatibility with Mixpanel's JavaScript SDK, maki
 2. Remove: mixpanel.init('YOUR_PROJECT_TOKEN');
 2. Configure ABXRLib SDK credentials
 3. Replace `mixpanel.track` → `Abxr.Track` throughout codebase
-4. Replace `mixpanel.register` → `Abxr.Register` throughout codebase for **super properties**
+4. Replace `mixpanel.register` → `Abxr.Register` throughout codebase for **super metadata**
 
 
 ```javascript
@@ -1062,7 +1062,7 @@ Abxr.Track("puzzle_solving"); // Duration automatically included
 |---------|----------|-----------|
 | **Basic Event Tracking** | ✅ | ✅ |
 | **Custom Properties** | ✅ | ✅ |
-| **Super Properties** | ✅ | ✅ (Register/RegisterOnce available) |
+| **Super Metadata/Properties** | ✅ | ✅ (Register/RegisterOnce available) |
 | **Timed Events** | ✅ | ✅ (StartTimedEvent available) |
 | **XR-Specific Events** | ❌ | ✅ (Assessments, Interactions, Objectives) |
 | **Session Persistence** | Limited | ✅ (Cross-device, resumable sessions) |
@@ -1437,9 +1437,9 @@ Object tracking can be enabled by adding the Track Object component to any GameO
 - **Debug**: Enable debug logging to see why events are being blocked
 - **Check**: Verify your event names use snake_case format for best processing
 
-**Problem: Super Properties not persisting**
+**Problem: Super Metadata not persisting**
 - **Solution**: Check that localStorage is available in your browser
-- **Debug**: Use `Abxr.GetSuperProperties()` to inspect current super properties
+- **Debug**: Use `Abxr.GetSuperMetaData()` to inspect current super metadata
 - **Fix**: Ensure you're calling `Abxr.Register()` after authentication completes
 
 #### Session Management Issues

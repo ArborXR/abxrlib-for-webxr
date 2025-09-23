@@ -1,10 +1,10 @@
 {
 	"name": "abxrlib-for-webxr",
 	"version": "1.0.0",
-	"main": "index.js",
-	"module": "index.js",
-	"browser": "index.js",
-	"types": "index.d.ts",
+	"main": "Abxr.js",
+	"module": "Abxr.js",
+	"browser": "Abxr.js",
+	"types": "Abxr.d.ts",
 	"description": "AbxrLibWebForXR for node (npm)",
 	"scripts": {
 		"test-package": "npm link abxrlib",
@@ -60,8 +60,8 @@
 		"three": "^0.160.0"
 	},
 	"files": [
-		"index.js",
-		"index.d.ts",
+		"Abxr.js",
+		"Abxr.d.ts",
 		"*.d.ts",
 		"network/**/*",
 		"README.md",

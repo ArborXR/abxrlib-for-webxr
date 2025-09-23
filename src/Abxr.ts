@@ -500,14 +500,14 @@ export class Abxr {
     private static latestAuthCompletedData: AuthCompletedData | null = null;
     private static authCompletedCallbacks: AuthCompletedCallback[] = [];
     private static moduleTargetCallbacks: ModuleTargetCallback[] = [];
-    private static superProperties: Map<string, string> = new Map();
-    private static readonly SUPER_PROPERTIES_KEY = 'abxr_super_properties';
+    private static superMetaData: Map<string, string> = new Map();
+    private static readonly SUPER_METADATA_KEY = 'abxr_super_metadata';
     private static quitHandlerEnabled: boolean = false;  // Disabled by default for WebXR
     private static readonly RUNNING_EVENTS_KEY = 'abxr_running_events';
     
     // Static initialization
     static {
-        Abxr.loadSuperProperties();
+        Abxr.loadSuperMetaData();
         // Note: Quit handler is NOT initialized by default for WebXR due to navigation issues
         // Call Abxr.EnableQuitHandler() explicitly if needed for single-page apps
     }
@@ -1096,8 +1096,8 @@ export class Abxr {
             return;
         }
         
-        // Add super properties to all logs
-        meta = this.mergeSuperProperties(meta);
+        // Add super metadata to all logs
+        meta = this.mergeSuperMetaData(meta);
         
         const log = new AbxrLog();
         log.Construct(level, message, this.convertToAbxrDictStrings(meta));
@@ -1176,8 +1176,8 @@ export class Abxr {
             return 0; // Return success even when not authenticated
         }
         
-        // Add super properties to all events
-        meta = this.mergeSuperProperties(meta);
+        // Add super metadata to all events
+        meta = this.mergeSuperMetaData(meta);
         
         const event = new AbxrEvent();
         event.Construct(name, this.convertToAbxrDictStrings(meta));
@@ -1521,132 +1521,132 @@ export class Abxr {
     }
     
     /**
-     * Register a super property that will be automatically included in all events
-     * Super properties persist across browser sessions and are stored in localStorage
-     * @param key Property name
-     * @param value Property value
+     * Register a super metadata that will be automatically included in all events
+     * Super metadata persist across browser sessions and are stored in localStorage
+     * @param key metadata name
+     * @param value metadata value
      */
     static Register(key: string, value: string): void {
-        if (this.isReservedSuperPropertyKey(key)) {
-            const errorMessage = `AbxrLib: Cannot register super property with reserved key '${key}'. Reserved keys are: module, module_name, module_id, module_order`;
+        if (this.isReservedSuperMetadataKey(key)) {
+            const errorMessage = `AbxrLib: Cannot register super metadata with reserved key '${key}'. Reserved keys are: module, module_name, module_id, module_order`;
             console.warn(errorMessage);
             this.LogInfo(errorMessage, { 
                 attempted_key: key, 
                 attempted_value: value,
-                error_type: 'reserved_super_property_key'
+                error_type: 'reserved_super_metadata_key'
             });
             return;
         }
 
-        this.superProperties.set(key, value);
-        this.saveSuperProperties();
+        this.superMetaData.set(key, value);
+        this.saveSuperMetaData();
     }
     
     /**
-     * Register a super property only if it doesn't already exist
-     * Will not overwrite existing super properties with the same key - perfect for default values
-     * Super properties persist across browser sessions and are stored in localStorage
-     * @param key Property name
-     * @param value Property value (only set if key doesn't already exist)
+     * Register a super metadata only if it doesn't already exist
+     * Will not overwrite existing super metadata with the same key - perfect for default values
+     * Super metadata persist across browser sessions and are stored in localStorage
+     * @param key metadata name
+     * @param value metadata value (only set if key doesn't already exist)
      */
     static RegisterOnce(key: string, value: string): void {
-        if (this.isReservedSuperPropertyKey(key)) {
-            const errorMessage = `AbxrLib: Cannot register super property with reserved key '${key}'. Reserved keys are: module, module_name, module_id, module_order`;
+        if (this.isReservedSuperMetadataKey(key)) {
+            const errorMessage = `AbxrLib: Cannot register super metadata with reserved key '${key}'. Reserved keys are: module, module_name, module_id, module_order`;
             console.warn(errorMessage);
             this.LogInfo(errorMessage, { 
                 attempted_key: key, 
                 attempted_value: value,
-                error_type: 'reserved_super_property_key'
+                error_type: 'reserved_super_metadata_key'
             });
             return;
         }
 
-        if (!this.superProperties.has(key)) {
-            this.superProperties.set(key, value);
-            this.saveSuperProperties();
+        if (!this.superMetaData.has(key)) {
+            this.superMetaData.set(key, value);
+            this.saveSuperMetaData();
         }
     }
     
     /**
-     * Remove a super property from all future events
-     * Also removes the property from persistent storage (localStorage)
-     * @param key Property name to remove
+     * Remove a super metadata from all future events
+     * Also removes the metadata from persistent storage (localStorage)
+     * @param key metadata name to remove
      */
     static Unregister(key: string): void {
-        this.superProperties.delete(key);
-        this.saveSuperProperties();
+        this.superMetaData.delete(key);
+        this.saveSuperMetaData();
     }
     
     /**
-     * Clear all super properties from current session and persistent storage  
+     * Clear all super metadata from current session and persistent storage  
      * Equivalent to mixpanel.reset() - useful for user logout or data reset scenarios
      */
     static Reset(): void {
-        this.superProperties.clear();
-        this.saveSuperProperties();
+        this.superMetaData.clear();
+        this.saveSuperMetaData();
     }
     
     /**
-     * Get a copy of all current super properties as a JavaScript object
-     * Useful for debugging, backup, or inspecting current global event properties
-     * @returns Object containing all super properties as key-value pairs
+     * Get a copy of all current super metadata as a JavaScript object
+     * Useful for debugging, backup, or inspecting current global event metadata
+     * @returns Object containing all super metadata as key-value pairs
      */
-    static GetSuperProperties(): { [key: string]: string } {
+    static GetSuperMetaData(): { [key: string]: string } {
         const result: { [key: string]: string } = {};
-        this.superProperties.forEach((value, key) => {
+        this.superMetaData.forEach((value, key) => {
             result[key] = value;
         });
         return result;
     }
     
-    private static loadSuperProperties(): void {
+    private static loadSuperMetaData(): void {
         if (typeof localStorage === 'undefined') return;
         
         try {
-            const stored = localStorage.getItem(this.SUPER_PROPERTIES_KEY);
+            const stored = localStorage.getItem(this.SUPER_METADATA_KEY);
             if (stored) {
                 const parsed = JSON.parse(stored);
-                this.superProperties.clear();
+                this.superMetaData.clear();
                 Object.entries(parsed).forEach(([key, value]) => {
-                    this.superProperties.set(key, value as string);
+                    this.superMetaData.set(key, value as string);
                 });
             }
         } catch (error) {
             if (this.enableDebug) {
-                console.warn('AbxrLib: Failed to load super properties:', error);
+                console.warn('AbxrLib: Failed to load super metadata:', error);
             }
         }
     }
     
-    private static saveSuperProperties(): void {
+    private static saveSuperMetaData(): void {
         if (typeof localStorage === 'undefined') return;
         
         try {
             const obj: { [key: string]: string } = {};
-            this.superProperties.forEach((value, key) => {
+            this.superMetaData.forEach((value, key) => {
                 obj[key] = value;
             });
-            localStorage.setItem(this.SUPER_PROPERTIES_KEY, JSON.stringify(obj));
+            localStorage.setItem(this.SUPER_METADATA_KEY, JSON.stringify(obj));
         } catch (error) {
             if (this.enableDebug) {
-                console.warn('AbxrLib: Failed to save super properties:', error);
+                console.warn('AbxrLib: Failed to save super metadata:', error);
             }
         }
     }
 
     /**
-     * Private helper function to merge super properties and module info into metadata
-     * Handles various metadata formats and ensures data-specific properties take precedence
-     * @param meta The metadata to merge super properties into
-     * @returns The metadata with super properties and module info merged
+     * Private helper function to merge super metadata and module info into metadata
+     * Handles various metadata formats and ensures data-specific metadata take precedence
+     * @param meta The metadata to merge super metadata into
+     * @returns The metadata with super metadata and module info merged
      */
-    private static mergeSuperProperties(meta: any): any {
+    private static mergeSuperMetaData(meta: any): any {
         // Helper function to add module info to object-style metadata
         const addModuleInfoToObject = (obj: any): any => {
             // Get current module session data
             const currentSession = this.GetModuleTargetWithoutAdvance();
             if (currentSession) {
-                // Only add module info if not already present (data-specific properties take precedence)
+                // Only add module info if not already present (data-specific metadata take precedence)
                 if (!('module' in obj) && currentSession.moduleTarget) {
                     obj.module = currentSession.moduleTarget;
                 }
@@ -1702,20 +1702,20 @@ export class Abxr {
         };
 
         if (!meta) {
-            // If no meta provided, create object with module info and super properties
+            // If no meta provided, create object with module info and super metadata
             meta = {};
             meta = addModuleInfoToObject(meta);
-            this.superProperties.forEach((value, key) => {
+            this.superMetaData.forEach((value, key) => {
                 if (!(key in meta)) { // Don't overwrite module info
                     meta[key] = value;
                 }
             });
         } else if (typeof meta === 'object' && meta !== null && !Array.isArray(meta)) {
-            // If meta is an object, add module info and super properties (don't overwrite data-specific properties)
-            const combined = { ...meta }; // Start with data-specific properties
+            // If meta is an object, add module info and super metadata (don't overwrite data-specific metadata)
+            const combined = { ...meta }; // Start with data-specific metadata
             addModuleInfoToObject(combined);
-            this.superProperties.forEach((value, key) => {
-                if (!(key in combined)) { // Only add if not already present (preserves data-specific and module info)
+            this.superMetaData.forEach((value, key) => {
+                if (!(key in combined)) { // Only add if not already present (preserves data-specific metadata and module info)
                     combined[key] = value;
                 }
             });
@@ -1724,8 +1724,8 @@ export class Abxr {
             // If meta is a string, JSON, URL params, etc., convert and merge
             const convertedMeta = this.convertToAbxrDictStrings(meta);
             addModuleInfoToDictStrings(convertedMeta);
-            this.superProperties.forEach((value, key) => {
-                if (!convertedMeta.has(key)) { // Don't overwrite data-specific or module info
+            this.superMetaData.forEach((value, key) => {
+                if (!convertedMeta.has(key)) { // Don't overwrite data-specific metadata or module info
                     convertedMeta.Add(key, value);
                 }
             });
@@ -1736,12 +1736,12 @@ export class Abxr {
     }
 
     /**
-     * Private helper to check if a super property key is reserved for module data
+     * Private helper to check if a super metadata key is reserved for module data
      * Reserved keys: module, module_name, module_id, module_order
      * @param key The key to validate
      * @returns True if the key is reserved, false otherwise
      */
-    private static isReservedSuperPropertyKey(key: string): boolean {
+    private static isReservedSuperMetadataKey(key: string): boolean {
         return key === 'module' || key === 'module_name' || key === 'module_id' || key === 'module_order';
     }
 
@@ -2064,8 +2064,8 @@ export class Abxr {
             return 0;
         }
         
-        // Add super properties to all telemetry entries
-        data = this.mergeSuperProperties(data);
+        // Add super metadata to all telemetry entries
+        data = this.mergeSuperMetaData(data);
         
         const telemetry = new AbxrTelemetry();
         telemetry.Construct(name, data);
@@ -2174,199 +2174,7 @@ export class Abxr {
         return headers;
     }
 
-    // ===== Mixpanel Compatibility Methods =====
-    
-    /**
-     * Mixpanel compatibility method - tracks an event with optional properties
-     * Drop-in replacement for mixpanel.track() - provides seamless migration from Mixpanel
-     * Internally calls the AbxrLib Event method with enhanced XR capabilities
-     * If StartTimedEvent() was called with this event name, duration will be added automatically
-     * @param eventName Name of the event to track
-     * @param properties Optional properties to send with the event (supports all ABXR metadata formats)
-     * @returns Promise<number> Event ID or 0 if not authenticated
-     */
-    static async Track(eventName: string, properties?: any): Promise<number> {
-        // Add AbxrMethod tag to track Mixpanel compatibility usage
-        let trackProperties: any;
-        
-        if (!properties) {
-            // No properties provided, create object with just the tag
-            trackProperties = { AbxrMethod: "Track" };
-        } else if (typeof properties === 'object' && properties !== null && !Array.isArray(properties)) {
-            // Properties is an object, add the tag to it
-            trackProperties = { ...properties, AbxrMethod: "Track" };
-        } else {
-            // Properties is a string, primitive, or other type - create wrapper object
-            trackProperties = { AbxrMethod: "Track", originalProperties: properties };
-        }
-        
-        return await this.Event(eventName, trackProperties);
-    }
 
-    // ===== Cognitive3D Compatibility Methods =====
-    
-    /**
-     * Cognitive3D compatibility class for custom events
-     * This class provides compatibility with Cognitive3D SDK for easier migration
-     * Usage: new Cognitive3D.CustomEvent("event_name").Send() instead of Cognitive3D SDK calls
-     */
-    static CustomEvent = class {
-        public eventName: string;
-        public properties: { [key: string]: string };
-
-        constructor(name: string) {
-            this.eventName = name;
-            this.properties = {};
-        }
-
-        /**
-         * Set a property for this custom event
-         * @param key Property key
-         * @param value Property value
-         * @returns This CustomEvent instance for method chaining
-         */
-        SetProperty(key: string, value: any): this {
-            this.properties[key] = String(value);
-            return this;
-        }
-
-        /**
-         * Send the custom event to AbxrLib
-         */
-        async Send(): Promise<number> {
-            const meta = { ...this.properties, Cognitive3DMethod: "CustomEvent" };
-            return await Abxr.Event(this.eventName, meta);
-        }
-    };
-
-    /**
-     * Start an event (maps to EventAssessmentStart for Cognitive3D compatibility)
-     * @param eventName Name of the event to start
-     * @param properties Optional properties for the event
-     * @returns Promise<number> Event ID or 0 if not authenticated
-     */
-    static async StartEvent(eventName: string, properties?: any): Promise<number> {
-        const meta: any = { Cognitive3DMethod: "StartEvent" };
-
-        if (properties && typeof properties === 'object') {
-            Object.assign(meta, properties);
-        }
-
-        return await this.EventAssessmentStart(eventName, meta);
-    }
-
-    /**
-     * End an event (maps to EventAssessmentComplete for Cognitive3D compatibility)
-     * Attempts to convert Cognitive3D result formats to AbxrLib EventStatus
-     * @param eventName Name of the event to end
-     * @param result Event result (will attempt conversion to EventStatus)
-     * @param score Optional score (defaults to 100)
-     * @param properties Optional properties for the event
-     * @returns Promise<number> Event ID or 0 if not authenticated
-     */
-    static async EndEvent(eventName: string, result?: any, score: number = 100, properties?: any): Promise<number> {
-        const meta: any = { Cognitive3DMethod: "EndEvent" };
-
-        if (properties && typeof properties === 'object') {
-            Object.assign(meta, properties);
-        }
-
-        // Convert result to EventStatus with best guess logic
-        let status = EventStatus.eComplete;
-        if (result !== undefined && result !== null) {
-            const resultStr = String(result).toLowerCase();
-            if (resultStr.includes("pass") || resultStr.includes("success") || resultStr.includes("complete") || resultStr === "true" || resultStr === "1") {
-                status = EventStatus.ePass;
-            } else if (resultStr.includes("fail") || resultStr.includes("error") || resultStr === "false" || resultStr === "0") {
-                status = EventStatus.eFail;
-            } else if (resultStr.includes("incomplete")) {
-                status = EventStatus.eIncomplete;
-            } else if (resultStr.includes("browse")) {
-                status = EventStatus.eBrowsed;
-            }
-        }
-
-        return await this.EventAssessmentComplete(eventName, score, status, meta);
-    }
-
-    /**
-     * Send an event (maps to EventObjectiveComplete for Cognitive3D compatibility)
-     * @param eventName Name of the event
-     * @param properties Event properties
-     * @returns Promise<number> Event ID or 0 if not authenticated
-     */
-    static async SendEvent(eventName: string, properties?: any): Promise<number> {
-        const meta: any = { Cognitive3DMethod: "SendEvent" };
-        let score = 100;
-        let status = EventStatus.eComplete;
-
-        if (properties && typeof properties === 'object') {
-            Object.entries(properties).forEach(([key, value]) => {
-                const keyLower = key.toLowerCase();
-                const valueStr = String(value);
-
-                // Extract score if provided
-                if (keyLower === "score") {
-                    const parsedScore = parseInt(valueStr, 10);
-                    if (!isNaN(parsedScore)) {
-                        score = parsedScore;
-                    }
-                }
-                // Extract status/result if provided
-                else if (keyLower === "result" || keyLower === "status" || keyLower === "success") {
-                    const valueLower = valueStr.toLowerCase();
-                    if (valueLower.includes("pass") || valueLower.includes("success") || valueStr === "true" || valueStr === "1") {
-                        status = EventStatus.ePass;
-                    } else if (valueLower.includes("fail") || valueLower.includes("error") || valueStr === "false" || valueStr === "0") {
-                        status = EventStatus.eFail;
-                    } else if (valueLower.includes("incomplete")) {
-                        status = EventStatus.eIncomplete;
-                    }
-                }
-
-                meta[key] = valueStr;
-            });
-        }
-
-        return await this.EventObjectiveComplete(eventName, score, status, meta);
-    }
-
-    /**
-     * Set session property (maps to Register for Cognitive3D compatibility)
-     * @param key Property key
-     * @param value Property value
-     */
-    static SetSessionProperty(key: string, value: any): void {
-        this.Register(key, String(value));
-    }
-
-    /**
-     * Set participant property (stub for Cognitive3D compatibility - not implemented)
-     * This method exists for string replacement compatibility but does not store data
-     * Use AbxrLib's authentication system and GetLearnerData() instead
-     * @param key Property key (ignored)
-     * @param value Property value (ignored)
-     * @deprecated SetParticipantProperty is not implemented. Use AbxrLib's authentication system and GetLearnerData() instead.
-     */
-    static SetParticipantProperty(key: string, value: any): void {
-        // Intentionally empty stub for compatibility
-        if (this.enableDebug) {
-            console.warn(`AbxrLib: SetParticipantProperty called but not implemented. Key: ${key}, Value: ${value}. Use AbxrLib authentication system instead.`);
-        }
-    }
-
-    /**
-     * Get participant property (maps to GetLearnerData for Cognitive3D compatibility)
-     * @param key Property key to retrieve
-     * @returns Property value if found, null otherwise
-     */
-    static GetParticipantProperty(key: string): any {
-        const learnerData = this.GetLearnerData();
-        if (learnerData && typeof learnerData === 'object' && learnerData[key] !== undefined) {
-            return learnerData[key];
-        }
-        return null;
-    }
 
     /**
      * INTERNAL USE ONLY - Do not use in application code
@@ -3670,6 +3478,204 @@ export class Abxr {
         
         this.queuedEvents = []; // Clear the queue
     }
+
+    // ===== COMPATIBILITY METHODS =====
+    // These methods provide compatibility for migrating from other analytics SDKs
+    // They are organized at the end of the class to keep the main API clean
+
+    // ===== Mixpanel Compatibility Methods =====
+    
+    /**
+     * Mixpanel compatibility method - tracks an event with optional properties
+     * Drop-in replacement for mixpanel.track() - provides seamless migration from Mixpanel
+     * Internally calls the AbxrLib Event method with enhanced XR capabilities
+     * If StartTimedEvent() was called with this event name, duration will be added automatically
+     * @param eventName Name of the event to track
+     * @param properties Optional properties to send with the event (supports all ABXR metadata formats)
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async Track(eventName: string, properties?: any): Promise<number> {
+        // Add AbxrMethod tag to track Mixpanel compatibility usage
+        let trackProperties: any;
+        
+        if (!properties) {
+            // No properties provided, create object with just the tag
+            trackProperties = { AbxrMethod: "Track" };
+        } else if (typeof properties === 'object' && properties !== null && !Array.isArray(properties)) {
+            // Properties is an object, add the tag to it
+            trackProperties = { ...properties, AbxrMethod: "Track" };
+        } else {
+            // Properties is a string, primitive, or other type - create wrapper object
+            trackProperties = { AbxrMethod: "Track", originalProperties: properties };
+        }
+        
+        return await this.Event(eventName, trackProperties);
+    }
+
+    // ===== Cognitive3D Compatibility Methods =====
+    
+    /**
+     * Cognitive3D compatibility class for custom events
+     * This class provides compatibility with Cognitive3D SDK for easier migration
+     * Usage: new Cognitive3D.CustomEvent("event_name").Send() instead of Cognitive3D SDK calls
+     */
+    static CustomEvent = class {
+        public eventName: string;
+        public properties: { [key: string]: string };
+
+        constructor(name: string) {
+            this.eventName = name;
+            this.properties = {};
+        }
+
+        /**
+         * Set a property for this custom event
+         * @param key Property key
+         * @param value Property value
+         * @returns This CustomEvent instance for method chaining
+         */
+        SetProperty(key: string, value: any): this {
+            this.properties[key] = String(value);
+            return this;
+        }
+
+        /**
+         * Send the custom event to AbxrLib
+         */
+        async Send(): Promise<number> {
+            const meta = { ...this.properties, Cognitive3DMethod: "CustomEvent" };
+            return await Abxr.Event(this.eventName, meta);
+        }
+    };
+
+    /**
+     * Start an event (maps to EventAssessmentStart for Cognitive3D compatibility)
+     * @param eventName Name of the event to start
+     * @param properties Optional properties for the event
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async StartEvent(eventName: string, properties?: any): Promise<number> {
+        const meta: any = { Cognitive3DMethod: "StartEvent" };
+
+        if (properties && typeof properties === 'object') {
+            Object.assign(meta, properties);
+        }
+
+        return await this.EventAssessmentStart(eventName, meta);
+    }
+
+    /**
+     * End an event (maps to EventAssessmentComplete for Cognitive3D compatibility)
+     * Attempts to convert Cognitive3D result formats to AbxrLib EventStatus
+     * @param eventName Name of the event to end
+     * @param result Event result (will attempt conversion to EventStatus)
+     * @param score Optional score (defaults to 100)
+     * @param properties Optional properties for the event
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async EndEvent(eventName: string, result?: any, score: number = 100, properties?: any): Promise<number> {
+        const meta: any = { Cognitive3DMethod: "EndEvent" };
+
+        if (properties && typeof properties === 'object') {
+            Object.assign(meta, properties);
+        }
+
+        // Convert result to EventStatus with best guess logic
+        let status = EventStatus.eComplete;
+        if (result !== undefined && result !== null) {
+            const resultStr = String(result).toLowerCase();
+            if (resultStr.includes("pass") || resultStr.includes("success") || resultStr.includes("complete") || resultStr === "true" || resultStr === "1") {
+                status = EventStatus.ePass;
+            } else if (resultStr.includes("fail") || resultStr.includes("error") || resultStr === "false" || resultStr === "0") {
+                status = EventStatus.eFail;
+            } else if (resultStr.includes("incomplete")) {
+                status = EventStatus.eIncomplete;
+            } else if (resultStr.includes("browse")) {
+                status = EventStatus.eBrowsed;
+            }
+        }
+
+        return await this.EventAssessmentComplete(eventName, score, status, meta);
+    }
+
+    /**
+     * Send an event (maps to EventObjectiveComplete for Cognitive3D compatibility)
+     * @param eventName Name of the event
+     * @param properties Event properties
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async SendEvent(eventName: string, properties?: any): Promise<number> {
+        const meta: any = { Cognitive3DMethod: "SendEvent" };
+        let score = 100;
+        let status = EventStatus.eComplete;
+
+        if (properties && typeof properties === 'object') {
+            Object.entries(properties).forEach(([key, value]) => {
+                const keyLower = key.toLowerCase();
+                const valueStr = String(value);
+
+                // Extract score if provided
+                if (keyLower === "score") {
+                    const parsedScore = parseInt(valueStr, 10);
+                    if (!isNaN(parsedScore)) {
+                        score = parsedScore;
+                    }
+                }
+                // Extract status/result if provided
+                else if (keyLower === "result" || keyLower === "status" || keyLower === "success") {
+                    const valueLower = valueStr.toLowerCase();
+                    if (valueLower.includes("pass") || valueLower.includes("success") || valueStr === "true" || valueStr === "1") {
+                        status = EventStatus.ePass;
+                    } else if (valueLower.includes("fail") || valueLower.includes("error") || valueStr === "false" || valueStr === "0") {
+                        status = EventStatus.eFail;
+                    } else if (valueLower.includes("incomplete")) {
+                        status = EventStatus.eIncomplete;
+                    }
+                }
+
+                meta[key] = valueStr;
+            });
+        }
+
+        return await this.EventObjectiveComplete(eventName, score, status, meta);
+    }
+
+    /**
+     * Set session property (maps to Register for Cognitive3D compatibility)
+     * @param key Property key
+     * @param value Property value
+     */
+    static SetSessionProperty(key: string, value: any): void {
+        this.Register(key, String(value));
+    }
+
+    /**
+     * Set participant property (stub for Cognitive3D compatibility - not implemented)
+     * This method exists for string replacement compatibility but does not store data
+     * Use AbxrLib's authentication system and GetLearnerData() instead
+     * @param key Property key (ignored)
+     * @param value Property value (ignored)
+     * @deprecated SetParticipantProperty is not implemented. Use AbxrLib's authentication system and GetLearnerData() instead.
+     */
+    static SetParticipantProperty(key: string, value: any): void {
+        // Intentionally empty stub for compatibility
+        if (this.enableDebug) {
+            console.warn(`AbxrLib: SetParticipantProperty called but not implemented. Key: ${key}, Value: ${value}. Use AbxrLib authentication system instead.`);
+        }
+    }
+
+    /**
+     * Get participant property (maps to GetLearnerData for Cognitive3D compatibility)
+     * @param key Property key to retrieve
+     * @returns Property value if found, null otherwise
+     */
+    static GetParticipantProperty(key: string): any {
+        const learnerData = this.GetLearnerData();
+        if (learnerData && typeof learnerData === 'object' && learnerData[key] !== undefined) {
+            return learnerData[key];
+        }
+        return null;
+    }
 }
 
 // Global scope setup - happens immediately when library loads
@@ -3889,3 +3895,4 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
         }
             }
 }
+

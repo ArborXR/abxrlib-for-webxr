@@ -137,11 +137,11 @@ if $do_publish; then
 
 	# Copy necessary files to the package directory
 	echo "Copying package files..."
-	cp dist/abxrlib-for-webxr.js abxrlib-for-webxr/index.js
+	cp dist/abxrlib-for-webxr.js abxrlib-for-webxr/Abxr.js
 	# Copy all TypeScript declaration files to root (standard npm practice)
 	cp build/*.d.ts abxrlib-for-webxr/
-	# Copy main index.d.ts (this will be the main entry point)
-	cp build/index.d.ts abxrlib-for-webxr/index.d.ts
+	# Copy main Abxr.d.ts (this will be the main entry point)
+	cp build/Abxr.d.ts abxrlib-for-webxr/Abxr.d.ts
 	cp -R build/network abxrlib-for-webxr/
 	cp package.json LICENSE abxrlib-for-webxr/
 	cp README.md abxrlib-for-webxr/README.md
@@ -154,11 +154,11 @@ if $do_publish; then
 		const pkg = require('./abxrlib-for-webxr/package.json');
 		delete pkg.devDependencies;
 		delete pkg.scripts;
-		pkg.main = 'index.js';
-		pkg.module = 'index.js';
-		pkg.browser = 'index.js';
-		pkg.types = 'index.d.ts';
-		pkg.files = ['index.js', 'index.d.ts', '*.d.ts', 'network/**/*', 'README.md', 'LICENSE'];
+		pkg.main = 'Abxr.js';
+		pkg.module = 'Abxr.js';
+		pkg.browser = 'Abxr.js';
+		pkg.types = 'Abxr.d.ts';
+		pkg.files = ['Abxr.js', 'Abxr.d.ts', '*.d.ts', 'network/**/*', 'README.md', 'LICENSE'];
 		pkg.version = '$NEW_VERSION';
 		require('fs').writeFileSync('./abxrlib-for-webxr/package.json', JSON.stringify(pkg, null, 2));
 	"
