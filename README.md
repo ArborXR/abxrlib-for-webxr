@@ -569,10 +569,19 @@ Deliver questionnaires to users to gather feedback.
 Abxr.PollType.Thumbs, Abxr.PollType.Rating, Abxr.PollType.MultipleChoice
 
 // JavaScript Method Signatures
-Abxr.PollUser(question, pollType)
+Abxr.PollUser(prompt, pollType, responses?, callback?)
+Abxr.HideExitPoll()
 
 // Poll types: Thumbs, Rating (1-5), MultipleChoice (2-8 options)
 Abxr.PollUser("How would you rate this training experience?", Abxr.PollType.Rating);
+
+// Multiple choice poll with custom responses
+Abxr.PollUser("What was your favorite part?", Abxr.PollType.MultipleChoice, 
+    ["Safety Training", "Equipment Check", "Emergency Procedures"], 
+    (response) => console.log("User selected:", response));
+
+// Hide any currently displayed poll
+Abxr.HideExitPoll();
 ```
 
 ### Metadata Formats

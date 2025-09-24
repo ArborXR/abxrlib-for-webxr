@@ -1659,6 +1659,13 @@ export class Abxr {
      * @region Exit Polls
      */
     
+    // Poll type enum for exit polls
+    static readonly PollType = {
+        Thumbs: 'Thumbs',
+        Rating: 'Rating',
+        MultipleChoice: 'MultipleChoice'
+    } as const;
+    
     private static exitPollHandler: any = null;
 
     /**
@@ -1670,7 +1677,7 @@ export class Abxr {
      */
     public static PollUser(
         prompt: string, 
-        pollType: 'Thumbs' | 'Rating' | 'MultipleChoice', 
+        pollType: keyof typeof Abxr.PollType, 
         responses?: string[], 
         callback?: (response: string) => void
     ): void {
@@ -1680,7 +1687,7 @@ export class Abxr {
             return;
         }
 
-        if (pollType === 'MultipleChoice') {
+        if (pollType === this.PollType.MultipleChoice) {
             if (!responses || responses.length < 2 || responses.length > 8) {
                 console.error('AbxrLib: Multiple choice poll must have between 2 and 8 responses');
                 return;
