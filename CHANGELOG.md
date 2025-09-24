@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.0.44] - 2025-09-24
+
+### ✨ Features
+
+- switched Modules support from method execution to event based like we have in Unity. Added anchors/bookmark model to match deep links in Android ([a27ac61](../../commit/a27ac61d51fbfaa18b090ccb2a0f0be20d22407c))
+
+### 🐛 Bug Fixes
+
+- poll fix ([08e9e09](../../commit/08e9e09c1514a2dc0e919f0ac1b9a1e8902e5ebc))
+- fixed quit handler assessment status ([5bdb5f4](../../commit/5bdb5f4db1a25dd3f57dffa89419ae682c0e5a19))
+
+### ♻️ Refactoring
+
+- many organizational improvements ([49d6350](../../commit/49d63503fe92b3338eff525eb3d7ccb9b6364312))
+
+### 🔨 Other Changes
+
+- organization in sync with unity code ([f6248bc](../../commit/f6248bcceb22f71824bc64b30e14e284826e5ef5))
+- Renaming and re-organzing to sync up with the unity code ([a62886f](../../commit/a62886fcfe214b12fd207758480408f2b15bf301))
+- Super properties to Super MetaData and renamed index.ts to Abxr.ts ([866d977](../../commit/866d977be6c63e16b73d89bfd6d7e4f89124c0ec))
+- Promoting use of Abxr.OnAuthCompleted ([33efad9](../../commit/33efad96c550a8eafc51799fe105f820d984dda3))
+
 ## [1.0.43] - 2025-09-18
 
 ### ✨ Features
