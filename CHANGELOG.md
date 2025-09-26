@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.45] - 2025-09-26
+
+### ✨ Features
+
+- enhance analytics API with user-friendly enums and automatic module execution ([517be87](../../commit/517be87d126b577ca28a22bd012c8c8237f4f981))
+
+### ♻️ Refactoring
+
+- readme updates ([67a6d77](../../commit/67a6d7733a2c9f5ecaff442dba33de476d34e1c9))
+- updated Cognitive3D compatibility details ([70fceda](../../commit/70fceda8994ae2281db48e934a24b91489f6bb11))
+
 ## [1.0.44] - 2025-09-24
 
 ### ✨ Features
