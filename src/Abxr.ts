@@ -22,7 +22,7 @@ import { AbxrLibAsync } from "./AbxrLibAsync";
 import { AbxrLibSend } from "./AbxrLibSend";
 import { AbxrLibClient } from "./AbxrLibClient";
 import { AbxrLibAnalytics } from "./AbxrLibAnalytics";
-import { ConfigurationManager, DateTime, AbxrResult, AbxrDictStrings, StringList, TimeSpan, InteractionType, EventStatus } from './network/utils/DotNetishTypes';
+import { ConfigurationManager, DateTime, AbxrResult, AbxrDictStrings, StringList, TimeSpan, InteractionType as InternalInteractionType, InteractionResult as InternalInteractionResult, EventStatus as InternalEventStatus } from './network/utils/DotNetishTypes';
 import { AbxrBase, AbxrEvent, AbxrLog, AbxrStorage, AbxrTelemetry, AbxrAIProxy, LogLevel } from "./AbxrLibCoreModel";
 import { Partner } from "./AbxrLibClient";
 // Import XR dialog template
@@ -456,8 +456,9 @@ interface AbxrQueuedEvent {
     eventName: string;
     meta?: any;
     score?: string;  // Changed from number to string to match validateScore return type
-    status?: EventStatus;
-    interactionType?: InteractionType;
+    status?: InternalEventStatus;
+    interactionType?: InternalInteractionType;
+    result?: InternalInteractionResult;
     response?: string;
 }
 
@@ -476,6 +477,11 @@ interface AbxrCurrentSessionData {
     userId?: any;
     userEmail?: string | null;
 }
+
+// Type definitions for the public enum values (clean names like Unity)
+export type EventStatus = 'pass' | 'fail' | 'complete' | 'incomplete' | 'browsed' | 'notattempted';
+export type InteractionType = 'null' | 'bool' | 'select' | 'text' | 'rating' | 'number';
+export type InteractionResult = 'correct' | 'incorrect' | 'neutral';
 
 // Global Abxr class that gets configured by Abxr_init()
 export class Abxr {
@@ -498,6 +504,80 @@ export class Abxr {
 
     // Expose commonly used types and enums for easy access
     static readonly AbxrDictStrings = AbxrDictStrings;
+    
+    /**
+     * @region Public Enums
+     * User-friendly enum values that get converted internally to the e* format
+     */
+    
+    // Public EventStatus enum with user-friendly values
+    static readonly EventStatus = {
+        Pass: 'pass',
+        Fail: 'fail', 
+        Complete: 'complete',
+        Incomplete: 'incomplete',
+        Browsed: 'browsed',
+        NotAttempted: 'notattempted'
+    } as const;
+    
+    // Public InteractionType enum with user-friendly values
+    static readonly InteractionType = {
+        Null: 'null',
+        Bool: 'bool',
+        Select: 'select',
+        Text: 'text',
+        Rating: 'rating',
+        Number: 'number'
+    } as const;
+    
+    // Public InteractionResult enum with user-friendly values
+    static readonly InteractionResult = {
+        Correct: 'correct',
+        Incorrect: 'incorrect',
+        Neutral: 'neutral'
+    } as const;
+    
+    /**
+     * @region Internal Enum Conversion Functions
+     * Convert public enum values to internal e* format
+     */
+    
+    // Convert public EventStatus to internal EventStatus
+    private static convertEventStatus(publicStatus: string): InternalEventStatus {
+        switch (publicStatus) {
+            case 'pass': return InternalEventStatus.ePass;
+            case 'fail': return InternalEventStatus.eFail;
+            case 'complete': return InternalEventStatus.eComplete;
+            case 'incomplete': return InternalEventStatus.eIncomplete;
+            case 'browsed': return InternalEventStatus.eBrowsed;
+            case 'notattempted': return InternalEventStatus.eNotAttempted;
+            default: return InternalEventStatus.eComplete;
+        }
+    }
+    
+    // Convert public InteractionType to internal InteractionType
+    private static convertInteractionType(publicType: string): InternalInteractionType {
+        switch (publicType) {
+            case 'null': return InternalInteractionType.eNull;
+            case 'bool': return InternalInteractionType.eBool;
+            case 'select': return InternalInteractionType.eSelect;
+            case 'text': return InternalInteractionType.eText;
+            case 'rating': return InternalInteractionType.eRating;
+            case 'number': return InternalInteractionType.eNumber;
+            default: return InternalInteractionType.eNull;
+        }
+    }
+    
+    // Convert public InteractionResult to internal InteractionResult
+    private static convertInteractionResult(publicResult: string): InternalInteractionResult {
+        switch (publicResult) {
+            case 'correct': return InternalInteractionResult.eCorrect;
+            case 'incorrect': return InternalInteractionResult.eIncorrect;
+            case 'neutral': return InternalInteractionResult.eNeutral;
+            default: return InternalInteractionResult.eNeutral;
+        }
+    }
+    
     
     // Configuration methods
     static SetDebugMode(enabled: boolean): void {
@@ -676,6 +756,22 @@ export class Abxr {
         // Always notify auth completion subscribers (both success AND failure cases like Unity)
         // This ensures developers get AuthCompletedData for all authentication attempts
         this.notifyAuthCompletedCallbacks(isReauthentication, moduleTargets);
+        
+        // Check if we should execute module sequence after authentication completes
+        if (success) {
+            // Check if there are modules available to execute
+            const moduleToExecute = this.GetModuleTargetWithoutAdvance();
+            if (moduleToExecute != null) {
+                // Check if there are already subscribers to OnModuleTarget
+                if (this.moduleTargetCallbacks.length > 0) {
+                    // Execute immediately since there are already subscribers
+                    this.ExecuteModuleSequence();
+                } else {
+                    // Mark as pending - will execute when first subscriber is added
+                    this.hasPendingModules = true;
+                }
+            }
+        }
     }
     
     /**
@@ -780,27 +876,6 @@ export class Abxr {
     private static readonly interactionStartTimes: Map<string, number> = new Map();
     private static readonly levelStartTimes: Map<string, number> = new Map();
 
-    // Event status enum for assessment and objective completion
-    static readonly EventStatus = {
-        Pass: 'pass',
-        Fail: 'fail',
-        Complete: 'complete',
-        Incomplete: 'incomplete',
-        Browsed: 'browsed'
-    } as const;
-
-    // Interaction type enum for interaction events
-    static readonly InteractionType = {
-        Null: 'null',
-        Bool: 'bool',
-        Select: 'select',
-        Text: 'text',
-        Rating: 'rating',
-        Number: 'number',
-        Matching: 'matching',
-        Performance: 'performance',
-        Sequencing: 'sequencing'
-    } as const;
 
     /**
      * Record a named event with optional metadata
@@ -891,11 +966,14 @@ export class Abxr {
      * When complete, automatically records and closes the assessment in supported LMS platforms
      * @param assessmentName Name of the assessment (must match the start event)
      * @param score Numerical score achieved (number or string, automatically validated to 0-100 range)
-     * @param eventStatus Result status of the assessment (ePass, eFail, eComplete, etc.)
+     * @param eventStatus Result status of the assessment (Pass, Fail, Complete, etc.)
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventAssessmentComplete(assessmentName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number> {
+        // Convert public enum value to internal enum
+        const internalEventStatus = this.convertEventStatus(eventStatus);
+        
         // If authentication is not complete, queue this event
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
@@ -906,7 +984,7 @@ export class Abxr {
                 eventName: assessmentName,
                 meta: meta,
                 score: this.validateScore(score, `assessment "${assessmentName}"`),
-                status: eventStatus
+                status: internalEventStatus
             });
             return 1; // Return success - event will be processed later
         }
@@ -921,7 +999,7 @@ export class Abxr {
         const validatedScore = this.validateScore(score, `assessment "${assessmentName}"`);
         
         // Fire-and-forget async sending
-        AbxrLibSend.EventAssessmentComplete(assessmentName, validatedScore, eventStatus, this.convertToAbxrDictStrings(meta)).catch(error => {
+        AbxrLibSend.EventAssessmentComplete(assessmentName, validatedScore, internalEventStatus, this.convertToAbxrDictStrings(meta)).catch(error => {
             if (this.enableDebug) {
                 console.error('AbxrLib: Failed to send assessment complete event:', error);
             }
@@ -975,11 +1053,14 @@ export class Abxr {
      * Objectives automatically calculate duration if corresponding start event was logged
      * @param objectiveName Name of the objective (must match the start event)
      * @param score Numerical score achieved for this objective (number or string, automatically validated to 0-100 range)
-     * @param eventStatus Result status (eComplete, ePass, eFail, etc.)
+     * @param eventStatus Result status (Complete, Pass, Fail, etc.)
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
     static async EventObjectiveComplete(objectiveName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number> {
+        // Convert public enum value to internal enum
+        const internalEventStatus = this.convertEventStatus(eventStatus);
+        
         // If authentication is not complete, queue this event
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
@@ -990,7 +1071,7 @@ export class Abxr {
                 eventName: objectiveName,
                 meta: meta,
                 score: this.validateScore(score, `objective "${objectiveName}"`),
-                status: eventStatus
+                status: internalEventStatus
             });
             return 1; // Return success - event will be processed later
         }
@@ -1005,7 +1086,7 @@ export class Abxr {
         const validatedScore = this.validateScore(score, `objective "${objectiveName}"`);
         
         // Fire-and-forget async sending
-        AbxrLibSend.EventObjectiveComplete(objectiveName, validatedScore, eventStatus, this.convertToAbxrDictStrings(meta)).catch(error => {
+        AbxrLibSend.EventObjectiveComplete(objectiveName, validatedScore, internalEventStatus, this.convertToAbxrDictStrings(meta)).catch(error => {
             if (this.enableDebug) {
                 console.error('AbxrLib: Failed to send objective complete event:', error);
             }
@@ -1055,15 +1136,20 @@ export class Abxr {
     }
     
     /**
-     * Complete an interaction with type, response, and optional metadata
+     * Complete an interaction with type, result, response, and optional metadata
      * Interactions automatically calculate duration if corresponding start event was logged
      * @param interactionName Name of the interaction (must match the start event)
      * @param interactionType Type of interaction (eClick, eSelect, eType, eDrag, etc.)
-     * @param response User's response or result (e.g., "A", "correct", "blue_button")
+     * @param result User's result (e.g., Correct, Incorrect, Neutral)
+     * @param response User's response (e.g., "A", "red_pill", "blue_pill")
      * @param meta Optional metadata with interaction details
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
-    static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, response: string = "", meta?: any): Promise<number> {
+    static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, result: InteractionResult = "neutral", response: string = "", meta?: any): Promise<number> {
+        // Convert public enum values to internal enums
+        const internalInteractionType = this.convertInteractionType(interactionType);
+        const internalResult = this.convertInteractionResult(result);
+        
         // If authentication is not complete, queue this event
         if (!this.isAuthenticated) {
             if (this.enableDebug) {
@@ -1073,7 +1159,8 @@ export class Abxr {
                 eventType: AbxrQueuedEventType.InteractionComplete,
                 eventName: interactionName,
                 meta: meta,
-                interactionType: interactionType,
+                interactionType: internalInteractionType,
+                result: internalResult,
                 response: response
             });
             return 1; // Return success - event will be processed later
@@ -1088,7 +1175,7 @@ export class Abxr {
         }
         
         // Fire-and-forget async sending
-        AbxrLibSend.EventInteractionComplete(interactionName, interactionType, response, this.convertToAbxrDictStrings(meta)).catch(error => {
+        AbxrLibSend.EventInteractionComplete(interactionName, internalInteractionType, internalResult, response, this.convertToAbxrDictStrings(meta)).catch(error => {
             if (this.enableDebug) {
                 console.error('AbxrLib: Failed to send interaction complete event:', error);
             }
@@ -2060,14 +2147,16 @@ export class Abxr {
 
     // Module target callbacks
     private static moduleTargetCallbacks: AbxrModuleTargetCallback[] = [];
+    private static hasPendingModules: boolean = false;
 
     /**
      * Execute module sequence by triggering the OnModuleTarget event for each available module.
      * Developers should subscribe to OnModuleTarget to handle module targets with their own logic.
      * This approach gives developers full control over how to handle each module target.
      * @returns Number of modules successfully executed
+     * @private
      */
-    static ExecuteModuleSequence(): number {
+    private static ExecuteModuleSequence(): number {
         if (this.moduleTargetCallbacks.length === 0) {
             console.warn('AbxrLib - ExecuteModuleSequence: No subscribers to OnModuleTarget event. Subscribe to OnModuleTarget to handle module targets.');
             return 0;
@@ -2307,13 +2396,23 @@ export class Abxr {
         }
         
         this.moduleTargetCallbacks.push(callback);
+        
+        // If we have modules to execute and now have subscribers, execute them now
+        if (this.hasPendingModules) {
+            // Double-check that we still have modules to execute
+            const moduleToExecute = this.GetModuleTargetWithoutAdvance();
+            if (moduleToExecute != null) {
+                this.hasPendingModules = false;
+                this.ExecuteModuleSequence();
+            }
+        }
     }
     
     /**
      * Remove a specific module target callback
      * @param callback The callback function to remove
      */
-    static RemoveModuleTargetCallback(callback: AbxrModuleTargetCallback): void {
+    static RemoveModuleTarget(callback: AbxrModuleTargetCallback): void {
         const index = this.moduleTargetCallbacks.indexOf(callback);
         if (index > -1) {
             this.moduleTargetCallbacks.splice(index, 1);
@@ -3193,7 +3292,7 @@ export class Abxr {
                         break;
                     
                     case AbxrQueuedEventType.InteractionComplete:
-                        AbxrLibSend.EventInteractionComplete(queuedEvent.eventName, queuedEvent.interactionType!, queuedEvent.response!, this.convertToAbxrDictStrings(queuedEvent.meta)).catch(error => {
+                        AbxrLibSend.EventInteractionComplete(queuedEvent.eventName, queuedEvent.interactionType!, queuedEvent.result || InternalInteractionResult.eNeutral, queuedEvent.response!, this.convertToAbxrDictStrings(queuedEvent.meta)).catch(error => {
                             if (this.enableDebug) {
                                 console.error('AbxrLib: Failed to send queued interaction complete event:', error);
                             }
@@ -3320,17 +3419,17 @@ export class Abxr {
         }
 
         // Convert result to EventStatus with best guess logic
-        let status = EventStatus.eComplete;
+        let status: EventStatus = 'complete';
         if (result !== undefined && result !== null) {
             const resultStr = String(result).toLowerCase();
             if (resultStr.includes("pass") || resultStr.includes("success") || resultStr.includes("complete") || resultStr === "true" || resultStr === "1") {
-                status = EventStatus.ePass;
+                status = 'pass';
             } else if (resultStr.includes("fail") || resultStr.includes("error") || resultStr === "false" || resultStr === "0") {
-                status = EventStatus.eFail;
+                status = 'fail';
             } else if (resultStr.includes("incomplete")) {
-                status = EventStatus.eIncomplete;
+                status = 'incomplete';
             } else if (resultStr.includes("browse")) {
-                status = EventStatus.eBrowsed;
+                status = 'browsed';
             }
         }
 
@@ -3346,7 +3445,7 @@ export class Abxr {
     static async SendEvent(eventName: string, properties?: any): Promise<number> {
         const meta: any = { Cognitive3DMethod: "SendEvent" };
         let score = 100;
-        let status = EventStatus.eComplete;
+        let status: EventStatus = 'complete';
 
         if (properties && typeof properties === 'object') {
             Object.entries(properties).forEach(([key, value]) => {
@@ -3364,11 +3463,11 @@ export class Abxr {
                 else if (keyLower === "result" || keyLower === "status" || keyLower === "success") {
                     const valueLower = valueStr.toLowerCase();
                     if (valueLower.includes("pass") || valueLower.includes("success") || valueStr === "true" || valueStr === "1") {
-                        status = EventStatus.ePass;
+                        status = 'pass';
                     } else if (valueLower.includes("fail") || valueLower.includes("error") || valueStr === "false" || valueStr === "0") {
-                        status = EventStatus.eFail;
+                        status = 'fail';
                     } else if (valueLower.includes("incomplete")) {
-                        status = EventStatus.eIncomplete;
+                        status = 'incomplete';
                     }
                 }
 
@@ -3742,7 +3841,7 @@ export class Abxr {
             if (interactionTimes && interactionTimes.size > 0) {
                 const interactionNames = Array.from(interactionTimes.keys());
                 interactionNames.forEach(interactionName => {
-                    this.EventInteractionComplete(interactionName, InteractionType.eNull, 'abandoned', {
+                    this.EventInteractionComplete(interactionName, "null", "neutral", 'abandoned', {
                         abandon_reason: 'manually_abandoned',
                         auto_completed: 'true'
                     }).catch(error => console.warn('AbxrLib: Failed to complete abandoned interaction:', error));
@@ -3753,7 +3852,7 @@ export class Abxr {
             if (objectiveTimes && objectiveTimes.size > 0) {
                 const objectiveNames = Array.from(objectiveTimes.keys());
                 objectiveNames.forEach(objectiveName => {
-                    this.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
+                    this.EventObjectiveComplete(objectiveName, 0, "incomplete", {
                         abandon_reason: 'manually_abandoned',
                         auto_completed: 'true'
                     }).catch(error => console.warn('AbxrLib: Failed to complete abandoned objective:', error));
@@ -3764,7 +3863,7 @@ export class Abxr {
             if (assessmentTimes && assessmentTimes.size > 0) {
                 const assessmentNames = Array.from(assessmentTimes.keys());
                 assessmentNames.forEach(assessmentName => {
-                    this.EventAssessmentComplete(assessmentName, 0, EventStatus.eFail, {
+                    this.EventAssessmentComplete(assessmentName, 0, "fail", {
                         abandon_reason: 'manually_abandoned',
                         auto_completed: 'true'
                     }).catch(error => console.warn('AbxrLib: Failed to complete abandoned assessment:', error));
@@ -3808,7 +3907,7 @@ export class Abxr {
                         this.sendEventSync('assessment_complete', {
                             name: assessmentName,
                             score: 0,
-                            status: EventStatus.eIncomplete,
+                            status: "incomplete",
                             quit_reason: 'page_unload',
                             auto_closed: 'true'
                         });
@@ -3816,7 +3915,7 @@ export class Abxr {
                     } catch (error) {
                         // Fallback to async if sync fails
                         try {
-                            Abxr.EventAssessmentComplete(assessmentName, 0, EventStatus.eIncomplete, {
+                            Abxr.EventAssessmentComplete(assessmentName, 0, "incomplete", {
                                 quit_reason: 'page_unload',
                                 auto_closed: 'true'
                             }).catch(() => {});
@@ -3836,14 +3935,14 @@ export class Abxr {
                         this.sendEventSync('objective_complete', {
                             name: objectiveName,
                             score: 0,
-                            status: EventStatus.eIncomplete,
+                            status: "incomplete",
                             quit_reason: 'page_unload',
                             auto_closed: 'true'
                         });
                         totalClosed++;
                     } catch (error) {
                         try {
-                            Abxr.EventObjectiveComplete(objectiveName, 0, EventStatus.eIncomplete, {
+                            Abxr.EventObjectiveComplete(objectiveName, 0, "incomplete", {
                                 quit_reason: 'page_unload',
                                 auto_closed: 'true'
                             }).catch(() => {});
@@ -3860,7 +3959,7 @@ export class Abxr {
                     try {
                         this.sendEventSync('interaction_complete', {
                             name: interactionName,
-                            interactionType: InteractionType.eNull,
+                            interactionType: "null",
                             response: 'incomplete_quit',
                             quit_reason: 'page_unload',
                             auto_closed: 'true'
@@ -3868,7 +3967,7 @@ export class Abxr {
                         totalClosed++;
                     } catch (error) {
                         try {
-                            Abxr.EventInteractionComplete(interactionName, InteractionType.eNull, 'incomplete_quit', {
+                            Abxr.EventInteractionComplete(interactionName, "null", "neutral", 'incomplete_quit', {
                                 quit_reason: 'page_unload',
                                 auto_closed: 'true'
                             }).catch(() => {});
@@ -3913,7 +4012,7 @@ export class Abxr {
                     break;
                     
                 case 'interaction_complete':
-                    this.EventInteractionComplete(eventData.name, eventData.interactionType, eventData.response, {
+                    this.EventInteractionComplete(eventData.name, eventData.interactionType, eventData.result || "neutral", eventData.response, {
                         quit_reason: eventData.quit_reason,
                         auto_closed: eventData.auto_closed
                     }).catch(() => {});
@@ -4010,10 +4109,11 @@ if (typeof window !== 'undefined') {
     // Expose prefixed versions of all enums
     (window as any).AbxrLogLevel = LogLevel;
     (window as any).AbxrPartner = Partner;
-    (window as any).AbxrEventStatus = EventStatus;
-    (window as any).AbxrInteractionType = InteractionType;
-    (window as any).AbxrAbxr.StorageScope = Abxr.StorageScope;
-    (window as any).AbxrAbxr.StoragePolicy = Abxr.StoragePolicy;
+    (window as any).AbxrEventStatus = Abxr.EventStatus;
+    (window as any).AbxrInteractionType = Abxr.InteractionType;
+    (window as any).AbxrInteractionResult = Abxr.InteractionResult;
+    (window as any).AbxrStorageScope = Abxr.StorageScope;
+    (window as any).AbxrStoragePolicy = Abxr.StoragePolicy;
     console.log('AbxrLib: Loaded into global scope. Use Abxr for simple API or AbxrLib for advanced features.');
 }
 

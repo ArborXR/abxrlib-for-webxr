@@ -633,7 +633,7 @@
             const dictMeta = { completed_at: new Date().toISOString(), user_response: response };
             
             const { result, responseData } = await executeWithResponseCapture(
-                () => Abxr.EventInteractionComplete(interactionName, interactionType, response, dictMeta)
+                () => Abxr.EventInteractionComplete(interactionName, interactionType, Abxr.InteractionResult.Neutral, response, dictMeta)
             );
                         
             document.getElementById('interaction_result').textContent = 

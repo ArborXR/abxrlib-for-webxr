@@ -120,19 +120,46 @@ export function InteractionTypeToString(eRet: InteractionType): string
     switch (eRet)
     {
     case InteractionType.eBool:
-        return "Bool";
+        return "bool";
     case InteractionType.eSelect:
-        return "Select";
+        return "select";
     case InteractionType.eText:
-        return "Text";
+        return "text";
     case InteractionType.eRating:
-        return "Rating";
+        return "rating";
     case InteractionType.eNumber:
-        return "Number";
+        return "number";
     default:
         break;
     }
-    return "Null";
+    return "null";
+}
+
+/// <summary>
+/// Result of an interaction for EventInteractionComplete().
+///		Co-maintained with the one in AbxrInterop.cs.
+/// </summary>
+export enum InteractionResult
+{
+    eCorrect,
+    eIncorrect,
+    eNeutral
+};
+
+export function InteractionResultToString(eRet: InteractionResult): string
+{
+    switch (eRet)
+    {
+    case InteractionResult.eCorrect:
+        return "correct";
+    case InteractionResult.eIncorrect:
+        return "incorrect";
+    case InteractionResult.eNeutral:
+        return "neutral";
+    default:
+        break;
+    }
+    return "neutral";
 }
 
 /// <summary>
@@ -145,7 +172,8 @@ export enum EventStatus
     ePass,
     eFail, 
     eIncomplete,
-    eBrowsed
+    eBrowsed,
+    eNotAttempted
 }
 
 export function EventStatusToString(eRet: EventStatus): string
@@ -153,19 +181,21 @@ export function EventStatusToString(eRet: EventStatus): string
     switch (eRet)
     {
     case EventStatus.eComplete:
-        return "Complete";
+        return "complete";
     case EventStatus.ePass:
-        return "Pass";
+        return "pass";
     case EventStatus.eFail:
-        return "Fail";
+        return "fail";
     case EventStatus.eIncomplete:
-        return "Incomplete";
+        return "incomplete";
     case EventStatus.eBrowsed:
-        return "Browsed";
+        return "browsed";
+    case EventStatus.eNotAttempted:
+        return "notattempted";
     default:
         break;
     }
-    return "Complete";
+    return "complete";
 }
 
 /// <summary>

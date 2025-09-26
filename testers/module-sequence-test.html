@@ -65,12 +65,11 @@
       <a href="index.html" style="display: inline-block; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; font-size: 14px; margin: 0 5px; transition: background-color 0.2s;">← Back to Main Menu</a>
     </div>
     
-    <p>This test demonstrates the OnModuleTarget event system which provides flexible module handling similar to Unity's deep link integration.</p>
+    <p>This test demonstrates the OnModuleTarget event system which provides automatic module execution when authentication completes. Modules will execute automatically without manual intervention.</p>
     
     <div id="status" class="status info">Initializing...</div>
     
     <div>
-      <button id="executeBtn" onclick="executeModules()" disabled>Execute Module Sequence</button>
       <button onclick="clearLog()">Clear Log</button>
       <button onclick="resetModules()">Reset Module Progress</button>
     </div>
@@ -186,11 +185,8 @@
       }
 
       log('Authentication successful!');
-      setStatus('Authentication successful - Ready to execute modules', 'success');
+      setStatus('Authentication successful - Modules will execute automatically', 'success');
       authCompleted = true;
-      
-      // Enable the execute button
-      document.getElementById('executeBtn').disabled = false;
       
       // Log user information
       log('=== USER INFORMATION ===');
@@ -216,21 +212,6 @@
       log(`Module count available: ${Abxr.GetModuleTargetCount()}`);
     });
 
-    function executeModules() {
-      if (!authCompleted) {
-        log('ERROR: Authentication not completed yet');
-        return;
-      }
-
-      log('=== EXECUTING MODULE SEQUENCE ===');
-      
-      // Execute all modules using the event-based approach
-      log('Executing modules using OnModuleTarget events...');
-      const executedCount = Abxr.ExecuteModuleSequence();
-      log(`Executed ${executedCount} modules via OnModuleTarget events`);
-      
-      log('=== MODULE SEQUENCE EXECUTION COMPLETED ===');
-    }
 
     function resetModules() {
       if (!authCompleted) {

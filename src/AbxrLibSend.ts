@@ -4,7 +4,7 @@
 import { AbxrLibAnalytics } from "./AbxrLibAnalytics";
 import { AbxrLibClient } from "./AbxrLibClient";
 import { AbxrEvent, AbxrLog, AbxrTelemetry, LogLevel } from "./AbxrLibCoreModel";
-import { DateTime, InteractionType, InteractionTypeToString, AbxrResult, AbxrDictStrings, EventStatus, EventStatusToString, TimeSpan } from "./network/utils/DotNetishTypes";
+import { DateTime, InteractionType, InteractionTypeToString, InteractionResult, InteractionResultToString, AbxrResult, AbxrDictStrings, EventStatus, EventStatusToString, TimeSpan } from "./network/utils/DotNetishTypes";
 
 // --- MJP:  templatize these?
 export type AbxrLibAnalyticsLogCallback = (abxrLog: AbxrLog, eResult: AbxrResult, szExceptionMessage: string) => void;
@@ -195,7 +195,7 @@ export class AbxrLibSend
 		// ---
 		return await AbxrLibSend.Event(szInteractionName, dictMeta);
 	}
-	public static async EventInteractionComplete(szInteractionName: string, eInteractionType: InteractionType, szResponse: string = "", dictMeta: AbxrDictStrings): Promise<AbxrResult>
+	public static async EventInteractionComplete(szInteractionName: string, eInteractionType: InteractionType, eResult: InteractionResult = InteractionResult.eNeutral, szResponse: string = "", dictMeta: AbxrDictStrings): Promise<AbxrResult>
 	{
 		var	rpStartTime:	{vRet: DateTime} = {vRet: new DateTime()};
 		var	bGotValue:		boolean;
@@ -203,6 +203,7 @@ export class AbxrLibSend
 		dictMeta.set("type", "interaction");
 		dictMeta.set("verb", "completed");
 		dictMeta.set("interaction", InteractionTypeToString(eInteractionType));
+		dictMeta.set("result", InteractionResultToString(eResult));
 		if (szResponse !== "") dictMeta.set("response", szResponse);
 		//AbxrEvent.m_csDictProtect.lock();
 		bGotValue = AbxrEvent.m_dictInteractionStartTimes.TryGetValue(szInteractionName, rpStartTime);

@@ -302,32 +302,34 @@ These three event types work together to provide comprehensive tracking of user 
 - **Interaction**: Tracks individual user responses or actions within an objective or assessment. These capture specific user inputs, choices, or behaviors that demonstrate engagement and learning progress.
 
 ```javascript
-// Status enumeration for all analytics events
-Abxr.EventStatus.ePass, Abxr.EventStatus.eFail, Abxr.EventStatus.eComplete, Abxr.EventStatus.eIncomplete, Abxr.EventStatus.eBrowsed
+// Status enumeration for all analytics events (user-friendly values)
+Abxr.EventStatus.Pass, Abxr.EventStatus.Fail, Abxr.EventStatus.Complete, Abxr.EventStatus.Incomplete, Abxr.EventStatus.Browsed, Abxr.EventStatus.NotAttempted
 
-Abxr.InteractionType.eNull, Abxr.InteractionType.eBool, Abxr.InteractionType.eSelect, Abxr.InteractionType.eText, Abxr.InteractionType.eRating, Abxr.InteractionType.eNumber
+Abxr.InteractionType.Null, Abxr.InteractionType.Bool, Abxr.InteractionType.Select, Abxr.InteractionType.Text, Abxr.InteractionType.Rating, Abxr.InteractionType.Number
 
-> **Note:** Enums are also available in the global namespace as `AbxrEventStatus`, `AbxrInteractionType`, `AbxrLogLevel`, `AbxrStorageScope`, and `AbxrStoragePolicy` for compatibility, but the recommended approach is to use the `Abxr.*` namespace to avoid conflicts.
+Abxr.InteractionResult.Correct, Abxr.InteractionResult.Incorrect, Abxr.InteractionResult.Neutral // defaults to Neutral
+
+> **Note:** Enums are also available in the global namespace as `AbxrEventStatus`, `AbxrInteractionType`, `AbxrInteractionResult`, `AbxrLogLevel`, `AbxrStorageScope`, and `AbxrStoragePolicy` for compatibility, but the recommended approach is to use the `Abxr.*` namespace to avoid conflicts.
 
 // JavaScript Method Signatures
 static async EventAssessmentStart(assessmentName: string, meta?: any): Promise<number>
-static async EventAssessmentComplete(assessmentName: string, score: number | string, eventStatus: Abxr.EventStatus, meta?: any): Promise<number>
+static async EventAssessmentComplete(assessmentName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number>
 static async EventObjectiveStart(objectiveName: string, meta?: any): Promise<number>
-static async EventObjectiveComplete(objectiveName: string, score: number | string, eventStatus: Abxr.EventStatus, meta?: any): Promise<number>
+static async EventObjectiveComplete(objectiveName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number>
 static async EventInteractionStart(interactionName: string, meta?: any): Promise<number>
-static async EventInteractionComplete(interactionName: string, interactionType: Abxr.InteractionType, response: string = "", meta?: any): Promise<number>
+static async EventInteractionComplete(interactionName: string, interactionType: InteractionType, result: InteractionResult = "neutral", response: string = "", meta?: any): Promise<number>
 
 // Assessment tracking (overall course/curriculum performance)
 Abxr.EventAssessmentStart('final_exam');
-Abxr.EventAssessmentComplete('final_exam', 92, Abxr.EventStatus.ePass);
+Abxr.EventAssessmentComplete('final_exam', 92, Abxr.EventStatus.Pass);
 
 // Objective tracking (specific learning goals)
 Abxr.EventObjectiveStart('open_valve');
-Abxr.EventObjectiveComplete('open_valve', 100, Abxr.EventStatus.eComplete);
+Abxr.EventObjectiveComplete('open_valve', 100, Abxr.EventStatus.Complete);
 
 // Interaction tracking (individual user responses)
 Abxr.EventInteractionStart('select_option_a');
-Abxr.EventInteractionComplete('select_option_a', Abxr.InteractionType.eSelect, 'true');
+Abxr.EventInteractionComplete('select_option_a', Abxr.InteractionType.Select, Abxr.InteractionResult.Correct, 'true');
 ```
 
 #### Additional Event Wrappers
@@ -348,9 +350,9 @@ Abxr.EventCritical('safety_violation');
 **Parameters for all Event Wrapper Functions:**
 - `levelName/assessmentName/objectiveName/interactionName` (string): The identifier for the assessment, objective, interaction, or level.
 - `score` (int): The numerical score achieved. While typically between 1-100, any integer is valid. In metadata, you can also set a minScore and maxScore to define the range of scores for this objective.
-- `result` (Interactions): The result for the interaction is based on the InteractionType.
-- `result_details` (string): Optional. Additional details about the result. For interactions, this can be a single character or a string. For example: "a", "b", "c" or "correct", "incorrect".
-- `type` (InteractionType): Optional. The type of interaction for this event.
+- `result` (InteractionResult): The result for the interaction (Correct, Incorrect, Neutral).
+- `response` (string): Optional. Additional details about the result. For interactions, this can be a single character or a string. For example: "a", "b", "c" or "correct", "incorrect".
+- `interactionType` (InteractionType): Optional. The type of interaction for this event.
 - `meta` (object): Optional. Additional key-value pairs describing the event.
 
 **Note:** All complete events automatically calculate duration if a corresponding start event was logged.
@@ -659,26 +661,19 @@ Abxr.EventAssessmentComplete("final_exam", 95, Abxr.EventStatus.ePass); // Autom
 
 ### Module Targets
 
-The **Module Target** feature enables developers to create single applications with multiple modules, where each module can be its own assignment in an LMS. When a learner enters from the LMS for a specific module, the application can automatically direct the user to that module within the application. Individual grades and results are then tracked for that specific assignment in the LMS.
+The **Module Target** feature enables developers to create single applications with multiple modules, where users can be assigned to specific module(s) and the application can automatically direct users to their assigned module within the application. When combined with Insights LMS integration, each module can be its own assignment, and individual grades and results are tracked for that specific assignment.
 
 #### Event-Based Module Handling (Recommended)
 
-The recommended way to handle modules is using the `OnModuleTarget` event, which gives you full control over how to handle each module target. This event works perfectly with existing URL anchor handlers - you can use the same routing logic for both external URL anchors and LMS module targets:
+The recommended way to handle modules is to subscribe your Module/URL anchor handler to the `OnModuleTarget` event, which gives you full control over how to handle each module target. This event works perfectly with existing URL anchor handlers—you can use the same routing logic for both external URL anchors and LMS module targets. **The module sequence executes automatically when authentication completes, and will wait for your subscription if needed**, so you only need to subscribe to the event:
 
 ```javascript
-// Subscribe to authentication completion
-Abxr.OnAuthCompleted((authData) => {
-    if (authData.success) {
-        // Execute all available modules in sequence
-        const executedCount = Abxr.ExecuteModuleSequence();
-        console.log(`Executed ${executedCount} modules`);
-    }
-});
-
 // Subscribe to module target events
-Abxr.OnModuleTarget(handleModuleOrUrlTarget);
+Abxr.OnModuleTarget(handleModuleOrUrlTarget); // handleModuleOrUrlTarget points to your module/URL anchor handler
 
-// This method can handle BOTH external URL anchors AND module targets
+// Module(s) will be executed automatically when authentication completes!
+
+// Create or use your own module/URL anchor handler along these lines
 function handleModuleOrUrlTarget(moduleTarget) {
     console.log(`Handling module target: ${moduleTarget}`);
     
@@ -697,19 +692,10 @@ function handleModuleOrUrlTarget(moduleTarget) {
     }
 }
 
-// Your existing URL anchor handler can call the same method
-function onUrlAnchorReceived(urlAnchor) {
-    const target = extractTargetFromUrl(urlAnchor); // "myapp.com/#module=safety-training" -> "safety-training"
-    handleModuleOrUrlTarget(target);
-}
-```
-
-**Method Signature:**
-```javascript
-static ExecuteModuleSequence(): number
 ```
 
 **Features:**
+- **Smart Automatic Execution**: Module sequence executes automatically when authentication completes, and waits for your subscription if needed
 - **Event-Driven**: Uses the `OnModuleTarget` event for maximum flexibility
 - **Developer Control**: You decide how to handle each module target
 - **URL Anchor Integration**: Perfect for connecting to existing URL anchor handlers
@@ -788,10 +774,8 @@ Abxr.OnAuthCompleted((authData) => {
         if (urlModule) {
             // Handle URL-based module targeting
             handleModuleOrUrlTarget(urlModule);
-        } else {
-            // Fall back to normal module sequence
-            Abxr.ExecuteModuleSequence();
         }
+        // Note: module targets will execute automatically via OnModuleTarget subscription
     }
 });
 ```
