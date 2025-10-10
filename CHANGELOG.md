@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.46] - 2025-10-10
+
+### 🐛 Bug Fixes
+
+- fixed backtick requirement around code outside of codeblocks ([3604910](../../commit/3604910231d3f5f3b1c04d57bd85896509a28882))
+
+### 🔨 Other Changes
+
+- corrected naming scheme for data ([01a4560](../../commit/01a45602fa4636fe3891b97b2c41d6c466435e48))
+
 ## [1.0.45] - 2025-09-26
 
 ### ✨ Features
