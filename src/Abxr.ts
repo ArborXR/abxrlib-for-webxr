@@ -1916,7 +1916,7 @@ export class Abxr {
      */
     static Register(key: string, value: string): void {
         if (this.isReservedSuperMetadataKey(key)) {
-            const errorMessage = `AbxrLib: Cannot register super metadata with reserved key '${key}'. Reserved keys are: module, module_name, module_id, module_order`;
+            const errorMessage = `AbxrLib: Cannot register super metadata with reserved key '${key}'. Reserved keys are: module, moduleName, moduleId, moduleOrder`;
             console.warn(errorMessage);
             this.LogInfo(errorMessage, { 
                 attempted_key: key, 
@@ -1939,7 +1939,7 @@ export class Abxr {
      */
     static RegisterOnce(key: string, value: string): void {
         if (this.isReservedSuperMetadataKey(key)) {
-            const errorMessage = `AbxrLib: Cannot register super metadata with reserved key '${key}'. Reserved keys are: module, module_name, module_id, module_order`;
+            const errorMessage = `AbxrLib: Cannot register super metadata with reserved key '${key}'. Reserved keys are: module, moduleName, moduleId, moduleOrder`;
             console.warn(errorMessage);
             this.LogInfo(errorMessage, { 
                 attempted_key: key, 
@@ -2044,14 +2044,14 @@ export class Abxr {
                     this.loadModuleIndex();
                     if (this.moduleIndex < modules.length) {
                         const currentModule = modules[this.moduleIndex];
-                        if (!('module_name' in obj) && currentModule.name) {
-                            obj.module_name = currentModule.name;
+                        if (!('moduleName' in obj) && currentModule.name) {
+                            obj.moduleName = currentModule.name;
                         }
-                        if (!('module_id' in obj) && currentModule.id) {
-                            obj.module_id = currentModule.id;
+                        if (!('moduleId' in obj) && currentModule.id) {
+                            obj.moduleId = currentModule.id;
                         }
-                        if (!('module_order' in obj)) {
-                            obj.module_order = currentModule.order.toString();
+                        if (!('moduleOrder' in obj)) {
+                            obj.moduleOrder = currentModule.order.toString();
                         }
                     }
                 }
@@ -2074,14 +2074,14 @@ export class Abxr {
                     this.loadModuleIndex();
                     if (this.moduleIndex < modules.length) {
                         const currentModule = modules[this.moduleIndex];
-                        if (!dictStrings.has('module_name') && currentModule.name) {
-                            dictStrings.Add('module_name', currentModule.name);
+                        if (!dictStrings.has('moduleName') && currentModule.name) {
+                            dictStrings.Add('moduleName', currentModule.name);
                         }
-                        if (!dictStrings.has('module_id') && currentModule.id) {
-                            dictStrings.Add('module_id', currentModule.id);
+                        if (!dictStrings.has('moduleId') && currentModule.id) {
+                            dictStrings.Add('moduleId', currentModule.id);
                         }
-                        if (!dictStrings.has('module_order')) {
-                            dictStrings.Add('module_order', currentModule.order.toString());
+                        if (!dictStrings.has('moduleOrder')) {
+                            dictStrings.Add('moduleOrder', currentModule.order.toString());
                         }
                     }
                 }
@@ -2125,12 +2125,12 @@ export class Abxr {
 
     /**
      * Private helper to check if a super metadata key is reserved for module data
-     * Reserved keys: module, module_name, module_id, module_order
+     * Reserved keys: module, moduleName, moduleId, moduleOrder
      * @param key The key to validate
      * @returns True if the key is reserved, false otherwise
      */
     private static isReservedSuperMetadataKey(key: string): boolean {
-        return key === 'module' || key === 'module_name' || key === 'module_id' || key === 'module_order';
+        return key === 'module' || key === 'moduleName' || key === 'moduleId' || key === 'moduleOrder';
     }
 
     /**
