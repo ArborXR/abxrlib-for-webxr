@@ -350,9 +350,9 @@ Abxr.EventCritical('safety_violation');
 **Parameters for all Event Wrapper Functions:**
 - `levelName/assessmentName/objectiveName/interactionName` (string): The identifier for the assessment, objective, interaction, or level.
 - `score` (int): The numerical score achieved. While typically between 1-100, any integer is valid. In metadata, you can also set a minScore and maxScore to define the range of scores for this objective.
-- `result` (InteractionResult): The result for the interaction (Correct, Incorrect, Neutral).
+- `result` (`InteractionResult`): The result for the interaction (Correct, Incorrect, Neutral).
 - `response` (string): Optional. Additional details about the result. For interactions, this can be a single character or a string. For example: "a", "b", "c" or "correct", "incorrect".
-- `interactionType` (InteractionType): Optional. The type of interaction for this event.
+- `interactionType` (`InteractionType`): Optional. The type of interaction for this event.
 - `meta` (object): Optional. Additional key-value pairs describing the event.
 
 **Note:** All complete events automatically calculate duration if a corresponding start event was logged.
@@ -486,12 +486,12 @@ Abxr.StorageRemoveMultipleEntries(Abxr.StorageScope.user); // Clear all entries 
 **Parameters:**
 - `name` (string): The identifier for this storage entry.
 - `entry` (object): The key-value pairs to store as `{[key: string]: string}`.
-- `scope` (StorageScope): Store/retrieve from 'device' or 'user' storage.
-- `policy` (StoragePolicy): How data should be stored - `StoragePolicy.keepLatest` or `StoragePolicy.appendHistory` (defaults to `StoragePolicy.keepLatest`).
+- `scope` (`StorageScope`): Store/retrieve from 'device' or 'user' storage.
+- `policy` (`StoragePolicy`): How data should be stored - `StoragePolicy.keepLatest` or `StoragePolicy.appendHistory` (defaults to `StoragePolicy.keepLatest`).
 
 **Return Values:**
 - **Set methods**: Return `Promise<number>` - Storage entry ID or 0 if not authenticated.
-- **Get methods**: Return `Promise<{[key: string]: string}[]>` - Array of dictionaries matching Unity's `List<Dictionary<string, string>>` format.
+- **Get methods**: Return `Promise<{[key: string]: string}[]>` - Array of dictionaries matching Unity's `List<`Dictionary<string, string>`>` format.
 
 ### Telemetry
 The Telemetry Methods provide comprehensive tracking of the XR environment. By default, they capture headset and controller movements, but can be extended to track any custom objects in the virtual space. These functions also allow collection of system-level data such as frame rates or device temperatures. This versatile tracking enables developers to gain deep insights into user interactions and application performance, facilitating optimization and enhancing the overall XR experience.
