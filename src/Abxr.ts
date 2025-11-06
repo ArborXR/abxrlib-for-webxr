@@ -759,6 +759,16 @@ export class Abxr {
         
         // Check if we should execute module sequence after authentication completes
         if (success) {
+            // Start default assessment if no assessments are currently running
+            // This ensures duration tracking starts immediately after authentication
+            if (AbxrEvent.m_dictAssessmentStartTimes.size === 0) {
+                this.EventAssessmentStart('DEFAULT_ASSESSMENT').catch(error => {
+                    if (this.enableDebug) {
+                        console.error('AbxrLib: Failed to start default assessment:', error);
+                    }
+                });
+            }
+            
             // Check if there are modules available to execute
             const moduleToExecute = this.GetModuleTargetWithoutAdvance();
             if (moduleToExecute != null) {
@@ -951,6 +961,12 @@ export class Abxr {
             return 0;
         }
         
+        // If user is starting their own assessment (not the default), silently remove the default assessment
+        // This removes it as if it never existed - no completion event will be sent
+        if (assessmentName !== 'DEFAULT_ASSESSMENT' && AbxrEvent.m_dictAssessmentStartTimes.has('DEFAULT_ASSESSMENT')) {
+            AbxrEvent.m_dictAssessmentStartTimes.delete('DEFAULT_ASSESSMENT');
+        }
+        
         // Fire-and-forget async sending
         AbxrLibSend.EventAssessmentStart(assessmentName, this.convertToAbxrDictStrings(meta)).catch(error => {
             if (this.enableDebug) {
@@ -998,6 +1014,13 @@ export class Abxr {
         }
         const validatedScore = this.validateScore(score, `assessment "${assessmentName}"`);
         
+        // If user is completing their own assessment (not the default), silently remove the default assessment
+        // This removes it as if it never existed - no completion event will be sent
+        // This handles the case where user completes an assessment without starting it
+        if (assessmentName !== 'DEFAULT_ASSESSMENT' && AbxrEvent.m_dictAssessmentStartTimes.has('DEFAULT_ASSESSMENT')) {
+            AbxrEvent.m_dictAssessmentStartTimes.delete('DEFAULT_ASSESSMENT');
+        }
+        
         // Fire-and-forget async sending
         AbxrLibSend.EventAssessmentComplete(assessmentName, validatedScore, internalEventStatus, this.convertToAbxrDictStrings(meta)).catch(error => {
             if (this.enableDebug) {
@@ -1006,6 +1029,30 @@ export class Abxr {
         });
         
         return 1; // Return success immediately without waiting for server response
+    }
+    
+    /**
+     * Start tracking an experience - developer-friendly wrapper for EventAssessmentStart
+     * This method provides a more intuitive API for VR experiences that don't feel like traditional assessments
+     * but still need assessment tracking behind the scenes for LMS integration
+     * @param experienceName Name of the experience to start
+     * @param meta Optional metadata with experience details
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async EventExperienceStart(experienceName: string, meta?: any): Promise<number> {
+        return await this.EventAssessmentStart(experienceName, meta);
+    }
+    
+    /**
+     * Complete an experience - developer-friendly wrapper for EventAssessmentComplete
+     * This method automatically uses score=100 and status=Complete, making it perfect for VR experiences
+     * where completion itself is the goal rather than a graded assessment
+     * @param experienceName Name of the experience (must match the start event)
+     * @param meta Optional metadata with completion details
+     * @returns Promise<number> Event ID or 0 if not authenticated
+     */
+    static async EventExperienceComplete(experienceName: string, meta?: any): Promise<number> {
+        return await this.EventAssessmentComplete(experienceName, 100, 'complete', meta);
     }
     
     /**
