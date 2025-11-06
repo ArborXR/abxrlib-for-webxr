@@ -174,6 +174,18 @@ if $do_publish; then
 	echo "Using npm access token for authentication..."
 	npm config set //registry.npmjs.org/:_authToken="${NPM_TOKEN}"
 
+	# Verify authentication by checking who we are
+	echo "Verifying npm authentication..."
+	if npm whoami --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
+		NPM_USER=$(npm whoami --registry=https://registry.npmjs.org/)
+		echo "✅ Authenticated as: $NPM_USER"
+	else
+		echo "❌ Error: Failed to authenticate with npm registry"
+		echo "Please verify your NPM_TOKEN is valid and not expired"
+		npm config delete //registry.npmjs.org/:_authToken
+		exit 1
+	fi
+
 	# Navigate to package directory
 	cd abxrlib-for-webxr
 
@@ -186,7 +198,22 @@ if $do_publish; then
 
 	# Publish the package
 	echo "Publishing version $NEW_VERSION to npm..."
-	npm publish $TARBALL_NAME --access public
+	if npm publish $TARBALL_NAME --access public; then
+		echo "✅ Package published successfully!"
+	else
+		PUBLISH_EXIT_CODE=$?
+		echo "❌ Failed to publish package (exit code: $PUBLISH_EXIT_CODE)"
+		echo ""
+		echo "💡 Common issues:"
+		echo "  1. Package name may not exist - verify 'abxrlib-for-webxr' exists in npm registry"
+		echo "  2. You may not have publish permissions for this package"
+		echo "  3. The package may be owned by a different user/organization"
+		echo "  4. Your npm token may not have sufficient permissions"
+		echo ""
+		echo "To check package ownership, run: npm owner ls abxrlib-for-webxr"
+		npm config delete //registry.npmjs.org/:_authToken
+		exit $PUBLISH_EXIT_CODE
+	fi
 
 	# Clean up - remove the token from npm config
 	npm config delete //registry.npmjs.org/:_authToken

@@ -50,12 +50,20 @@ echo "Next version will be: $NEXT_VERSION"
 TEMP_DIR=$(mktemp -d)
 echo "Using temp directory: $TEMP_DIR"
 
+# Function to cleanup and exit
+cleanup_and_exit() {
+    rm -rf "$TEMP_DIR" 2>/dev/null || true
+    docker-compose down 2>/dev/null || true
+    exit ${1:-0}
+}
+
 # Run Docker build and publish
 echo "🐳 Running Docker build and publish..."
 docker-compose down 2>/dev/null || true
 
 # Run the publish with volume mount to get the version back
 NEXT_VERSION=$NEXT_VERSION docker-compose -f docker-compose-publish.yml up --build
+DOCKER_EXIT_CODE=$?
 
 # Check if Docker publish was successful by looking for the version file
 PUBLISHED_VERSION=""
@@ -82,17 +90,20 @@ if [ -z "$PUBLISHED_VERSION" ]; then
         echo "✅ Detected new version from npm registry: $PUBLISHED_VERSION"
     else
         echo "❌ Publish appears to have failed. No new version detected."
+        if [ $DOCKER_EXIT_CODE -ne 0 ]; then
+            echo "❌ Docker container exited with code: $DOCKER_EXIT_CODE"
+        fi
+        echo ""
+        echo "💡 Troubleshooting tips:"
+        echo "  1. Check that your NPM_TOKEN in .env is valid and not expired"
+        echo "  2. Verify you have publish permissions for 'abxrlib-for-webxr'"
+        echo "  3. Check Docker logs: docker logs abxrlib-for-webxr"
+        echo "  4. Try running: npm whoami --registry=https://registry.npmjs.org/"
         cleanup_and_exit 1
     fi
 fi
 
 echo "✅ Successfully published version: $PUBLISHED_VERSION"
-
-# Function to cleanup and exit
-cleanup_and_exit() {
-    rm -rf "$TEMP_DIR" 2>/dev/null || true
-    exit ${1:-0}
-}
 
 # Generate changelog for this version
 echo "📝 Generating changelog for version $PUBLISHED_VERSION..."
