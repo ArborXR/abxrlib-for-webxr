@@ -758,11 +758,14 @@ export class Abxr {
         this.notifyAuthCompletedCallbacks(isReauthentication, moduleTargets);
         
         // Check if we should execute module sequence after authentication completes
-        if (success) {
+        // Only proceed if authentication is successful AND final auth is not required (or has been completed)
+        // AND this is a real authentication completion (not just state clearing from Abxr_init)
+        // We check for moduleTargets being provided as a signal that this is a real auth completion
+        if (success && !this.requiresFinalAuth && moduleTargets !== undefined) {
             // Start default assessment if no assessments are currently running
-            // This ensures duration tracking starts immediately after authentication
+            // This ensures duration tracking starts immediately after authentication is fully complete
             if (AbxrEvent.m_dictAssessmentStartTimes.size === 0) {
-                this.EventAssessmentStart('DEFAULT_ASSESSMENT').catch(error => {
+                this.EventAssessmentStart('DEFAULT').catch(error => {
                     if (this.enableDebug) {
                         console.error('AbxrLib: Failed to start default assessment:', error);
                     }
@@ -963,8 +966,8 @@ export class Abxr {
         
         // If user is starting their own assessment (not the default), silently remove the default assessment
         // This removes it as if it never existed - no completion event will be sent
-        if (assessmentName !== 'DEFAULT_ASSESSMENT' && AbxrEvent.m_dictAssessmentStartTimes.has('DEFAULT_ASSESSMENT')) {
-            AbxrEvent.m_dictAssessmentStartTimes.delete('DEFAULT_ASSESSMENT');
+        if (assessmentName !== 'DEFAULT' && AbxrEvent.m_dictAssessmentStartTimes.has('DEFAULT')) {
+            AbxrEvent.m_dictAssessmentStartTimes.delete('DEFAULT');
         }
         
         // Fire-and-forget async sending
@@ -1017,8 +1020,8 @@ export class Abxr {
         // If user is completing their own assessment (not the default), silently remove the default assessment
         // This removes it as if it never existed - no completion event will be sent
         // This handles the case where user completes an assessment without starting it
-        if (assessmentName !== 'DEFAULT_ASSESSMENT' && AbxrEvent.m_dictAssessmentStartTimes.has('DEFAULT_ASSESSMENT')) {
-            AbxrEvent.m_dictAssessmentStartTimes.delete('DEFAULT_ASSESSMENT');
+        if (assessmentName !== 'DEFAULT' && AbxrEvent.m_dictAssessmentStartTimes.has('DEFAULT')) {
+            AbxrEvent.m_dictAssessmentStartTimes.delete('DEFAULT');
         }
         
         // Fire-and-forget async sending
@@ -3277,8 +3280,9 @@ export class Abxr {
                 const authResponseData = AbxrLibClient.getAuthResponseData();
                 const moduleTargets = Abxr.ExtractModuleTargets(authResponseData?.modules || []);
                 
-                Abxr.NotifyAuthCompleted(true, false, moduleTargets);
+                // Set requiresFinalAuth to false BEFORE NotifyAuthCompleted so DEFAULT can start
                 this.setRequiresFinalAuth(false);
+                Abxr.NotifyAuthCompleted(true, false, moduleTargets);
                 return true;
             } else {
                 console.warn(`AbxrLib: Final authentication failed with code ${result}`);

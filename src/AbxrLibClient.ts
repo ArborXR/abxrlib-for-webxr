@@ -695,6 +695,70 @@ export class AbxrLibClient
 	}
 	// ---
 	/// <summary>
+	/// Post batched data (events, logs, telemetry) to /v1/collect/data endpoint
+	/// </summary>
+	public static async PostDataBatch(dataPayload: {event?: any[], telemetry?: any[], basicLog?: any[]}, rpResponse: {szResponse: string}): Promise<AbxrResult>
+	{
+		try
+		{
+			var	objRequest:			CurlHttp = new CurlHttp();
+			var	eCurlRet:			boolean;
+			var	eJsonRet:			JsonResult;
+			var	eReauthResult:		AbxrResult;
+			var	szJSON:				string = "";
+			var	mbBodyContent:		Buffer = Buffer.from("");
+			var	objResponseSuccess:	PostObjectsResponseSuccess = new PostObjectsResponseSuccess();
+			var	objResponseFailure:	PostObjectsResponseFailure = new PostObjectsResponseFailure();
+			var sszErrors:			Set<string> = new Set<string>;
+
+			// Convert to JSON matching Unity DataBatcher format
+			szJSON = JSON.stringify(dataPayload);
+			mbBodyContent = Buffer.from(szJSON);
+
+			await AbxrLibAnalytics.SetHeadersFromCurrentState(objRequest, mbBodyContent, true, true);
+			eCurlRet = await objRequest.Post(AbxrLibAnalytics.FinalUrl("collect/data"), [], mbBodyContent, rpResponse);
+
+			if (eCurlRet)
+			{
+				eJsonRet = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false, sszErrors);
+				if (JsonSuccess(eJsonRet) && objResponseSuccess.IsValid())
+				{
+					return AbxrResult.eOk;
+				}
+				else
+				{
+					// Did not get success, does failure parse?
+					eJsonRet = LoadFromJson(objResponseFailure, rpResponse.szResponse, false, sszErrors);
+					if (JsonSuccess(eJsonRet) && objResponseFailure.IsValid())
+					{
+						// Failure parses, probably auth error.
+						eReauthResult = await AbxrLibInit.ReAuthenticate(true);
+						if (eReauthResult != AbxrResult.eOk)
+						{
+							return eReauthResult;
+						}
+					}
+					else
+					{
+						// Response does not parse.
+						return AbxrResult.ePostObjectsBadJsonResponse;
+					}
+				}
+			}
+			else
+			{
+				return AbxrResult.ePostObjectsFailedNetworkError;
+			}
+		}
+		catch (error)
+		{
+			console.log("AbxrLib Error: ", error);
+			return AbxrResult.ePostObjectsFailed;
+		}
+		return AbxrResult.eOk;
+	}
+	// ---
+	/// <summary>
 	/// Debug/Test code... output diagnostic information for other debug/test code.
 	/// </summary>
 	/// <param name="szLine"></param>

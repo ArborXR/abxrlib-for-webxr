@@ -570,6 +570,7 @@ export class AbxrLibAnalytics
 					pdsABXRXXX = pdsABXRXXX?.filter(t => { return !t.m_bSyncedWithCloud; }) as DbSet<T>;
 				}
 			}
+			// Use existing send flow - it will handle batching for events/logs/telemetry internally
 			eRet = await AbxrLibAnalytics.SendUnsentXXXs<T>(abxrDbContext, pdsABXRXXX, tTypeOfT, szTableName, pfnPostABXRXXX, bOneAtATime, AbxrLibStorage.m_abxrLibConfiguration.m_nEventsPerSendAttempt, false);
 			// ---
 			// if (AbxrLibStorage.m_abxrLibConfiguration.m_bUseDatabase)
@@ -698,9 +699,165 @@ export class AbxrLibAnalytics
 			eTestRet:	AbxrResult = AbxrResult.eOk;
 		var sszErrors:	Set<string> = new Set<string>;
 
+		// Check if this is events, logs, or telemetry - if so, batch them together
+		const isBatchedType = (tTypeOfT === AbxrEvent || tTypeOfT === AbxrLog || tTypeOfT === AbxrTelemetry);
+		
 		// If we have enough new yet-to-be-pushed-to-REST items, then do that and mark as sent.
 		if (AbxrLibStorage.m_abxrLibConfiguration.RESTConfigured())
 		{
+			// For batched types (events, logs, telemetry), collect all three types together
+			if (isBatchedType)
+			{
+				// Get all unsent items of all three types
+				const unsentEvents: AbxrEvent[] = [];
+				const unsentLogs: AbxrLog[] = [];
+				const unsentTelemetries: AbxrTelemetry[] = [];
+				
+				if (abxrDbContext.m_dsABXREvents)
+				{
+					for (let i = 0; i < abxrDbContext.m_dsABXREvents.length; i++)
+					{
+						const evt = abxrDbContext.m_dsABXREvents[i];
+						if (!evt.m_bSyncedWithCloud)
+						{
+							unsentEvents.push(evt);
+						}
+					}
+				}
+				
+				if (abxrDbContext.m_dsABXRLogs)
+				{
+					for (let i = 0; i < abxrDbContext.m_dsABXRLogs.length; i++)
+					{
+						const log = abxrDbContext.m_dsABXRLogs[i];
+						if (!log.m_bSyncedWithCloud)
+						{
+							unsentLogs.push(log);
+						}
+					}
+				}
+				
+				if (abxrDbContext.m_dsABXRTelemetry)
+				{
+					for (let i = 0; i < abxrDbContext.m_dsABXRTelemetry.length; i++)
+					{
+						const tel = abxrDbContext.m_dsABXRTelemetry[i];
+						if (!tel.m_bSyncedWithCloud)
+						{
+							unsentTelemetries.push(tel);
+						}
+					}
+				}
+				
+				const totalUnsent = unsentEvents.length + unsentLogs.length + unsentTelemetries.length;
+				if (totalUnsent === 0)
+				{
+					return AbxrResult.eOk;
+				}
+				
+				// For batched types, send all available items immediately (no threshold waiting)
+				// Limit batch size only if configured and we have more than the limit
+				const dataEntriesPerSend = AbxrLibStorage.m_abxrLibConfiguration.m_nDataEntriesPerSendAttempt || 0;
+				let eventsToSend: AbxrEvent[] = [];
+				let logsToSend: AbxrLog[] = [];
+				let telemetriesToSend: AbxrTelemetry[] = [];
+				
+				if (dataEntriesPerSend > 0 && totalUnsent > dataEntriesPerSend)
+				{
+					// If we have more than batch size, take up to the limit, distributing across types
+					const eventRatio = unsentEvents.length / totalUnsent;
+					const logRatio = unsentLogs.length / totalUnsent;
+					const telemetryRatio = unsentTelemetries.length / totalUnsent;
+					
+					const eventsToTake = Math.min(unsentEvents.length, Math.ceil(dataEntriesPerSend * eventRatio));
+					const logsToTake = Math.min(unsentLogs.length, Math.ceil(dataEntriesPerSend * logRatio));
+					const telemetriesToTake = Math.min(unsentTelemetries.length, Math.ceil(dataEntriesPerSend * telemetryRatio));
+					
+					eventsToSend = unsentEvents.slice(0, eventsToTake);
+					logsToSend = unsentLogs.slice(0, logsToTake);
+					telemetriesToSend = unsentTelemetries.slice(0, telemetriesToTake);
+				}
+				else
+				{
+					// Send all available items immediately
+					eventsToSend = unsentEvents;
+					logsToSend = unsentLogs;
+					telemetriesToSend = unsentTelemetries;
+				}
+				
+				// Send batched data
+				let bSuccess: boolean = false;
+				for (let i = 0; i < AbxrLibStorage.m_abxrLibConfiguration.m_nSendRetriesOnFailure && !bSuccess; i++)
+				{
+					try
+					{
+						var	rpResponse:	{szResponse: string} = {szResponse: ""};
+						const payload = this.ConvertToBatchedPayload(eventsToSend, logsToSend, telemetriesToSend);
+						
+						// Ensure we have at least one item to send
+						const hasData = (payload.event && payload.event.length > 0) || 
+						               (payload.telemetry && payload.telemetry.length > 0) || 
+						               (payload.basicLog && payload.basicLog.length > 0);
+						
+						if (!hasData)
+						{
+							return AbxrResult.eOk;
+						}
+						
+						eTestRet = await AbxrLibClient.PostDataBatch(payload, rpResponse);
+						
+						if (eTestRet === AbxrResult.eOk)
+						{
+							var	eSuccessParse:		JsonResult,
+								eFailureParse:		JsonResult;
+							var	objResponseSuccess:	PostObjectsResponseSuccess = new PostObjectsResponseSuccess();
+							var	objResponseFailure:	PostObjectsResponseFailure = new PostObjectsResponseFailure();
+
+							eSuccessParse = LoadFromJson(objResponseSuccess, rpResponse.szResponse, false, sszErrors);
+							eFailureParse = LoadFromJson(objResponseFailure, rpResponse.szResponse, false, sszErrors);
+							
+							if (eSuccessParse === JsonResult.eBadJsonStructure || eFailureParse === JsonResult.eBadJsonStructure)
+							{
+								eTestRet = AbxrResult.eCorruptJson;
+							}
+							else if (JsonSuccess(eSuccessParse) && objResponseSuccess.IsValid())
+							{
+								// Mark all as sent
+								eventsToSend.forEach(evt => evt.m_bSyncedWithCloud = true);
+								logsToSend.forEach(log => log.m_bSyncedWithCloud = true);
+								telemetriesToSend.forEach(tel => tel.m_bSyncedWithCloud = true);
+								
+								AbxrLibAnalytics.m_dtLastSuccessfulSend = DateTime.ConvertUnixTime(DateTime.Now());
+								AbxrLibAnalytics.m_bCheckForStragglers = !bSendingStragglers;
+								bSuccess = true;
+								return AbxrResult.eOk;
+							}
+							else
+							{
+								eTestRet = AbxrResult.eAuthenticateFailed;
+							}
+						}
+						
+						// Wait before retrying if we didn't succeed and there are more attempts
+						if (!bSuccess && i < AbxrLibStorage.m_abxrLibConfiguration.m_nSendRetriesOnFailure - 1)
+						{
+							await Sleep(AbxrLibStorage.m_abxrLibConfiguration.m_tsSendRetryInterval.ToInt64() * 1000);
+						}
+					}
+					catch (error)
+					{
+						eTestRet = AbxrResult.ePostObjectsFailed;
+						if (i < AbxrLibStorage.m_abxrLibConfiguration.m_nSendRetriesOnFailure - 1)
+						{
+							await Sleep(AbxrLibStorage.m_abxrLibConfiguration.m_tsSendRetryInterval.ToInt64() * 1000);
+						}
+					}
+				}
+				
+				return eTestRet;
+			}
+			
+			// Original flow for non-batched types (Storage, etc.)
 			var	dspObjectsToSend:	DbSet<T> | null | undefined = null;
 			var	i:					number;
 			var	bDoneSending:		boolean = false;
@@ -925,6 +1082,64 @@ export class AbxrLibAnalytics
 		return AbxrLibAnalytics.TaskErrorReturnT<T>(eRet, abxrT, bNoCallbackOnSuccess, pfnStatusCallback, "");
 	}
 	/// <summary>
+	/// Convert AbxrDictStrings (Dictionary) to plain object
+	/// </summary>
+	private static DictToObject(dict: AbxrDictStrings): { [key: string]: string }
+	{
+		return Object.fromEntries(dict);
+	}
+
+	/// <summary>
+	/// Convert DateTime to ISO string format
+	/// </summary>
+	private static DateTimeToISOString(dt: DateTime): string
+	{
+		// DateTime extends Date, so we can use toISOString()
+		return dt.toISOString();
+	}
+
+	/// <summary>
+	/// Convert AbxrEvent, AbxrLog, AbxrTelemetry to batched payload format matching Unity DataBatcher
+	/// </summary>
+	private static ConvertToBatchedPayload(events: AbxrEvent[], logs: AbxrLog[], telemetries: AbxrTelemetry[]): {event?: any[], telemetry?: any[], basicLog?: any[]}
+	{
+		const payload: {event?: any[], telemetry?: any[], basicLog?: any[]} = {};
+
+		if (events.length > 0)
+		{
+			payload.event = events.map(evt => ({
+				timestamp: this.DateTimeToISOString(evt.m_dtTimeStamp),
+				preciseTimestamp: evt.m_nTimeStamp,
+				name: evt.m_szName,
+				meta: this.DictToObject(evt.m_dictMeta)
+			}));
+		}
+
+		if (telemetries.length > 0)
+		{
+			payload.telemetry = telemetries.map(tel => ({
+				timestamp: this.DateTimeToISOString(tel.m_dtTimeStamp),
+				preciseTimestamp: tel.m_nTimeStamp,
+				name: tel.m_szName,
+				meta: this.DictToObject(tel.m_dictMeta)
+			}));
+		}
+
+		if (logs.length > 0)
+		{
+			payload.basicLog = logs.map(log => ({
+				timestamp: this.DateTimeToISOString(log.m_dtTimeStamp),
+				preciseTimestamp: log.m_nTimeStamp,
+				logLevel: log.m_szLogLevel,
+				text: log.m_szText,
+				meta: this.DictToObject(log.m_dictMeta)
+			}));
+		}
+
+		return payload;
+	}
+
+	/// <summary>
 	/// Core-core function to force send unsent objects synchronously.  Used to be inlined in ^^^ TimerCallback().
 	///		Now we want it to be callable on its own for the user-goes-to-the-bog-then-resumes-playing workflow.
 	/// </summary>
@@ -935,21 +1150,13 @@ export class AbxrLibAnalytics
 			eTestRet:		AbxrResult = AbxrResult.eOk;
 		var	abxrDbContext:	AbxrDbContext = new AbxrDbContext(false);
 
+		// Send events (this will batch events, logs, and telemetry together)
 		eTestRet = await AbxrLibAnalytics.SendUnsentXXXs<AbxrEvent>(abxrDbContext, abxrDbContext.m_dsABXREvents, AbxrEvent, "ABXREvents", AbxrLibClient.PostABXREvents, false, AbxrLibStorage.m_abxrLibConfiguration.m_nEventsPerSendAttempt, true);
 		if (eTestRet !== AbxrResult.eOk)
 		{
 			eRet = eTestRet;
 		}
-		eTestRet = await AbxrLibAnalytics.SendUnsentXXXs<AbxrLog>(abxrDbContext, abxrDbContext.m_dsABXRLogs, AbxrLog, "ABXRLogs", AbxrLibClient.PostABXRLogs, false, AbxrLibStorage.m_abxrLibConfiguration.m_nLogsPerSendAttempt, true);
-		if (eTestRet !== AbxrResult.eOk)
-		{
-			eRet = eTestRet;
-		}
-		eTestRet = await AbxrLibAnalytics.SendUnsentXXXs<AbxrTelemetry>(abxrDbContext, abxrDbContext.m_dsABXRTelemetry, AbxrTelemetry, "ABXRTelemetry", AbxrLibClient.PostABXRTelemetry, false, AbxrLibStorage.m_abxrLibConfiguration.m_nTelemetryEntriesPerSendAttempt, true);
-		if (eTestRet !== AbxrResult.eOk)
-		{
-			eRet = eTestRet;
-		}
+		// Storage still uses separate endpoint
 		eTestRet = await AbxrLibAnalytics.SendUnsentXXXs<AbxrStorage>(abxrDbContext, abxrDbContext.m_dsABXRStorage, AbxrStorage, "ABXRStorage", AbxrLibClient.PostABXRStorage, true, AbxrLibStorage.m_abxrLibConfiguration.m_nStorageEntriesPerSendAttempt, true);
 		if (eTestRet !== AbxrResult.eOk)
 		{

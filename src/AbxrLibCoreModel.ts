@@ -133,6 +133,8 @@ export class AbxrLibConfiguration extends DataObjectBase
 	public m_nLogsPerSendAttempt:				number;
 	public m_nTelemetryEntriesPerSendAttempt:	number;
 	public m_nStorageEntriesPerSendAttempt:		number;
+	public m_nDataEntriesPerSendAttempt:		number;		// For DataBatcher - total events + logs + telemetry per batch
+	public m_nMaxCallFrequencySeconds:			number;		// Minimum seconds between batch sends
 	public m_tsPruneSentItemsOlderThan:			TimeSpan;
 	public m_nMaximumCachedItems:				number;
 	public m_bRetainLocalAfterSent:				boolean;
@@ -168,6 +170,8 @@ export class AbxrLibConfiguration extends DataObjectBase
 		this.m_nLogsPerSendAttempt = 16;
 		this.m_nTelemetryEntriesPerSendAttempt = 16;
 		this.m_nStorageEntriesPerSendAttempt = 16;
+		this.m_nDataEntriesPerSendAttempt = 16;		// Default: same as individual limits
+		this.m_nMaxCallFrequencySeconds = 1;		// Default: 1 second minimum between sends
 		this.m_tsPruneSentItemsOlderThan = TimeSpan.Parse("1.00:00:00");
 		this.m_nMaximumCachedItems = 1024;
 		this.m_bRetainLocalAfterSent = false;
@@ -227,6 +231,12 @@ export class AbxrLibConfiguration extends DataObjectBase
 		{m_nTelemetryEntriesPerSendAttempt: new FieldProperties("telemetry_entries_per_send_attempt")},
 		{m_nTelemetryEntriesPerSendAttempt: new FieldProperties("telemetryEntriesPerSendAttempt", FieldPropertyFlags.bfBackendAccommodation)},
 		 // ---
+		{m_nDataEntriesPerSendAttempt: new FieldProperties("data_entries_per_send_attempt")},
+		{m_nDataEntriesPerSendAttempt: new FieldProperties("dataEntriesPerSendAttempt", FieldPropertyFlags.bfBackendAccommodation)},
+		 // ---
+		{m_nMaxCallFrequencySeconds: new FieldProperties("max_call_frequency_seconds")},
+		{m_nMaxCallFrequencySeconds: new FieldProperties("maxCallFrequencySeconds", FieldPropertyFlags.bfBackendAccommodation)},
+		 // ---
 		{m_nStorageEntriesPerSendAttempt: new FieldProperties("storage_entries_per_send_attempt")},
 		{m_nStorageEntriesPerSendAttempt: new FieldProperties("storageEntriesPerSendAttempt", FieldPropertyFlags.bfBackendAccommodation)},
 		 // ---
@@ -278,6 +288,12 @@ export class AbxrLibConfiguration extends DataObjectBase
 			this.m_dTelemetryCapturePeriodicity = atof(ConfigurationManager.AppSettings("PositionCapturePeriodicity", "1.0"));
 			// 0 = Send all not already sent.
 			this.m_nEventsPerSendAttempt = atol(ConfigurationManager.AppSettings("EventsPerSendAttempt", "16"));
+			this.m_nLogsPerSendAttempt = atol(ConfigurationManager.AppSettings("LogsPerSendAttempt", "16"));
+			this.m_nTelemetryEntriesPerSendAttempt = atol(ConfigurationManager.AppSettings("TelemetryEntriesPerSendAttempt", "16"));
+			// Data batching: total events + logs + telemetry per batch
+			this.m_nDataEntriesPerSendAttempt = atol(ConfigurationManager.AppSettings("DataEntriesPerSendAttempt", "16"));
+			// Minimum seconds between batch sends
+			this.m_nMaxCallFrequencySeconds = atol(ConfigurationManager.AppSettings("MaxCallFrequencySeconds", "1"));
 			// 0 = infinite, i.e. never prune.
 			this.m_tsPruneSentItemsOlderThan = TimeSpan.Parse(ConfigurationManager.AppSettings("PruneSentItemsOlderThan", "0"));
 			this.m_nMaximumCachedItems = atol(ConfigurationManager.AppSettings("MaximumCachedItems", "1024"));

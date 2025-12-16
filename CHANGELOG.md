@@ -5,7 +5,7 @@
 ### ✨ Features
 
 - added extra error handling ([f57d565](../../commit/f57d565769e243da4b97673a9f8119eb207ec229))
-- Added support for Experience Start/Complete functions and a forced DEFAULT_ASSESSMENT incase the user does not start their own Assessment ([3ff514b](../../commit/3ff514b599937e34c88a198fc76235055de520dc))
+- Added support for Experience Start/Complete functions and a forced DEFAULT assessment incase the user does not start their own Assessment ([3ff514b](../../commit/3ff514b599937e34c88a198fc76235055de520dc))
 
 ### ♻️ Refactoring
 
