@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.48] - 2025-12-16
+
+### ♻️ Refactoring
+
+- updated to new /data endpoint ([44c5282](../../commit/44c52821a34f98d7c86c2a642af73d55a88ffc11))
+
 ## [1.0.47] - 2025-11-06
 
 ### ✨ Features
