@@ -103,45 +103,39 @@
         }
     }
 
+    // Helper: subscribe to OnAuthCompleted and run init. Prefer this over polling ConnectionActive().
+    function runInitWithAuthCompleted(initFn, successMessage, requiresFinalAuthMessage) {
+        Abxr.ClearAuthCompletedCallbacks();
+        Abxr.OnAuthCompleted((authData) => {
+            if (authData.success) {
+                updateBuiltinResult(successMessage, 'success');
+                enableSharedButtons();
+            } else {
+                if (Abxr.getRequiresFinalAuth()) {
+                    updateBuiltinResult(requiresFinalAuthMessage || 'Additional authentication required.', 'warning');
+                } else {
+                    updateBuiltinResult('Authentication failed: ' + (authData.error || Abxr.getAuthenticationError()), 'error');
+                }
+            }
+        });
+        initFn();
+    }
+
     // XR Dialog Demo Functions
     async function initBuiltinDefault() {
         console.log("AbxrTester: Testing XR dialog (default)");
         updateBuiltinResult('Initializing with XR dialog (default behavior)...', 'info');
         
         try {
-            // No callback or dialog options - uses XR dialog automatically
-            // Credentials come from cookies/GET parameters
-            Abxr_init(appId);
-            Abxr.SetDebugMode(true);
-            
-            // Enable quit handler for demo purposes (single-page tester app)
-            Abxr.EnableQuitHandler(true);
-            
-            // Check authentication status
-            setTimeout(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
-                    enableSharedButtons();
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. XR dialog should appear automatically for additional authentication with purple theme and virtual keyboard.', 'warning');
-                } else {
-                    updateBuiltinResult('Authentication in progress...', 'info');
-                }
-            }, 1000);
-            
-            // Set up periodic check for completion
-            const checkAuth = setInterval(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully with XR dialog!', 'success');
-                    enableSharedButtons();
-                    clearInterval(checkAuth);
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                    clearInterval(checkAuth);
-                }
-            }, 500);
+            runInitWithAuthCompleted(
+                () => {
+                    Abxr_init(appId);
+                    Abxr.SetDebugMode(true);
+                    Abxr.EnableQuitHandler(true);
+                },
+                'Authentication completed successfully with XR dialog!',
+                'Initial authentication successful. XR dialog should appear automatically for additional authentication with purple theme and virtual keyboard.'
+            );
         } catch (error) {
             updateBuiltinResult('Error: ' + error.message, 'error');
         }
@@ -152,15 +146,14 @@
         updateBuiltinResult('Initializing with custom-styled XR dialog...', 'info');
         
         try {
-            // Custom styling for the XR dialog
             const dialogOptions = {
                 enabled: true,
                 xrStyle: {
                     colors: {
-                        primary: '#667eea',        // Purple/blue accent
-                        success: '#764ba2',        // Darker purple for submit
-                        background: 'linear-gradient(135deg, #1e2a38, #2d4356)', // Dark blue/gray
-                        keyBg: 'rgba(102, 126, 234, 0.2)',     // Semi-transparent purple keys
+                        primary: '#667eea',
+                        success: '#764ba2',
+                        background: 'linear-gradient(135deg, #1e2a38, #2d4356)',
+                        keyBg: 'rgba(102, 126, 234, 0.2)',
                         keyText: '#ffffff',
                         keyActive: '#667eea'
                     },
@@ -173,37 +166,15 @@
                     }
                 }
             };
-            
-            // Credentials come from cookies/GET parameters
-            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
-            Abxr.SetDebugMode(true);
-            
-            // Enable quit handler for demo purposes (single-page tester app)
-            Abxr.EnableQuitHandler(true);
-            
-            setTimeout(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully!', 'success');
-                    enableSharedButtons();
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. Custom-styled XR dialog should appear with blue/purple theme!', 'warning');
-                } else {
-                    updateBuiltinResult('Authentication in progress...', 'info');
-                }
-            }, 1000);
-            
-            const checkAuth = setInterval(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed with custom-styled XR dialog!', 'success');
-                    enableSharedButtons();
-                    clearInterval(checkAuth);
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                    clearInterval(checkAuth);
-                }
-            }, 500);
+            runInitWithAuthCompleted(
+                () => {
+                    Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
+                    Abxr.SetDebugMode(true);
+                    Abxr.EnableQuitHandler(true);
+                },
+                'Authentication completed with custom-styled XR dialog!',
+                'Initial authentication successful. Custom-styled XR dialog should appear with blue/purple theme!'
+            );
         } catch (error) {
             updateBuiltinResult('Error: ' + error.message, 'error');
         }
@@ -239,36 +210,15 @@
                 }
             };
             
-            // Credentials come from cookies/GET parameters
-            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
-            Abxr.SetDebugMode(true);
-            
-            // Enable quit handler for demo purposes (single-page tester app)
-            Abxr.EnableQuitHandler(true);
-            
-            setTimeout(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully with advanced XR styling!', 'success');
-                    enableSharedButtons();
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. Advanced XR dialog should appear with cyan glow, neon effects, enhanced VR-optimized styling, and virtual keyboard!', 'warning');
-                } else {
-                    updateBuiltinResult('Authentication in progress...', 'info');
-                }
-            }, 1000);
-            
-            const checkAuth = setInterval(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully with advanced XR dialog!', 'success');
-                    enableSharedButtons();
-                    clearInterval(checkAuth);
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                    clearInterval(checkAuth);
-                }
-            }, 500);
+            runInitWithAuthCompleted(
+                () => {
+                    Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
+                    Abxr.SetDebugMode(true);
+                    Abxr.EnableQuitHandler(true);
+                },
+                'Authentication completed successfully with advanced XR dialog!',
+                'Initial authentication successful. Advanced XR dialog should appear with cyan glow, neon effects, enhanced VR-optimized styling, and virtual keyboard!'
+            );
         } catch (error) {
             updateBuiltinResult('Error: ' + error.message, 'error');
         }
@@ -285,36 +235,15 @@
                 showVirtualKeyboard: false  // Disable virtual keyboard for desktop - uses default theme
             };
             
-            // Credentials come from cookies/GET parameters
-            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
-            Abxr.SetDebugMode(true);
-            
-            // Enable quit handler for demo purposes (single-page tester app)
-            Abxr.EnableQuitHandler(true);
-            
-            setTimeout(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully!', 'success');
-                    enableSharedButtons();
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. XR dialog should appear WITHOUT virtual keyboard using default theme - perfect for desktop use with physical keyboard!', 'warning');
-                } else {
-                    updateBuiltinResult('Authentication in progress...', 'info');
-                }
-            }, 1000);
-            
-            const checkAuth = setInterval(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully with default-themed XR dialog (no virtual keyboard)!', 'success');
-                    enableSharedButtons();
-                    clearInterval(checkAuth);
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                    clearInterval(checkAuth);
-                }
-            }, 500);
+            runInitWithAuthCompleted(
+                () => {
+                    Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
+                    Abxr.SetDebugMode(true);
+                    Abxr.EnableQuitHandler(true);
+                },
+                'Authentication completed successfully with default-themed XR dialog (no virtual keyboard)!',
+                'Initial authentication successful. XR dialog should appear WITHOUT virtual keyboard using default theme - perfect for desktop use with physical keyboard!'
+            );
         } catch (error) {
             updateBuiltinResult('Error: ' + error.message, 'error');
         }
@@ -328,25 +257,15 @@
             // Disable XR dialog
             const dialogOptions = { enabled: false };
             
-            // Credentials come from cookies/GET parameters
-            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
-            Abxr.SetDebugMode(true);
-            
-            // Enable quit handler for demo purposes (single-page tester app)
-            Abxr.EnableQuitHandler(true);
-            
-            setTimeout(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully!', 'success');
-                    enableSharedButtons();
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Additional authentication required, but XR dialog is disabled. You would need to implement custom handling or call Abxr.extractAuthMechanismData() to get the auth requirements.', 'warning');
-                } else {
-                    updateBuiltinResult('Authentication in progress...', 'info');
-                }
-            }, 1000);
+            runInitWithAuthCompleted(
+                () => {
+                    Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
+                    Abxr.SetDebugMode(true);
+                    Abxr.EnableQuitHandler(true);
+                },
+                'Authentication completed successfully!',
+                'Additional authentication required, but XR dialog is disabled. You would need to implement custom handling or call Abxr.extractAuthMechanismData() to get the auth requirements.'
+            );
         } catch (error) {
             updateBuiltinResult('Error: ' + error.message, 'error');
         }
@@ -403,26 +322,15 @@
                 }, 100);
             };
             
-            // Method 1: Pass custom callback as function parameter
-            // Credentials come from cookies/GET parameters
-            Abxr_init(appId, undefined, undefined, undefined, undefined, customAuthCallback);
-            Abxr.SetDebugMode(true);
-            
-            // Enable quit handler for demo purposes (single-page tester app)
-            Abxr.EnableQuitHandler(true);
-            
-            setTimeout(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully with custom callback!', 'success');
-                    enableSharedButtons();
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. Custom callback will be triggered for additional authentication.', 'warning');
-                } else {
-                    updateBuiltinResult('Authentication in progress...', 'info');
-                }
-            }, 1000);
+            runInitWithAuthCompleted(
+                () => {
+                    Abxr_init(appId, undefined, undefined, undefined, undefined, customAuthCallback);
+                    Abxr.SetDebugMode(true);
+                    Abxr.EnableQuitHandler(true);
+                },
+                'Authentication completed successfully with custom callback!',
+                'Initial authentication successful. Custom callback will be triggered for additional authentication.'
+            );
         } catch (error) {
             updateBuiltinResult('Error: ' + error.message, 'error');
         }
@@ -461,25 +369,15 @@
                 }
             };
             
-            // Credentials come from cookies/GET parameters
-            Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
-            Abxr.SetDebugMode(true);
-            
-            // Enable quit handler for demo purposes (single-page tester app)
-            Abxr.EnableQuitHandler(true);
-            
-            setTimeout(() => {
-                if (Abxr.ConnectionActive()) {
-                    updateBuiltinResult('Authentication completed successfully!', 'success');
-                    enableSharedButtons();
-                } else if (Abxr.hasAuthenticationFailed()) {
-                    updateBuiltinResult('Authentication failed: ' + Abxr.getAuthenticationError(), 'error');
-                } else if (Abxr.getRequiresFinalAuth()) {
-                    updateBuiltinResult('Initial authentication successful. Custom callback (via options) will be triggered.', 'warning');
-                } else {
-                    updateBuiltinResult('Authentication in progress...', 'info');
-                }
-            }, 1000);
+            runInitWithAuthCompleted(
+                () => {
+                    Abxr_init(appId, undefined, undefined, undefined, dialogOptions);
+                    Abxr.SetDebugMode(true);
+                    Abxr.EnableQuitHandler(true);
+                },
+                'Authentication completed successfully!',
+                'Initial authentication successful. Custom callback (via options) will be triggered.'
+            );
         } catch (error) {
             updateBuiltinResult('Error: ' + error.message, 'error');
         }

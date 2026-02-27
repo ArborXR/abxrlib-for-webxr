@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Deprecated
+
+- **ConnectionActive()** – Prefer subscribing to **OnAuthCompleted** to know when auth has completed and you can start sending events. The library queues pre-auth assessment/objective/interaction events and replays them when auth succeeds. `ConnectionActive()` remains available but is deprecated and may be removed in a future release.
+
+### Refactoring
+
+- Testers (advanced.html, device-detection-test.html) now use **OnAuthCompleted** instead of polling **ConnectionActive()**.
+
 ## [1.0.48] - 2025-12-16
 
 ### ♻️ Refactoring

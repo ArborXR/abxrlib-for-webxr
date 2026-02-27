@@ -51,6 +51,10 @@ export class AuthTokenRequest extends DataObjectBase
 	m_szDeviceId:			string = "";
 	m_szSessionId:			string = "";
 	m_szPartner:			string = "";	// Blank if it is just us (Abxr).  Otherwise, "arborxr", ... if not blank this is how backend knows to do further authentication with partner.
+	// --- App token path (use when appToken is provided instead of appId/orgId/authSecret).
+	m_szAppToken:			string = "";
+	m_szOrgToken:			string = "";
+	m_szBuildType:			string = "";
 	// --- Extra environment-variable kind of data set by properties.
 	m_szOsVersion:			string = "";
 	m_szIpAddress:			string = "";
@@ -73,6 +77,9 @@ export class AuthTokenRequest extends DataObjectBase
 	 	{m_szDeviceId: new FieldProperties("deviceId")},
 	 	{m_szSessionId: new FieldProperties("sessionId")},
 	 	{m_szPartner: new FieldProperties("partner")},
+	 	{m_szAppToken: new FieldProperties("appToken")},
+	 	{m_szOrgToken: new FieldProperties("orgToken")},
+	 	{m_szBuildType: new FieldProperties("buildType")},
 	 	// ---
 	 	{m_szOsVersion: new FieldProperties("osVersion", FieldPropertyFlags.bfStringOnly)},
 	 	{m_szIpAddress: new FieldProperties("ipAddress")},

@@ -170,60 +170,50 @@
       // Use test credentials (you may need to update these)
       const testAppId = '06bdf0bf-a2d7-4dfa-9ef5-c551cfc9a7f9';
       
-      // Initialize AbxrLib - this should trigger device detection
-      Abxr_init(testAppId);
-      
-      // Enable quit handler for demo purposes (single-page tester app)
-      Abxr.EnableQuitHandler(true);
-      
-      // Monitor authentication status
-      const checkInterval = setInterval(() => {
-        if (Abxr.ConnectionActive()) {
-          clearInterval(checkInterval);
-          
+      // Subscribe to auth completion before init (preferred over polling ConnectionActive)
+      let authCompleted = false;
+      Abxr.OnAuthCompleted((authData) => {
+        if (authCompleted) return;
+        authCompleted = true;
+        if (authData.success) {
           document.getElementById('status').textContent = 'Status: Authentication completed!';
           document.getElementById('authStatus').textContent = 'Yes';
           document.getElementById('userId').textContent = Abxr.GetUserId() || 'Not available';
           document.getElementById('userEmail').textContent = Abxr.GetUserEmail() || 'Not available';
           document.getElementById('authInfo').style.display = 'block';
           document.getElementById('authInfo').className = 'info-box detected-info';
-          
           console.log('AbxrTester: Authentication test completed successfully');
-          
-          // Try to get the device info that was set during authentication
           try {
-            // AbxrLibInit is available as part of the AbxrLib global object
             const osVersion = AbxrLib.AbxrLibInit.get_OsVersion();
             const deviceModel = AbxrLib.AbxrLibInit.get_DeviceModel();
             const ipAddress = AbxrLib.AbxrLibInit.get_IpAddress();
-            
             document.getElementById('osVersion').textContent = osVersion || 'Not set';
             document.getElementById('deviceModel').textContent = deviceModel || 'Not set';
             document.getElementById('ipAddress').textContent = ipAddress || 'Not set';
             document.getElementById('deviceInfo').style.display = 'block';
             document.getElementById('deviceInfo').className = 'info-box detected-info';
-            
             console.log('AbxrTester: Device info from authentication:', { osVersion, deviceModel, ipAddress });
           } catch (error) {
             console.warn('AbxrTester: Could not retrieve device info from AbxrLib.AbxrLibInit:', error);
           }
-          
-        } else if (Abxr.hasAuthenticationFailed()) {
-          clearInterval(checkInterval);
-          
+        } else {
           document.getElementById('status').textContent = 'Status: Authentication failed!';
           document.getElementById('authStatus').textContent = 'Failed';
           document.getElementById('authInfo').style.display = 'block';
           document.getElementById('authInfo').className = 'info-box error-info';
-          
-          console.error('AbxrTester: Authentication test failed:', Abxr.getAuthenticationError());
+          console.error('AbxrTester: Authentication test failed:', authData.error);
         }
-      }, 1000);
+      });
+
+      // Initialize AbxrLib - this should trigger device detection
+      Abxr_init(testAppId);
       
-      // Timeout after 30 seconds
+      // Enable quit handler for demo purposes (single-page tester app)
+      Abxr.EnableQuitHandler(true);
+      
+      // Timeout after 30 seconds if no auth completion
       setTimeout(() => {
-        if (!Abxr.ConnectionActive() && !Abxr.hasAuthenticationFailed()) {
-          clearInterval(checkInterval);
+        if (!authCompleted) {
           document.getElementById('status').textContent = 'Status: Authentication timed out!';
           console.error('AbxrTester: Authentication test timed out');
         }

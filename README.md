@@ -89,24 +89,30 @@ To use the ABXRLib SDK with ArborXR Insights:
 
 #### Configure Web Application
 
-The ABXRLib SDK now provides a simplified initialization API. The `appId` is required, while `orgId` and `authSecret` are optional and can be provided via URL parameters.
-
-> **⚠️ Security Note:** For production builds distributed to third parties, avoid compiling `orgId` and `authSecret` directly into your application code. Instead, use URL parameters or environment variables to provide these credentials at runtime. Only compile credentials directly into the build when creating custom applications for specific individual clients.
+**Default (recommended):** Initialize with app tokens (JWT). Use `Abxr_init({ appToken, orgToken?, buildType?, ... })`. For `buildType === "production_custom"`, `orgToken` is required.
 
 ```typescript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
-// RECOMMENDED: Use URL parameters for production builds
-// URL: https://yourdomain.com/?abxr_orgid=YOUR_ORG_ID&abxr_auth_secret=YOUR_AUTH_SECRET
-Abxr_init('your-app-id');
-
-// DEVELOPMENT ONLY: Direct initialization with all parameters
-Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
-
-// Now you can use the Abxr class
+Abxr_init({
+    appToken: 'eyJ...',      // Required (JWT)
+    orgToken: 'eyJ...',      // Optional; required when buildType is production_custom
+    buildType: 'production', // Optional
+});
 Abxr.Event('user_action', { action: 'button_click' });
-Abxr.LogDebug('Debug message');
 ```
+
+**Legacy:** Initialize with app ID / org ID / auth secret. `orgId` and `authSecret` can be provided via URL parameters (`abxr_orgid`, `abxr_auth_secret`).
+
+> **⚠️ Security Note:** For production builds distributed to third parties, avoid compiling `orgId` and `authSecret` (or tokens) directly into your application code when possible. Use URL parameters or environment variables at runtime. Only compile credentials when creating custom builds for specific clients.
+
+```typescript
+// Legacy: appId (required), orgId and authSecret optional
+Abxr_init('your-app-id');
+Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
+```
+
+Events, logs, and telemetry are batched and sent via the unified **`/v1/collect/data`** endpoint.
 
 #### URL Parameter Authentication
 
