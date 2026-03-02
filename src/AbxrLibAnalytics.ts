@@ -1229,10 +1229,15 @@ export class AbxrLibAnalytics
 	private static DictToObject(dict: AbxrDictStrings | { [key: string]: string }): { [key: string]: string }
 	{
 		if (dict && typeof (dict as Map<string, string>).entries === 'function') {
-			return Object.fromEntries(dict as Map<string, string>);
+			return Object.fromEntries((dict as Map<string, string>).entries()) as { [key: string]: string };
 		}
 		if (dict && typeof dict === 'object' && !Array.isArray(dict)) {
-			return { ...dict };
+			const plain: { [key: string]: string } = {};
+			for (const k of Object.keys(dict)) {
+				const v = (dict as Record<string, unknown>)[k];
+				if (typeof v === 'string') plain[k] = v;
+			}
+			return plain;
 		}
 		return {};
 	}

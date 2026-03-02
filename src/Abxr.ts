@@ -3277,19 +3277,22 @@ export class Abxr {
     }
     
     // INTERNAL USE ONLY - Helper method to format auth data for completeFinalAuth based on type
+    // lib-backend expects auth_mechanism.prompt for type "text"; pin for assessmentPin; etc.
     private static formatAuthDataForSubmission(inputValue: string, authType: string, domain?: string): any {
         const authData: any = {};
         
         if (authType === 'email') {
             // For email type, combine input with domain if provided
             const fullEmail = domain ? `${inputValue}@${domain}` : inputValue;
-            authData.email = fullEmail;
+            authData.prompt = fullEmail;
         } else if (authType === 'assessmentPin' || authType === 'assessment_pin' || authType === 'pin') {
             // For PIN type, use pin field (align with Unity: assessmentPin, assessment_pin → pin)
             authData.pin = inputValue;
+        } else if (authType === 'text' || authType === 'custom') {
+            // Backend expects "prompt" for user-provided value (schemas.AuthMechanism.prompt)
+            authData.prompt = inputValue;
         } else {
-            // Default fallback - use the type as the field name
-            authData[authType || 'value'] = inputValue;
+            authData.prompt = inputValue;
         }
         
         return authData;
@@ -3335,6 +3338,16 @@ export class Abxr {
     private static async completeFinalAuth(authData: any): Promise<boolean> {
         if (!this.requiresFinalAuth) {
             console.warn('AbxrLib: No final authentication required');
+            return false;
+        }
+        
+        // Backend returns 400 "Missing input for text auth" if type is text and prompt is empty
+        const userPrompt = authData?.prompt ?? authData?.pin ?? authData?.email ?? '';
+        const hasUserInput = typeof userPrompt === 'string' ? userPrompt.trim() !== '' : Boolean(userPrompt);
+        if (!hasUserInput) {
+            if (this.enableDebug) {
+                console.warn('AbxrLib: completeFinalAuth called without user input; skipping request to avoid 400');
+            }
             return false;
         }
         
