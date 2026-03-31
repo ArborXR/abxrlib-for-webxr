@@ -78,18 +78,22 @@ npm install abxrlib-for-webxr
 
 ### Using with ArborXR Insights
 
-To use the ABXRLib SDK with ArborXR Insights:
+To use the ABXRLib SDK with ArborXR Insights, configure **app token** and **org token** (recommended)—aligned with the [Unity](https://github.com/ArborXR/abxrlib-for-unity/blob/main/README.md#configuration) and [Unreal](https://github.com/ArborXR/abxrlib-for-unreal/blob/main/README.md#configuration) SDKs.
 
-#### Get Your Credentials
-1. Go to the ArborXR Insights web app and log in.
-2. Grab these three values from the **View Data** screen of the specific app you are configuring:
-- App ID
-- Organization ID
-- Authentication Secret
+#### App token and org token (recommended)
 
-#### Configure Web Application
+##### Get your credentials
 
-**Default (recommended):** Initialize with app tokens (JWT). Use `Abxr_init({ appToken, orgToken?, buildType?, ... })`. For `buildType === "production_custom"`, `orgToken` is required.
+1. Go to the ArborXR Portal and log in.
+2. Open **Content Library**, choose your app from the **Managed** apps list, then open the **Insights Hub** tab. The **App Token** is shown on this screen. Copy:
+   - **App Token** (JWT) — required for new integrations.
+   - **Org Token** (JWT) — optional in many flows; required when `buildType` is `"production_custom"` (use your distribution channel when the portal does not provide it).
+
+**Org token:** Leave unset or empty to rely on dynamic org resolution when the runtime provides org context. For **local development**, you can set `orgToken` to the same JWT as `appToken` when you need both values populated.
+
+##### Configure Web application
+
+**Default:** Initialize with `Abxr_init({ appToken, orgToken?, buildType?, ... })`.
 
 ```typescript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
@@ -97,14 +101,22 @@ import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 Abxr_init({
     appToken: 'eyJ...',      // Required (JWT)
     orgToken: 'eyJ...',      // Optional; required when buildType is production_custom
-    buildType: 'production', // Optional
+    buildType: 'production', // Optional: 'production' | 'development' | 'production_custom'
 });
 Abxr.Event('user_action', { action: 'button_click' });
 ```
 
-**Legacy:** Initialize with app ID / org ID / auth secret. `orgId` and `authSecret` can be provided via URL parameters (`abxr_orgid`, `abxr_auth_secret`).
+**Development / testing:** Pass `appToken`; use `buildType: 'development'` when appropriate.
 
-> **⚠️ Security Note:** For production builds distributed to third parties, avoid compiling `orgId` and `authSecret` (or tokens) directly into your application code when possible. Use URL parameters or environment variables at runtime. Only compile credentials when creating custom builds for specific clients.
+**Production builds:** Use `appToken` and omit or empty `orgToken` when the deployment supplies org context; set `orgToken` for production_custom per your channel.
+
+> **⚠️ Security Note:** Avoid embedding long-lived org tokens or legacy secrets in client bundles for broad distribution. Prefer runtime configuration, environment variables, or ArborXR-managed deployment. For single-customer builds, follow your security guidelines.
+
+Events, logs, and telemetry are batched and sent via the unified **`/v1/collect/data`** endpoint.
+
+#### Legacy (App ID / Org ID / Auth Secret)
+
+Initialize with app ID / org ID / auth secret. `orgId` and `authSecret` can be provided via URL parameters (`abxr_orgid`, `abxr_auth_secret`).
 
 ```typescript
 // Legacy: appId (required), orgId and authSecret optional
@@ -112,33 +124,22 @@ Abxr_init('your-app-id');
 Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
 ```
 
-Events, logs, and telemetry are batched and sent via the unified **`/v1/collect/data`** endpoint.
+##### URL parameter authentication (legacy)
 
-#### URL Parameter Authentication
-
-You can provide authentication credentials via URL parameters, which take precedence over function parameters:
+You can provide credentials via URL parameters, which take precedence over function parameters:
 
 ```
 https://yourdomain.com/?abxr_orgid=YOUR_ORG_ID&abxr_auth_secret=YOUR_AUTH_SECRET
 ```
 
-Then initialize with just the App ID:
 ```typescript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
-// URL parameters will be automatically detected
 Abxr_init('your-app-id');
-
-// Now you can use the Abxr class
 Abxr.Event('user_action', { action: 'button_click' });
 ```
 
-#### Alternative for Managed Devices:
-If you're using an ArborXR-managed device, only the App ID is required:
-```typescript
-Abxr_init('your-app-id');
-// orgId and authSecret are automatically provided
-```
+On ArborXR-managed devices with legacy auth, only the App ID may be required in code; org and secret can be supplied by the environment.
 
 ### Using with Other Backend Services
 For information on implementing your own backend service or using other compatible services, please refer to the ABXR protocol specification.
@@ -206,7 +207,7 @@ The full documentation includes:
 
 ### FAQ
 
-#### How do I retrieve my Application ID and Authorization Secret?
-Your Application ID can be found in the Web Dashboard under the application details. For the Authorization Secret, navigate to Settings > Organization Codes on the same dashboard.
+#### How do I get my App Token and Org Token?
+Use **App Token** and **Org Token** (recommended). Copy them from **Content Library** → **Managed** app → **Insights Hub** in the portal, or use values from your distribution channel. Leave **Org Token** empty when the runtime provides org context; for local testing you can set **Org Token** to the same JWT as **App Token** if needed. For legacy setups, Application ID and Authorization Secret are still available under application details and Settings > Organization Codes.
 
 For more troubleshooting help and detailed FAQs, see the [full documentation](https://developers.arborxr.com/docs/insights/full-documentation/).

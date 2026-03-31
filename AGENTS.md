@@ -6,7 +6,7 @@ Project-wide instructions are duplicated in sibling ArborXR repos (abxrlib-for-u
 
 ## This repo: ABXRLib SDK for WebXR
 
-JavaScript/TypeScript library for analytics and data collection in WebXR applications. **Standalone only:** it does **not** integrate with ArborInsightService (the Android device service). ArborInsightService is Android-only; WebXR has no need to support it. The SDK talks to ArborXR Insights (or other backends) over the network from the browser.
+JavaScript/TypeScript library for analytics and data collection in WebXR applications. **Standalone only:** it does **not** integrate with ArborInsightsClient (the Android device service). ArborInsightsClient is Android-only; WebXR has no need to support it. The SDK talks to ArborXR Insights (or other backends) over the network from the browser.
 
 ### Project setup
 
@@ -16,11 +16,11 @@ JavaScript/TypeScript library for analytics and data collection in WebXR applica
 
 ### How it relates to other projects
 
-- **No ArborInsightService:** This SDK runs in the browser and does not use the Android ArborInsightService APK or AIDL. Do not add or assume device-service integration.
+- **No ArborInsightsClient:** This SDK runs in the browser and does not use the Android ArborInsightsClient APK or AIDL. Do not add or assume device-service integration.
 - **ArborXR Insights:** Can send data to the same cloud/Insights backend as the Unity/Unreal SDKs; protocol and backend alignment matter, not the device service.
 - **abxrlib-for-unity / abxrlib-for-unreal:** Same product family and analytics model, but different runtimes; no shared code with the Android service stack.
 
-When editing this repo, treat it as a standalone Web SDK: no references to ArborInsightService, AIDL, or Android service deployment.
+When editing this repo, treat it as a standalone Web SDK: no references to ArborInsightsClient, AIDL, or Android service deployment.
 
 ### Auth and endpoints
 
