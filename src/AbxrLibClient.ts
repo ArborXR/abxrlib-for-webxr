@@ -45,9 +45,11 @@ export function StringToPartner(szString: string): Partner
 export class AuthTokenRequest extends DataObjectBase
 {
 	// --- Fixed auth fields taken as parameters to Authenticate().
-	m_szAppId:				string = "";
-	m_szOrgId:				string = "";
-	m_szAuthSecret:			string = "";
+	m_szAppId:				string | null = null;
+	m_szOrgId:				string | null = null;
+	m_szAuthSecret:			string | null = null;
+	m_szAppToken:			string | null = null;
+	m_szOrgToken:			string | null = null;
 	m_szDeviceId:			string = "";
 	m_szSessionId:			string = "";
 	m_szPartner:			string = "";	// Blank if it is just us (Abxr).  Otherwise, "arborxr", ... if not blank this is how backend knows to do further authentication with partner.
@@ -67,9 +69,11 @@ export class AuthTokenRequest extends DataObjectBase
 	// ---
 	public static m_mapProperties: FieldPropertiesRecordContainer = new FieldPropertiesRecordContainer(Object.assign({},
 		super.m_mapProperties.m_rfp,
-	 	{m_szAppId: new FieldProperties("appId")},
-	 	{m_szOrgId: new FieldProperties("orgId")},
-	 	{m_szAuthSecret: new FieldProperties("authSecret")},
+	 	{m_szAppId: new FieldProperties("appId", FieldPropertyFlags.bfSkipIfNull)},
+	 	{m_szOrgId: new FieldProperties("orgId", FieldPropertyFlags.bfSkipIfNull)},
+	 	{m_szAuthSecret: new FieldProperties("authSecret", FieldPropertyFlags.bfSkipIfNull)},
+	 	{m_szAppToken: new FieldProperties("appToken", FieldPropertyFlags.bfSkipIfNull)},
+	 	{m_szOrgToken: new FieldProperties("orgToken", FieldPropertyFlags.bfSkipIfNull)},
 	 	{m_szDeviceId: new FieldProperties("deviceId")},
 	 	{m_szSessionId: new FieldProperties("sessionId")},
 	 	{m_szPartner: new FieldProperties("partner")},
