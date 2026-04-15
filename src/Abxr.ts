@@ -2604,15 +2604,14 @@ export class Abxr {
         }
         
         const params = this.getAuthParams();
-        if (!params.appId) {
-            console.error('AbxrLib: Cannot reauthenticate - no appId stored. Call Abxr_init() first.');
+        if (!params.appId && !params.appToken) {
+            console.error('AbxrLib: Cannot reauthenticate - no credentials stored. Call Abxr_init() first.');
             return;
         }
-        
+
         try {
             // Call the actual reauthentication method (similar to Unity's Authentication.Authenticate())
-            // Using AbxrLibInit since it contains the authentication logic
-            const result = await (AbxrLibAnalytics as any).ReAuthenticate(false); // false = use existing authSecret, don't obtain new one via callback
+            const result = await AbxrLibInit.ReAuthenticate(false); // false = use existing authSecret, don't obtain new one via callback
             
             if (result === AbxrResult.eOk) {
                 // Extract module targets from auth response data (similar to Unity version)
@@ -2655,8 +2654,8 @@ export class Abxr {
         }
         
         const params = this.getAuthParams();
-        if (!params.appId) {
-            console.error('AbxrLib: Cannot start new session - no appId stored. Call Abxr_init() first.');
+        if (!params.appId && !params.appToken) {
+            console.error('AbxrLib: Cannot start new session - no credentials stored. Call Abxr_init() first.');
             return;
         }
         
