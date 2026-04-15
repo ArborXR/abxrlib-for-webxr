@@ -126,6 +126,12 @@ function AbxrIsValidAlphanumericId(value: string): boolean {
     return pattern.test(value);
 }
 
+function AbxrIsValidJwt(value: string): boolean {
+    if (!value) return false;
+    const parts = value.split('.');
+    return parts.length === 3;
+}
+
 // URL version handling utilities
 function AbxrHasApiVersion(url: string): boolean {
     try {
@@ -196,7 +202,14 @@ function AbxrValidateAndSanitizeParameter(name: string, value: string): string |
                 return null;
             }
             break;
-            
+
+        case 'abxr_org_token':
+            if (!AbxrIsValidJwt(value)) {
+                console.warn(`AbxrLib: Invalid JWT format for ${name}: value does not have 3 dot-separated segments`);
+                return null;
+            }
+            break;
+
         default:
             // For unknown parameters, do basic sanitization
             if (value.length > 500) {
@@ -437,6 +450,30 @@ interface AbxrAuthMechanismData {
 }
 
 type AbxrAuthMechanismCallback = (data: AbxrAuthMechanismData) => void;
+
+/**
+ * Options for initializing AbxrLib. Use either token mode (appToken) or legacy mode (appId/orgId/authSecret).
+ * If appToken is provided, token mode is used and legacy fields are ignored.
+ */
+export interface AbxrInitOptions {
+    /** App Token (JWT) from ArborXR Portal. When provided, enables token auth mode. */
+    appToken?: string;
+    /** Org Token (JWT) for token auth mode. Can also be set via abxr_org_token URL parameter. */
+    orgToken?: string;
+    /** App ID (UUID) for legacy authentication. */
+    appId?: string;
+    /** Organization ID (UUID) for legacy authentication. Can also be set via abxr_orgid URL parameter. */
+    orgId?: string;
+    /** Auth secret for legacy authentication. Can also be set via abxr_auth_secret URL parameter. */
+    authSecret?: string;
+    /** Custom app configuration JSON string. */
+    appConfig?: string;
+    /** Options for the built-in auth mechanism dialog. */
+    dialogOptions?: AbxrAuthMechanismDialogOptions;
+    /** Custom callback for handling auth mechanism prompts. */
+    authMechanismCallback?: AbxrAuthMechanismCallback;
+}
+
 type AbxrAuthCompletedCallback = (data: AbxrAuthCompletedData) => void;
 type AbxrModuleTargetCallback = (moduleTarget: string) => void;
 
@@ -605,7 +642,10 @@ export class Abxr {
         appId?: string;
         orgId?: string;
         authSecret?: string;
-    } = {};
+        appToken?: string;
+        orgToken?: string;
+        useAppTokens: boolean;
+    } = { useAppTokens: false };
 
     // Authentication mechanism and dialog configuration
     private static authMechanismCallback: AbxrAuthMechanismCallback | null = null;
@@ -791,8 +831,8 @@ export class Abxr {
      * INTERNAL USE ONLY - Do not use in application code
      * @internal
      */
-    static setAuthParams(params: { appId?: string; orgId?: string; authSecret?: string }): void {
-        this.authParams = { ...params };
+    static setAuthParams(params: { appId?: string; orgId?: string; authSecret?: string; appToken?: string; orgToken?: string; useAppTokens?: boolean }): void {
+        this.authParams = { ...params, useAppTokens: params.useAppTokens ?? false };
     }
     
     /**
@@ -4169,123 +4209,132 @@ if (typeof window !== 'undefined') {
 }
 
 // Global function for easy access
-export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string, dialogOptions?: AbxrAuthMechanismDialogOptions, authMechanismCallback?: AbxrAuthMechanismCallback): void {
-    
-    // Validate required appId
-    if (!appId) {
-        console.error('AbxrLib: appId is required for initialization');
-        return;
+export function Abxr_init(options: AbxrInitOptions): void;
+export function Abxr_init(appId: string, orgId?: string, authSecret?: string, appConfig?: string, dialogOptions?: AbxrAuthMechanismDialogOptions, authMechanismCallback?: AbxrAuthMechanismCallback): void;
+export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: string, authSecret?: string, appConfig?: string, dialogOptions?: AbxrAuthMechanismDialogOptions, authMechanismCallback?: AbxrAuthMechanismCallback): void {
+
+    // Backward-compat shim: wrap positional args into AbxrInitOptions
+    let options: AbxrInitOptions;
+    if (typeof optionsOrAppId === 'string') {
+        console.info('AbxrLib: Positional arguments to Abxr_init are deprecated. Use AbxrInitOptions object instead.');
+        options = {
+            appId: optionsOrAppId,
+            orgId: orgId,
+            authSecret: authSecret,
+            appConfig: appConfig,
+            dialogOptions: dialogOptions,
+            authMechanismCallback: authMechanismCallback
+        };
+    } else {
+        options = optionsOrAppId;
     }
-    
+
+    // Mode detection
+    const useAppTokens = !!options.appToken;
+
+    if (useAppTokens) {
+        // Token mode
+        if (!AbxrIsValidJwt(options.appToken!)) {
+            console.error('AbxrLib: appToken is not a valid JWT (expected 3 dot-separated segments)');
+            return;
+        }
+        if (options.appId || options.orgId || options.authSecret) {
+            console.warn('AbxrLib: Both appToken and legacy credentials (appId/orgId/authSecret) provided. Using appToken; legacy fields will be ignored.');
+        }
+    } else {
+        // Legacy mode
+        if (!options.appId) {
+            console.error('AbxrLib: appId is required for initialization (legacy mode) or provide appToken for token mode');
+            return;
+        }
+    }
+
     // Reset authentication state for new initialization attempt (unified approach)
     Abxr.NotifyAuthCompleted(true); // Clear failed state by setting success=true
     AbxrLibClient.clearLastAuthError();
-    
+
     // Configure dialog options if provided
-    if (dialogOptions) {
-        Abxr.setDialogOptions(dialogOptions);
+    if (options.dialogOptions) {
+        Abxr.setDialogOptions(options.dialogOptions);
     }
-    
+
     // Set up authMechanism handling
     const currentOptions = Abxr.getDialogOptions();
-    if (authMechanismCallback) {
-        // Use custom callback from function parameter
-        Abxr.setAuthMechanismCallback(authMechanismCallback);
+    if (options.authMechanismCallback) {
+        Abxr.setAuthMechanismCallback(options.authMechanismCallback);
     } else if (currentOptions.customCallback) {
-        // Use custom callback from dialogOptions
         Abxr.setAuthMechanismCallback(currentOptions.customCallback);
     } else {
-        // Determine if we should use built-in dialog
         const isBrowser = typeof window !== 'undefined';
         const shouldUseBuiltIn = currentOptions.enabled !== false && isBrowser;
-        
+
         if (shouldUseBuiltIn) {
             Abxr.setAuthMechanismCallback((authData) => Abxr.builtInAuthMechanismHandler(authData));
         }
     }
-    
-    // Get parameters with priority: GET params -> cookies -> function params
-    // Note: appId is always taken from function parameter only (not from GET/cookies)
-    const finalOrgId = AbxrGetParameter('abxr_orgid', orgId);
-    const finalAuthSecret = AbxrGetParameter('abxr_auth_secret', authSecret);
-    
-    // Generate or retrieve device ID
-    const deviceId = AbxrGetOrCreateDeviceId();
-    
-    // Store auth parameters (without deviceId since it's handled internally)
-    Abxr.setAuthParams({ appId: appId, orgId: finalOrgId, authSecret: finalAuthSecret });
-    
-    // If we have all required authentication parameters, attempt to authenticate
-    if (appId && finalOrgId && finalAuthSecret) {
-        // Use provided appConfig, or let AbxrLibBaseSetup.SetAppConfig use its comprehensive default
-        const configToUse = appConfig;
-        
-        // Store app config (only if provided)
+
+    if (useAppTokens) {
+        // --- Token mode auth flow ---
+        const orgToken = AbxrGetParameter('abxr_org_token', options.orgToken) || '';
+
+        Abxr.setAuthParams({ appToken: options.appToken, orgToken: orgToken, useAppTokens: true });
+
+        if (!orgToken || !AbxrIsValidJwt(orgToken)) {
+            console.error('AbxrLib: orgToken is required for token authentication. Provide via AbxrInitOptions or abxr_org_token URL parameter.');
+            Abxr.NotifyAuthCompleted(false, true);
+            return;
+        }
+
+        const deviceId = AbxrGetOrCreateDeviceId();
+        const configToUse = options.appConfig;
+
         if (configToUse) {
             Abxr.setAppConfig(configToUse);
         }
-        
+
         try {
-            // Configure the library (SetAppConfig handles undefined by using its default)
             AbxrLibBaseSetup.SetAppConfig(configToUse);
             AbxrLibInit.InitStatics();
             AbxrLibInit.Start();
-            
-            // Clear any previous auth errors before attempting authentication
+
             AbxrLibClient.clearLastAuthError();
-            
-            // Detect and set device information before authentication
+
             console.log('AbxrLib: Detecting device information...');
-            AbxrDetectAllDeviceInfo(false) // IP detection disabled to prevent CSP violations
+            AbxrDetectAllDeviceInfo(false)
                 .then((deviceInfo) => {
-                    //console.log(`AbxrLib: Device detection complete - OS: ${deviceInfo.osVersion}, Browser: ${deviceInfo.deviceModel}, IP: ${deviceInfo.ipAddress}`);
-                    // Set the detected values in the authentication object
                     AbxrLibInit.set_OsVersion(deviceInfo.osVersion);
                     AbxrLibInit.set_DeviceModel(deviceInfo.deviceModel);
                     AbxrLibInit.set_IpAddress(deviceInfo.ipAddress);
-                    // Set library type and version
                     AbxrLibInit.set_LibType('webxr');
                     AbxrLibInit.set_LibVersion(AbxrGetPackageVersion());
-                    
-                    // Now attempt initial authentication with device info set
-                    return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
+
+                    return AbxrLibInit.AuthenticateWithTokens(options.appToken!, orgToken, deviceId, Partner.eArborXR);
                 })
                 .catch((error) => {
                     console.warn('AbxrLib: Device detection failed, using defaults:', error);
-                    // Set fallback values if detection fails
                     AbxrLibInit.set_OsVersion('Unknown OS');
                     AbxrLibInit.set_DeviceModel('Unknown Browser');
                     AbxrLibInit.set_IpAddress('NA');
-                    // Set library type and version even when device detection fails
                     AbxrLibInit.set_LibType('webxr');
                     AbxrLibInit.set_LibVersion(AbxrGetPackageVersion());
-                    
-                    // Still attempt authentication even if device detection failed
-                    return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
+
+                    return AbxrLibInit.AuthenticateWithTokens(options.appToken!, orgToken, deviceId, Partner.eArborXR);
                 })
                 .then(async (result: number) => {
                     if (result === 0) {
                         console.log('AbxrLib: Initial authentication successful');
-                        
-                        // Check if authMechanism is required
+
                         const authMechanism = AbxrLibInit.get_AuthMechanism();
-                        
-                        // Check if authMechanism has content (either as AbxrDictStrings or plain object)
                         const hasAuthMechanism = authMechanism && (
                             (typeof authMechanism.Count === 'function' && authMechanism.Count() > 0) ||
                             (typeof authMechanism === 'object' && Object.keys(authMechanism).length > 0)
                         );
-                        
+
                         if (hasAuthMechanism) {
-                            // Set the library to require final authentication
                             Abxr.setRequiresFinalAuth(true);
-                            
-                            // Extract structured authMechanism data
                             const authData = Abxr.extractAuthMechanismData();
                             if (authData) {
                                 console.log(`AbxrLib: Additional authentication required - ${authData.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
-                                
-                                // Notify the client via callback if one is set
                                 const callback = Abxr.getAuthMechanismCallback();
                                 if (callback && typeof callback === 'function') {
                                     try {
@@ -4293,49 +4342,145 @@ export function Abxr_init(appId: string, orgId?: string, authSecret?: string, ap
                                     } catch (error) {
                                         console.error('AbxrLib: Error in authMechanism callback:', error);
                                     }
-                                } else if (!callback) {
-                                    console.log('AbxrLib: No callback configured for additional authentication');
                                 }
-                            } else {
-                                console.log('AbxrLib: Additional authentication required (authMechanism detected)');
                             }
-                            // Note: NotifyAuthCompleted will be called after final authentication completes
                         } else {
-                            // No additional authentication needed - complete authentication now
                             console.log('AbxrLib: Authentication complete - library ready');
-                            
-                            // Extract module targets from auth response data (similar to Unity version)
                             const authResponseData = AbxrLibClient.getAuthResponseData();
                             const moduleTargets = Abxr.ExtractModuleTargets(authResponseData?.modules || []);
-                            
                             Abxr.NotifyAuthCompleted(true, false, moduleTargets);
                         }
                     } else {
-                        // Try to get detailed error message from AbxrLibClient
                         const detailedError = AbxrLibClient.getLastAuthError();
                         const errorMessage = detailedError || `Authentication failed with code ${result}`;
-                        
-                        // Check if this looks like a CORS/redirect error and try version fallback
-                        if (AbxrShouldTryVersionFallback(errorMessage)) {
-                            console.log(`AbxrLib: Authentication failed with CORS/redirect error, attempting version fallback`);
-                            
-                            // Attempt version fallback (this will save cookie and refresh page if successful)
-                            await Abxr.attemptVersionFallback();
-                            // Note: If fallback is attempted, page will refresh and execution won't continue here
-                        }
-                        
-                        console.warn(`AbxrLib: Authentication failed - ${errorMessage}`);
-                        Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
+                        console.error('AbxrLib: Authentication failed:', errorMessage);
+                        Abxr.NotifyAuthCompleted(false, true);
                     }
                 })
-                .catch((error: any) => {
+                .catch((error) => {
                     console.error('AbxrLib: Authentication error:', error);
-                    Abxr.NotifyAuthCompleted(false, false, undefined, `Authentication error: ${error.message}`);
+                    Abxr.NotifyAuthCompleted(false, true);
                 });
-        } catch (error: any) {
-            console.error('AbxrLib: Configuration error:', error);
-            Abxr.NotifyAuthCompleted(false, false, undefined, `Configuration error: ${error.message}`);
+        } catch (error) {
+            console.error('AbxrLib: Initialization error:', error);
+            Abxr.NotifyAuthCompleted(false, true);
         }
+    } else {
+        // --- Legacy mode auth flow (existing logic, preserved) ---
+        const appId = options.appId!;
+        const finalOrgId = AbxrGetParameter('abxr_orgid', options.orgId);
+        const finalAuthSecret = AbxrGetParameter('abxr_auth_secret', options.authSecret);
+
+        const deviceId = AbxrGetOrCreateDeviceId();
+
+        Abxr.setAuthParams({ appId: appId, orgId: finalOrgId, authSecret: finalAuthSecret, useAppTokens: false });
+
+        if (appId && finalOrgId && finalAuthSecret) {
+            const configToUse = options.appConfig;
+
+            if (configToUse) {
+                Abxr.setAppConfig(configToUse);
             }
+
+            try {
+                AbxrLibBaseSetup.SetAppConfig(configToUse);
+                AbxrLibInit.InitStatics();
+                AbxrLibInit.Start();
+
+                AbxrLibClient.clearLastAuthError();
+
+                console.log('AbxrLib: Detecting device information...');
+                AbxrDetectAllDeviceInfo(false)
+                    .then((deviceInfo) => {
+                        AbxrLibInit.set_OsVersion(deviceInfo.osVersion);
+                        AbxrLibInit.set_DeviceModel(deviceInfo.deviceModel);
+                        AbxrLibInit.set_IpAddress(deviceInfo.ipAddress);
+                        AbxrLibInit.set_LibType('webxr');
+                        AbxrLibInit.set_LibVersion(AbxrGetPackageVersion());
+
+                        return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
+                    })
+                    .catch((error) => {
+                        console.warn('AbxrLib: Device detection failed, using defaults:', error);
+                        AbxrLibInit.set_OsVersion('Unknown OS');
+                        AbxrLibInit.set_DeviceModel('Unknown Browser');
+                        AbxrLibInit.set_IpAddress('NA');
+                        AbxrLibInit.set_LibType('webxr');
+                        AbxrLibInit.set_LibVersion(AbxrGetPackageVersion());
+
+                        return AbxrLibInit.Authenticate(appId, finalOrgId, deviceId, finalAuthSecret, Partner.eArborXR);
+                    })
+                    .then(async (result: number) => {
+                        if (result === 0) {
+                            console.log('AbxrLib: Initial authentication successful');
+
+                            const authMechanism = AbxrLibInit.get_AuthMechanism();
+                            const hasAuthMechanism = authMechanism && (
+                                (typeof authMechanism.Count === 'function' && authMechanism.Count() > 0) ||
+                                (typeof authMechanism === 'object' && Object.keys(authMechanism).length > 0)
+                            );
+
+                            if (hasAuthMechanism) {
+                                Abxr.setRequiresFinalAuth(true);
+                                const authData = Abxr.extractAuthMechanismData();
+                                if (authData) {
+                                    console.log(`AbxrLib: Additional authentication required - ${authData.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
+                                    const callback = Abxr.getAuthMechanismCallback();
+                                    if (callback && typeof callback === 'function') {
+                                        try {
+                                            callback(authData);
+                                        } catch (error) {
+                                            console.error('AbxrLib: Error in authMechanism callback:', error);
+                                        }
+                                    } else if (!callback) {
+                                        console.log('AbxrLib: No callback configured for additional authentication');
+                                    }
+                                } else {
+                                    console.log('AbxrLib: Additional authentication required (authMechanism detected)');
+                                }
+                            } else {
+                                console.log('AbxrLib: Authentication complete - library ready');
+                                const authResponseData = AbxrLibClient.getAuthResponseData();
+                                const moduleTargets = Abxr.ExtractModuleTargets(authResponseData?.modules || []);
+                                Abxr.NotifyAuthCompleted(true, false, moduleTargets);
+                            }
+                        } else {
+                            const detailedError = AbxrLibClient.getLastAuthError();
+                            const errorMessage = detailedError || `Authentication failed with code ${result}`;
+
+                            if (AbxrShouldTryVersionFallback(errorMessage)) {
+                                console.log('AbxrLib: Attempting version fallback...');
+                                const fallbackSuccess = await Abxr.attemptVersionFallback();
+                                if (!fallbackSuccess) {
+                                    console.error('AbxrLib: Authentication failed:', errorMessage);
+                                    Abxr.NotifyAuthCompleted(false, true);
+                                }
+                            } else {
+                                console.error('AbxrLib: Authentication failed:', errorMessage);
+                                Abxr.NotifyAuthCompleted(false, true);
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('AbxrLib: Authentication error:', error);
+                        Abxr.NotifyAuthCompleted(false, true);
+                    });
+            } catch (error) {
+                console.error('AbxrLib: Initialization error:', error);
+                Abxr.NotifyAuthCompleted(false, true);
+            }
+        } else {
+            // Missing credentials - initialize library but don't authenticate
+            try {
+                AbxrLibBaseSetup.SetAppConfig(options.appConfig);
+                AbxrLibInit.InitStatics();
+                AbxrLibInit.Start();
+                console.log('AbxrLib: Library initialized (authentication deferred - missing orgId or authSecret)');
+                console.log('AbxrLib: Set credentials via URL parameters (abxr_orgid, abxr_auth_secret) or cookies to authenticate');
+            } catch (error) {
+                console.error('AbxrLib: Initialization error:', error);
+            }
+        }
+    }
 }
 
