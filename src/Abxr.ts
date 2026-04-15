@@ -4277,13 +4277,13 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
         // --- Token mode auth flow ---
         const orgToken = AbxrGetParameter('abxr_org_token', options.orgToken) || '';
 
-        Abxr.setAuthParams({ appToken: options.appToken, orgToken: orgToken, useAppTokens: true });
-
         if (!orgToken || !AbxrIsValidJwt(orgToken)) {
             console.error('AbxrLib: orgToken is required for token authentication. Provide via AbxrInitOptions or abxr_org_token URL parameter.');
-            Abxr.NotifyAuthCompleted(false, true);
+            Abxr.NotifyAuthCompleted(false, false, undefined, 'orgToken is required for token authentication');
             return;
         }
+
+        Abxr.setAuthParams({ appToken: options.appToken, orgToken: orgToken, useAppTokens: true });
 
         const deviceId = AbxrGetOrCreateDeviceId();
         const configToUse = options.appConfig;
@@ -4354,16 +4354,18 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                         const detailedError = AbxrLibClient.getLastAuthError();
                         const errorMessage = detailedError || `Authentication failed with code ${result}`;
                         console.error('AbxrLib: Authentication failed:', errorMessage);
-                        Abxr.NotifyAuthCompleted(false, true);
+                        Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
                     }
                 })
                 .catch((error) => {
+                    const errorMessage = error instanceof Error ? error.message : String(error);
                     console.error('AbxrLib: Authentication error:', error);
-                    Abxr.NotifyAuthCompleted(false, true);
+                    Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
                 });
         } catch (error) {
+            const errorMessage = error instanceof Error ? (error as Error).message : String(error);
             console.error('AbxrLib: Initialization error:', error);
-            Abxr.NotifyAuthCompleted(false, true);
+            Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
         }
     } else {
         // --- Legacy mode auth flow (existing logic, preserved) ---
@@ -4453,21 +4455,23 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                                 const fallbackSuccess = await Abxr.attemptVersionFallback();
                                 if (!fallbackSuccess) {
                                     console.error('AbxrLib: Authentication failed:', errorMessage);
-                                    Abxr.NotifyAuthCompleted(false, true);
+                                    Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
                                 }
                             } else {
                                 console.error('AbxrLib: Authentication failed:', errorMessage);
-                                Abxr.NotifyAuthCompleted(false, true);
+                                Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
                             }
                         }
                     })
                     .catch((error) => {
+                        const errorMessage = error instanceof Error ? error.message : String(error);
                         console.error('AbxrLib: Authentication error:', error);
-                        Abxr.NotifyAuthCompleted(false, true);
+                        Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
                     });
             } catch (error) {
+                const errorMessage = error instanceof Error ? (error as Error).message : String(error);
                 console.error('AbxrLib: Initialization error:', error);
-                Abxr.NotifyAuthCompleted(false, true);
+                Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
             }
         } else {
             // Missing credentials - initialize library but don't authenticate
