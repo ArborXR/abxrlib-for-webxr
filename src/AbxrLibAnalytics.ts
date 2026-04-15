@@ -26,6 +26,10 @@ class Authentication
 	public m_ePartner:			Partner;
 	// ---
 	public m_szAuthSecret:		string = "";			// Not exposed via properties or anything else, only available to AbxrLibInit for use in 2-stage authentication (dictAuthMechanism flows)... in C++, no friend classes in TypeScript so public.
+	// --- App token auth mode fields.
+	public m_szAppToken:		string = "";			// JWT app token for modern auth mode.
+	public m_szOrgToken:		string = "";			// JWT org token for modern auth mode.
+	public m_bUseAppTokens:		boolean = false;		// true = modern JWT auth, false = legacy appId/orgId/authSecret.
 	// ---
 	public m_objAuthTokenRequest:	AuthTokenRequest;	// For setting the environment/session members of AuthTokenRequest as global properties that then get incorporated into the specific auth request on Authenticate().
 	// ---
@@ -361,6 +365,15 @@ export class AbxrLibInit
 	// ---
 	public static get_AuthMechanism(): AbxrDictStrings { return AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism; }
 	public static set_AuthMechanism(dictAuthMechanism: AbxrDictStrings): void { AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism = dictAuthMechanism; }
+	// ---
+	public static get_AppToken(): string { return AbxrLibInit.m_abxrLibAuthentication.m_szAppToken; }
+	public static set_AppToken(szAppToken: string): void { AbxrLibInit.m_abxrLibAuthentication.m_szAppToken = szAppToken; }
+	// ---
+	public static get_OrgToken(): string { return AbxrLibInit.m_abxrLibAuthentication.m_szOrgToken; }
+	public static set_OrgToken(szOrgToken: string): void { AbxrLibInit.m_abxrLibAuthentication.m_szOrgToken = szOrgToken; }
+	// ---
+	public static get_UseAppTokens(): boolean { return AbxrLibInit.m_abxrLibAuthentication.m_bUseAppTokens; }
+	public static set_UseAppTokens(bUseAppTokens: boolean): void { AbxrLibInit.m_abxrLibAuthentication.m_bUseAppTokens = bUseAppTokens; }
 	// --- End Authentication fields.
 };
 
