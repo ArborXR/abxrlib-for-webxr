@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AbxrLib Token Auth Test</title>
+  <script src="dist/abxrlib-for-webxr.js"></script>
+</head>
+<body>
+  <h1>AbxrLib Token Authentication Test</h1>
+  <div id="status">Initializing...</div>
+  <pre id="log"></pre>
+  <script>
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    function log(msg) {
+      logEl.textContent += msg + '\n';
+      console.log(msg);
+    }
+
+    // Subscribe to auth completion
+    Abxr.OnAuthCompleted(function(authData) {
+      log('Auth completed: ' + JSON.stringify(authData, null, 2));
+      statusEl.textContent = authData.success ? 'Authenticated!' : 'Auth failed';
+    });
+
+    // Token mode init using AbxrInitOptions
+    // orgToken can come from URL param: ?abxr_org_token=eyJ...
+    log('Calling Abxr_init with AbxrInitOptions (token mode)...');
+    Abxr_init({
+      appToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6IjFjMDU5MzlkLTAxMGEtNGRhNC04YWE5LTU4ZmZmYjNjYjczYyIsIm9yZ0lkIjoiN2E3NmYwOGMtMDAyNy00ZTdiLTllNTItNTgyNTQ1NmM4MjgzIiwianRpIjoiZmEzNTRlMGUtMmIzMy00NjAxLTk2ZDctYWM3YmQ2NDE0NTA2In0.RNym2_mVXeNOOkOBEW5nNkxu_sbdZzX9_MpkIz7hXYE',
+      appConfig: JSON.stringify({ restUrl: 'https://lib-backend.xrdm.app/v1/' })
+    });
+    // Expected: console error about missing orgToken (unless provided via abxr_org_token URL param)
+    log('Init called. Check console for auth flow details.');
+    log('To provide orgToken, add ?abxr_org_token=eyJ... to the URL');
+  </script>
+</body>
+</html>
