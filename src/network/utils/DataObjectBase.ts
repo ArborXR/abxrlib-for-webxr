@@ -36,7 +36,8 @@ export enum FieldPropertyFlags
 	bfNoFieldIfEmpty		= 0x00000020,
 	bfChild					= 0x00000040,
 	bfChildList				= 0x00000080,
-	bfExclude				= 0x00000100
+	bfExclude				= 0x00000100,
+	bfSkipIfNull			= 0x00000200
 }
 
 export class FieldProperties
@@ -192,10 +193,12 @@ export class FieldPropertiesRecordContainer
 				const bChild:			boolean = ((fFlags & (FieldPropertyFlags.bfChild | FieldPropertyFlags.bfChildList)) !== 0);
 				const bStringOnly:		boolean = ((fFlags & FieldPropertyFlags.bfStringOnly) !== 0);
 				const bNoFieldIfEmpty:	boolean = ((fFlags & FieldPropertyFlags.bfNoFieldIfEmpty) !== 0);
+				const bSkipIfNull:		boolean = ((fFlags & FieldPropertyFlags.bfSkipIfNull) !== 0);
 
 				if (bExclude ||
 					(!bChild && this.m_objCurrentObject && !this.m_objCurrentObject.ShouldDump(szJsonKey, JsonFieldType.eField, DumpCategory.eDumpingJsonForBackend)) ||
-					(bNoFieldIfEmpty && this.ValueIsEmpty(oObjectValue)))
+					(bNoFieldIfEmpty && this.ValueIsEmpty(oObjectValue)) ||
+					(bSkipIfNull && oObjectValue === null))
 				{
 					result[szJsonKey] = undefined;
 				}
