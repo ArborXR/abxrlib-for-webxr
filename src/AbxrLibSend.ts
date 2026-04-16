@@ -14,6 +14,11 @@ export type AbxrLibAnalyticsTelemetryCallback = (abxrTelemetry: AbxrTelemetry, e
 /// </summary>
 export class AbxrLibSend
 {
+	private static DurationToSeconds(tsDuration: TimeSpan): string
+	{
+		var totalMs = tsDuration.ToDateTime().getTime();
+		return (totalMs / 1000.0).toString();
+	}
 	// --- (C++ dll and C# dll) versions of LogXXX().
 	private static async Log(eLogLevel: LogLevel, szText: string, dictMeta: AbxrDictStrings): Promise<AbxrResult>
 	{
@@ -81,7 +86,7 @@ export class AbxrLibSend
 		{
 			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
 			
-			dictMeta.set("duration", tsDuration.ToString());
+			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
 			// Remove the start time since this event is now complete
 			AbxrEvent.m_dictTimedEventStartTimes.Remove(szName);
 		}
@@ -130,7 +135,7 @@ export class AbxrLibSend
 		{
 			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
 
-			dictMeta.set("duration", tsDuration.ToString());
+			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
 			// ---
 			//AbxrEvent.m_csDictProtect.lock();
 			AbxrEvent.m_dictAssessmentStartTimes.Remove(szAssessmentName);
@@ -175,7 +180,7 @@ export class AbxrLibSend
 		{
 			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
 
-			dictMeta.set("duration", tsDuration.ToString());
+			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
 			// ---
 			//AbxrEvent.m_csDictProtect.lock();
 			AbxrEvent.m_dictObjectiveStartTimes.Remove(szObjectiveName);
@@ -216,7 +221,7 @@ export class AbxrLibSend
 		{
 			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
 
-			dictMeta.set("duration", tsDuration.ToString());
+			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
 			// ---
 			//AbxrEvent.m_csDictProtect.lock();
 			AbxrEvent.m_dictInteractionStartTimes.Remove(szInteractionName);
@@ -257,7 +262,7 @@ export class AbxrLibSend
 		{
 			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
 
-			dictMeta.set("duration", tsDuration.ToString());
+			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
 			// ---
 			//AbxrEvent.m_csDictProtect.lock();
 			AbxrEvent.m_dictLevelStartTimes.Remove(szLevelName);
