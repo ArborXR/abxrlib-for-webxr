@@ -3172,6 +3172,20 @@ export class Abxr {
     }
     
     /**
+     * Normalize backend auth mechanism type to "text" | "pin" | "email" for UI/callback (align with Unity).
+     * assessmentPin, assessment_pin -> "pin"; "none" or empty -> "".
+     * @internal
+     */
+    static normalizeAuthMechanismTypeForInput(type: string): string {
+        if (!type || typeof type !== 'string') return '';
+        const t = type.trim().toLowerCase();
+        if (t === 'none') return '';
+        if (t === 'email') return 'email';
+        if (t === 'pin' || t === 'assessmentpin' || t === 'assessment_pin') return 'pin';
+        return 'text';
+    }
+
+    /**
      * INTERNAL USE ONLY - Extract authMechanism data into a structured format
      * @internal
      */
@@ -3209,21 +3223,21 @@ export class Abxr {
     }
     
     // INTERNAL USE ONLY - Helper method to format auth data for completeFinalAuth based on type
+    // lib-backend expects auth_mechanism.prompt for type "text"; pin for assessmentPin; etc.
     private static formatAuthDataForSubmission(inputValue: string, authType: string, domain?: string): any {
         const authData: any = {};
-        
+
         if (authType === 'email') {
-            // For email type, combine input with domain if provided
             const fullEmail = domain ? `${inputValue}@${domain}` : inputValue;
-            authData.email = fullEmail;
-        } else if (authType === 'assessmentPin' || authType === 'pin') {
-            // For PIN type, use pin field
+            authData.prompt = fullEmail;
+        } else if (authType === 'assessmentPin' || authType === 'assessment_pin' || authType === 'pin') {
             authData.pin = inputValue;
+        } else if (authType === 'text' || authType === 'custom') {
+            authData.prompt = inputValue;
         } else {
-            // Default fallback - use the type as the field name
-            authData[authType || 'value'] = inputValue;
+            authData.prompt = inputValue;
         }
-        
+
         return authData;
     }
     
