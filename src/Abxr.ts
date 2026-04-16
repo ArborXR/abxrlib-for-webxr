@@ -3283,7 +3283,17 @@ export class Abxr {
             console.warn('AbxrLib: No final authentication required');
             return false;
         }
-        
+
+        // Backend returns 400 "Missing input for text auth" if type is text and prompt is empty
+        const userPrompt = authData?.prompt ?? authData?.pin ?? authData?.email ?? '';
+        const hasUserInput = typeof userPrompt === 'string' ? userPrompt.trim() !== '' : Boolean(userPrompt);
+        if (!hasUserInput) {
+            if (this.enableDebug) {
+                console.warn('AbxrLib: completeFinalAuth called without user input; skipping request to avoid 400');
+            }
+            return false;
+        }
+
         try {
             // Get the device ID that was used during initial authentication
             const deviceId = AbxrGetOrCreateDeviceId();
@@ -3307,11 +3317,9 @@ export class Abxr {
                 authMechanism.Add('type', originalType);
             }
             
-            // Add user-provided auth data in the "prompt" field as per API spec
-            // The API expects user input in "prompt" regardless of auth type
+            // Merge formatted user input (pin, email, or value) into authMechanism; backend expects type + domain + pin/email/etc.
             for (const [key, value] of Object.entries(authData)) {
-                authMechanism.Add('prompt', String(value));
-                break; // Only take the first (and should be only) value
+                authMechanism.Add(key, String(value));
             }
             
             // Re-add any additional metadata (like domain for email)
