@@ -884,6 +884,46 @@ export class Abxr {
     }
 
     /**
+     * Set or update user data and trigger a re-authentication with type "custom".
+     * Aligns with Unity SetUserData(userId?, additionalUserData?). Merges current userData with additionalUserData, then re-auths.
+     * @param userId Optional user ID to set or update
+     * @param additionalUserData Optional key-value pairs to merge with existing userData (values stringified)
+     */
+    static async SetUserData(userId?: string | null, additionalUserData?: Record<string, string> | null): Promise<void> {
+        const authData = AbxrLibClient.getAuthResponseData();
+        if (!authData) {
+            if (this.enableDebug) {
+                console.warn('AbxrLib: Cannot set user data - not authenticated. Call Abxr_init() and complete authentication first.');
+            }
+            return;
+        }
+        const currentUserData = authData.userData && typeof authData.userData === 'object' ? { ...authData.userData } : {};
+        const currentUserId = authData.userId ?? (currentUserData as Record<string, unknown>).userId;
+        const merged: Record<string, string> = {};
+        for (const [k, v] of Object.entries(currentUserData)) {
+            if (v != null && typeof v !== 'object') merged[k] = String(v);
+        }
+        const finalUserId = (userId != null && userId !== '') ? userId : (currentUserId != null ? String(currentUserId) : '');
+        if (finalUserId) merged.userId = finalUserId;
+        if (additionalUserData && typeof additionalUserData === 'object') {
+            for (const [k, v] of Object.entries(additionalUserData)) merged[k] = String(v);
+        }
+        const dictAuthMechanism = new AbxrDictStrings();
+        dictAuthMechanism.Add('type', 'custom');
+        dictAuthMechanism.Add('prompt', finalUserId);
+        for (const [k, v] of Object.entries(merged)) {
+            if (k !== 'type' && k !== 'prompt') dictAuthMechanism.Add(k, v);
+        }
+        const req = (AbxrLibInit as any).m_abxrLibAuthentication?.m_objAuthTokenRequest;
+        if (req) {
+            req.m_szUserId = finalUserId;
+            req.m_dictAuthMechanism = dictAuthMechanism;
+        }
+        AbxrLibClient.setAuthResponseData({ ...authData, userData: merged, userId: finalUserId || authData.userId });
+        await this.ReAuthenticate();
+    }
+
+    /**
      * Get the package name from authentication response
      * @returns Package name string, or null if not available
      */
