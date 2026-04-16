@@ -112,7 +112,10 @@ export enum InteractionType
     eSelect,
     eText,
     eRating,
-    eNumber
+    eNumber,
+    eMatching,
+    ePerformance,
+    eSequencing
 };
 
 export function InteractionTypeToString(eRet: InteractionType): string
@@ -129,6 +132,12 @@ export function InteractionTypeToString(eRet: InteractionType): string
         return "rating";
     case InteractionType.eNumber:
         return "number";
+    case InteractionType.eMatching:
+        return "matching";
+    case InteractionType.ePerformance:
+        return "performance";
+    case InteractionType.eSequencing:
+        return "sequencing";
     default:
         break;
     }

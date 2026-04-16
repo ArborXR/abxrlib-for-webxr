@@ -530,7 +530,7 @@ interface AbxrCurrentSessionData {
 
 // Type definitions for the public enum values (clean names like Unity)
 export type EventStatus = 'pass' | 'fail' | 'complete' | 'incomplete' | 'browsed' | 'notattempted';
-export type InteractionType = 'null' | 'bool' | 'select' | 'text' | 'rating' | 'number';
+export type InteractionType = 'null' | 'bool' | 'select' | 'text' | 'rating' | 'number' | 'matching' | 'performance' | 'sequencing';
 export type InteractionResult = 'correct' | 'incorrect' | 'neutral';
 
 // Global Abxr class that gets configured by Abxr_init()
@@ -577,7 +577,10 @@ export class Abxr {
         Select: 'select',
         Text: 'text',
         Rating: 'rating',
-        Number: 'number'
+        Number: 'number',
+        Matching: 'matching',
+        Performance: 'performance',
+        Sequencing: 'sequencing'
     } as const;
     
     // Public InteractionResult enum with user-friendly values
@@ -614,6 +617,9 @@ export class Abxr {
             case 'text': return InternalInteractionType.eText;
             case 'rating': return InternalInteractionType.eRating;
             case 'number': return InternalInteractionType.eNumber;
+            case 'matching': return InternalInteractionType.eMatching;
+            case 'performance': return InternalInteractionType.ePerformance;
+            case 'sequencing': return InternalInteractionType.eSequencing;
             default: return InternalInteractionType.eNull;
         }
     }
@@ -1108,7 +1114,7 @@ export class Abxr {
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
-    static async EventAssessmentComplete(assessmentName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number> {
+    static async EventAssessmentComplete(assessmentName: string, score: number | string, eventStatus: EventStatus = 'complete', meta?: any): Promise<number> {
         // Convert public enum value to internal enum
         const internalEventStatus = this.convertEventStatus(eventStatus);
         
@@ -1226,7 +1232,7 @@ export class Abxr {
      * @param meta Optional metadata with completion details
      * @returns Promise<number> Event ID or 0 if not authenticated
      */
-    static async EventObjectiveComplete(objectiveName: string, score: number | string, eventStatus: EventStatus, meta?: any): Promise<number> {
+    static async EventObjectiveComplete(objectiveName: string, score: number | string, eventStatus: EventStatus = 'complete', meta?: any): Promise<number> {
         // Convert public enum value to internal enum
         const internalEventStatus = this.convertEventStatus(eventStatus);
         
