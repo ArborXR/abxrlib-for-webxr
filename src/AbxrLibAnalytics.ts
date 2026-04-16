@@ -326,6 +326,19 @@ export class AbxrLibInit
 		return await AbxrLibInit.AuthenticateGuts(false, false);
 	}
 	/// <summary>
+	/// Clears session-specific auth state (token, secret, sessionId, expiry) but preserves
+	///		app/org credentials and mode flag so a new Authenticate call can re-use them.
+	/// </summary>
+	public static ClearSessionAndPrepareForNew(): void
+	{
+		const auth = AbxrLibInit.m_abxrLibAuthentication;
+		auth.m_szApiToken = "";
+		auth.m_szApiSecret = "";
+		auth.m_szSessionId = "";
+		auth.m_dtTokenExpiration.setFullYear(DATEMAXVALUE);
+		AbxrLibClient.clearAuthResponseData();
+	}
+	/// <summary>
 	/// Wrapper for Core-core function to force send unsent objects synchronously.  Used to be inlined in ^^^ TimerCallback().
 	///		Now we want it to be callable on its own for the user-goes-to-the-bog-then-resumes-playing workflow.
 	/// </summary>
