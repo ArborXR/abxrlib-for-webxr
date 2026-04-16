@@ -4,7 +4,7 @@
 import { AbxrLibAnalytics } from "./AbxrLibAnalytics";
 import { AbxrLibClient } from "./AbxrLibClient";
 import { AbxrEvent, AbxrLog, AbxrTelemetry, LogLevel } from "./AbxrLibCoreModel";
-import { DateTime, InteractionType, InteractionTypeToString, InteractionResult, InteractionResultToString, AbxrResult, AbxrDictStrings, EventStatus, EventStatusToString, TimeSpan } from "./network/utils/DotNetishTypes";
+import { DateTime, InteractionType, InteractionTypeToString, InteractionResult, InteractionResultToString, AbxrResult, AbxrDictStrings, EventStatus, EventStatusToString } from "./network/utils/DotNetishTypes";
 
 // --- MJP:  templatize these?
 export type AbxrLibAnalyticsLogCallback = (abxrLog: AbxrLog, eResult: AbxrResult, szExceptionMessage: string) => void;
@@ -14,10 +14,10 @@ export type AbxrLibAnalyticsTelemetryCallback = (abxrTelemetry: AbxrTelemetry, e
 /// </summary>
 export class AbxrLibSend
 {
-	private static DurationToSeconds(tsDuration: TimeSpan): string
+	private static DurationInSeconds(startTime: DateTime): string
 	{
-		var totalMs = tsDuration.ToDateTime().getTime();
-		return (totalMs / 1000.0).toString();
+		var elapsedMs = DateTime.Now() - startTime.ToUnixTime();
+		return (elapsedMs / 1000.0).toString();
 	}
 	// --- (C++ dll and C# dll) versions of LogXXX().
 	private static async Log(eLogLevel: LogLevel, szText: string, dictMeta: AbxrDictStrings): Promise<AbxrResult>
@@ -84,10 +84,7 @@ export class AbxrLibSend
 		bGotValue = AbxrEvent.m_dictTimedEventStartTimes.TryGetValue(szName, rpStartTime);
 		if (bGotValue)
 		{
-			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
-			
-			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
-			// Remove the start time since this event is now complete
+			dictMeta.set("duration", AbxrLibSend.DurationInSeconds(rpStartTime.vRet));
 			AbxrEvent.m_dictTimedEventStartTimes.Remove(szName);
 		}
 		
@@ -133,9 +130,7 @@ export class AbxrLibSend
 		//AbxrEvent.m_csDictProtect.unlock();
 		if (bGotValue)
 		{
-			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
-
-			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
+			dictMeta.set("duration", AbxrLibSend.DurationInSeconds(rpStartTime.vRet));
 			// ---
 			//AbxrEvent.m_csDictProtect.lock();
 			AbxrEvent.m_dictAssessmentStartTimes.Remove(szAssessmentName);
@@ -178,9 +173,7 @@ export class AbxrLibSend
 		//AbxrEvent.m_csDictProtect.unlock();
 		if (bGotValue)
 		{
-			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
-
-			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
+			dictMeta.set("duration", AbxrLibSend.DurationInSeconds(rpStartTime.vRet));
 			// ---
 			//AbxrEvent.m_csDictProtect.lock();
 			AbxrEvent.m_dictObjectiveStartTimes.Remove(szObjectiveName);
@@ -219,9 +212,7 @@ export class AbxrLibSend
 		//AbxrEvent.m_csDictProtect.unlock();
 		if (bGotValue)
 		{
-			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
-
-			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
+			dictMeta.set("duration", AbxrLibSend.DurationInSeconds(rpStartTime.vRet));
 			// ---
 			//AbxrEvent.m_csDictProtect.lock();
 			AbxrEvent.m_dictInteractionStartTimes.Remove(szInteractionName);
@@ -260,9 +251,7 @@ export class AbxrLibSend
 		//AbxrEvent.m_csDictProtect.unlock();
 		if (bGotValue)
 		{
-			var	tsDuration:	TimeSpan = new TimeSpan().FromUnixTime(DateTime.Now() - rpStartTime.vRet.ToUnixTime());
-
-			dictMeta.set("duration", AbxrLibSend.DurationToSeconds(tsDuration));
+			dictMeta.set("duration", AbxrLibSend.DurationInSeconds(rpStartTime.vRet));
 			// ---
 			//AbxrEvent.m_csDictProtect.lock();
 			AbxrEvent.m_dictLevelStartTimes.Remove(szLevelName);
