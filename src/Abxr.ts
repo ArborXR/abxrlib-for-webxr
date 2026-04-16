@@ -136,7 +136,9 @@ function AbxrDecodeJwtPayload(jwt: string): Record<string, any> | null {
     if (!AbxrIsValidJwt(jwt)) return null;
     try {
         const payload = jwt.split('.')[1];
-        const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+        const decoded = atob(padded);
         return JSON.parse(decoded);
     } catch {
         return null;
@@ -4450,6 +4452,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                                     const success = await (Abxr as any).completeFinalAuth(pinData);
                                     if (success) {
                                         // PIN auto-submit succeeded — auth complete, no dialog needed
+                                        // NotifyAuthCompleted(true) is called inside completeFinalAuth
                                     } else {
                                         // PIN auto-submit failed — fall through to show dialog
                                         console.log('AbxrLib: PIN auto-submit failed, showing dialog for manual entry');
