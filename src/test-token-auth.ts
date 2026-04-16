@@ -192,6 +192,16 @@ console.log('\nTest 8: JWT without pin claim');
     assert(!('pin' in decoded), 'no pin claim in JWT payload');
 }
 
+// ─── Test 9: InteractionType includes Matching, Performance, Sequencing ─
+
+console.log('\nTest 9: InteractionType has all 9 Unity values');
+{
+    const { InteractionType, InteractionTypeToString } = require('./network/utils/DotNetishTypes');
+    assert(InteractionTypeToString(InteractionType.eMatching) === 'matching', 'eMatching -> "matching"');
+    assert(InteractionTypeToString(InteractionType.ePerformance) === 'performance', 'ePerformance -> "performance"');
+    assert(InteractionTypeToString(InteractionType.eSequencing) === 'sequencing', 'eSequencing -> "sequencing"');
+}
+
 // ─── Summary ────────────────────────────────────────────────────────
 
 console.log(`\n${'='.repeat(50)}`);
