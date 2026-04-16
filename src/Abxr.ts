@@ -132,6 +132,17 @@ function AbxrIsValidJwt(value: string): boolean {
     return parts.length === 3;
 }
 
+function AbxrDecodeJwtPayload(jwt: string): Record<string, any> | null {
+    if (!AbxrIsValidJwt(jwt)) return null;
+    try {
+        const payload = jwt.split('.')[1];
+        const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+        return JSON.parse(decoded);
+    } catch {
+        return null;
+    }
+}
+
 // URL version handling utilities
 function AbxrHasApiVersion(url: string): boolean {
     try {
@@ -647,6 +658,10 @@ export class Abxr {
         useAppTokens: boolean;
     } = { useAppTokens: false };
 
+    // PIN auto-submit state (from orgToken JWT "pin" claim)
+    private static storedAssessmentPin: string | null = null;
+    private static pinAutoSubmitAttempted: boolean = false;
+
     // Authentication mechanism and dialog configuration
     private static authMechanismCallback: AbxrAuthMechanismCallback | null = null;
     private static dialogOptions: AbxrAuthMechanismDialogOptions = { 
@@ -880,6 +895,26 @@ export class Abxr {
         return authData ? authData.userId : null;
     }
     
+    /** @internal */
+    static getStoredAssessmentPin(): string | null { return this.storedAssessmentPin; }
+    /** @internal */
+    static getPinAutoSubmitAttempted(): boolean { return this.pinAutoSubmitAttempted; }
+    /** @internal */
+    static setPinAutoSubmitAttempted(v: boolean): void { this.pinAutoSubmitAttempted = v; }
+
+    /**
+     * Extract assessment PIN from orgToken JWT "pin" claim.
+     * @internal
+     */
+    private static extractPinFromOrgToken(orgToken: string): string | null {
+        const payload = AbxrDecodeJwtPayload(orgToken);
+        if (payload && payload.pin && typeof payload.pin === 'string') {
+            const pin = payload.pin.trim();
+            return pin.length > 0 ? pin : null;
+        }
+        return null;
+    }
+
     static GetUserEmail(): string | null {
         const authData = AbxrLibClient.getAuthResponseData();
         return authData ? authData.userEmail : null;
@@ -4348,6 +4383,13 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
 
         Abxr.setAuthParams({ appToken: options.appToken, orgToken: orgToken, useAppTokens: true });
 
+        // Extract assessment PIN from orgToken JWT (if present)
+        (Abxr as any).storedAssessmentPin = (Abxr as any).extractPinFromOrgToken(orgToken);
+        (Abxr as any).pinAutoSubmitAttempted = false;
+        if (Abxr.getStoredAssessmentPin()) {
+            console.log('AbxrLib: Assessment PIN found in orgToken JWT');
+        }
+
         const deviceId = AbxrGetOrCreateDeviceId();
         const configToUse = options.appConfig;
 
@@ -4399,13 +4441,37 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                             if (authData) {
                                 const normalizedType = Abxr.normalizeAuthMechanismTypeForInput(authData.type) || 'text';
                                 const forCallback = { ...authData, type: normalizedType };
-                                console.log(`AbxrLib: Additional authentication required - ${forCallback.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
-                                const callback = Abxr.getAuthMechanismCallback();
-                                if (callback && typeof callback === 'function') {
-                                    try {
-                                        callback(forCallback);
-                                    } catch (error) {
-                                        console.error('AbxrLib: Error in authMechanism callback:', error);
+
+                                // PIN auto-submit: if we have a PIN from orgToken JWT and backend wants a PIN
+                                if (normalizedType === 'pin' && Abxr.getStoredAssessmentPin() && !Abxr.getPinAutoSubmitAttempted()) {
+                                    Abxr.setPinAutoSubmitAttempted(true);
+                                    console.log('AbxrLib: Auto-submitting assessment PIN from orgToken JWT');
+                                    const pinData = { pin: Abxr.getStoredAssessmentPin()! };
+                                    const success = await (Abxr as any).completeFinalAuth(pinData);
+                                    if (success) {
+                                        // PIN auto-submit succeeded — auth complete, no dialog needed
+                                    } else {
+                                        // PIN auto-submit failed — fall through to show dialog
+                                        console.log('AbxrLib: PIN auto-submit failed, showing dialog for manual entry');
+                                        const callback = Abxr.getAuthMechanismCallback();
+                                        if (callback && typeof callback === 'function') {
+                                            try {
+                                                callback(forCallback);
+                                            } catch (error) {
+                                                console.error('AbxrLib: Error in authMechanism callback:', error);
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // No auto-submit — show dialog as normal
+                                    console.log(`AbxrLib: Additional authentication required - ${forCallback.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
+                                    const callback = Abxr.getAuthMechanismCallback();
+                                    if (callback && typeof callback === 'function') {
+                                        try {
+                                            callback(forCallback);
+                                        } catch (error) {
+                                            console.error('AbxrLib: Error in authMechanism callback:', error);
+                                        }
                                     }
                                 }
                             }

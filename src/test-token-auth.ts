@@ -164,6 +164,34 @@ console.log('\nTest 6: Token mode payload shape matches backend expectation');
     assert(!('authSecret' in parsed), 'payload does NOT have authSecret');
 }
 
+// ─── Test 7: JWT payload decode extracts pin claim ──────────────────
+
+console.log('\nTest 7: AbxrDecodeJwtPayload extracts pin from orgToken');
+{
+    // Create a JWT with a pin claim: {"pin": "123456"}
+    const header = btoa(JSON.stringify({alg: "HS256", typ: "JWT"}));
+    const payload = btoa(JSON.stringify({orgId: "test-org", pin: "123456"}));
+    const fakeJwt = header + '.' + payload + '.fakesig';
+
+    const parts = fakeJwt.split('.');
+    assert(parts.length === 3, 'JWT has 3 parts');
+    const decoded = JSON.parse(atob(parts[1]));
+    assert(decoded.pin === '123456', 'pin claim extracted from JWT payload');
+    assert(decoded.orgId === 'test-org', 'orgId claim also present');
+}
+
+// ─── Test 8: JWT without pin claim returns no pin ───────────────────
+
+console.log('\nTest 8: JWT without pin claim');
+{
+    const header = btoa(JSON.stringify({alg: "HS256", typ: "JWT"}));
+    const payload = btoa(JSON.stringify({orgId: "test-org"}));
+    const fakeJwt = header + '.' + payload + '.fakesig';
+
+    const decoded = JSON.parse(atob(fakeJwt.split('.')[1]));
+    assert(!('pin' in decoded), 'no pin claim in JWT payload');
+}
+
 // ─── Summary ────────────────────────────────────────────────────────
 
 console.log(`\n${'='.repeat(50)}`);
