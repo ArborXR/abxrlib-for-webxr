@@ -668,6 +668,8 @@ export class Abxr {
      * Check if AbxrLib has an active connection to the server and can send data
      * This indicates whether the library is configured and ready to communicate
      * @returns True if connection is active, false otherwise
+     * @deprecated Prefer subscribing to OnAuthCompleted to know when auth has completed. The library queues pre-auth events and replays them on success.
+     * @internal
      */
     static ConnectionActive(): boolean {
         return this.connectionActive;
@@ -4395,11 +4397,13 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                             Abxr.setRequiresFinalAuth(true);
                             const authData = Abxr.extractAuthMechanismData();
                             if (authData) {
-                                console.log(`AbxrLib: Additional authentication required - ${authData.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
+                                const normalizedType = Abxr.normalizeAuthMechanismTypeForInput(authData.type) || 'text';
+                                const forCallback = { ...authData, type: normalizedType };
+                                console.log(`AbxrLib: Additional authentication required - ${forCallback.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
                                 const callback = Abxr.getAuthMechanismCallback();
                                 if (callback && typeof callback === 'function') {
                                     try {
-                                        callback(authData);
+                                        callback(forCallback);
                                     } catch (error) {
                                         console.error('AbxrLib: Error in authMechanism callback:', error);
                                     }
@@ -4487,11 +4491,13 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                                 Abxr.setRequiresFinalAuth(true);
                                 const authData = Abxr.extractAuthMechanismData();
                                 if (authData) {
-                                    console.log(`AbxrLib: Additional authentication required - ${authData.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
+                                    const normalizedType = Abxr.normalizeAuthMechanismTypeForInput(authData.type) || 'text';
+                                    const forCallback = { ...authData, type: normalizedType };
+                                    console.log(`AbxrLib: Additional authentication required - ${forCallback.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
                                     const callback = Abxr.getAuthMechanismCallback();
                                     if (callback && typeof callback === 'function') {
                                         try {
-                                            callback(authData);
+                                            callback(forCallback);
                                         } catch (error) {
                                             console.error('AbxrLib: Error in authMechanism callback:', error);
                                         }
