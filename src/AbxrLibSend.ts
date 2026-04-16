@@ -117,7 +117,11 @@ export class AbxrLibSend
 		dictMeta.set("type", "assessment");
 		dictMeta.set("verb", "completed");
 		dictMeta.set("score", szScore);
-		dictMeta.set("result_options", EventStatusToString(eEventStatus));
+		var scoreMin = dictMeta.get("score_min") || dictMeta.get("scoreMin") || dictMeta.get("min_score") || dictMeta.get("minScore") || "0";
+		var scoreMax = dictMeta.get("score_max") || dictMeta.get("scoreMax") || dictMeta.get("max_score") || dictMeta.get("maxScore") || "100";
+		dictMeta.set("score_min", scoreMin);
+		dictMeta.set("score_max", scoreMax);
+		dictMeta.set("status", EventStatusToString(eEventStatus));
 		// Calculate and add duration if start time exists, otherwise use "0".
 		//AbxrEvent.m_csDictProtect.lock();
 		bGotValue = AbxrEvent.m_dictAssessmentStartTimes.TryGetValue(szAssessmentName, rpStartTime);
@@ -158,7 +162,11 @@ export class AbxrLibSend
 		dictMeta.set("type", "objective");
 		dictMeta.set("verb", "completed");
 		dictMeta.set("score", szScore);
-		dictMeta.set("result_options", EventStatusToString(eEventStatus));
+		var scoreMin = dictMeta.get("score_min") || dictMeta.get("scoreMin") || dictMeta.get("min_score") || dictMeta.get("minScore") || "0";
+		var scoreMax = dictMeta.get("score_max") || dictMeta.get("scoreMax") || dictMeta.get("max_score") || dictMeta.get("maxScore") || "100";
+		dictMeta.set("score_min", scoreMin);
+		dictMeta.set("score_max", scoreMax);
+		dictMeta.set("status", EventStatusToString(eEventStatus));
 		// Calculate and add duration if start time exists, otherwise use "0".
 		//AbxrEvent.m_csDictProtect.lock();
 		bGotValue = AbxrEvent.m_dictObjectiveStartTimes.TryGetValue(szObjectiveName, rpStartTime);
