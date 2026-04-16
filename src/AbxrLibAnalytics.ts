@@ -259,7 +259,6 @@ export class AbxrLibInit
 	/// <returns>AbxrResult enum</returns>
 	public static async Authenticate(szAppId: string, szOrgId: string, szDeviceId: string, szAuthSecret: string, ePartner: Partner): Promise<AbxrResult>
 	{
-		// Store credentials for this and future re-authentications.
 		AbxrLibInit.set_AppID(szAppId);
 		AbxrLibInit.set_OrgID(szOrgId);
 		AbxrLibAnalytics.set_DeviceId(szDeviceId);
@@ -280,7 +279,6 @@ export class AbxrLibInit
 	/// <returns>AbxrResult enum</returns>
 	public static async AuthenticateWithTokens(szAppToken: string, szOrgToken: string, szDeviceId: string, ePartner: Partner): Promise<AbxrResult>
 	{
-		// Store token credentials for this and future re-authentications.
 		AbxrLibInit.set_AppToken(szAppToken);
 		AbxrLibInit.set_OrgToken(szOrgToken);
 		AbxrLibAnalytics.set_DeviceId(szDeviceId);

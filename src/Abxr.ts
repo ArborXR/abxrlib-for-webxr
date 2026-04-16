@@ -953,7 +953,7 @@ export class Abxr {
         for (const [k, v] of Object.entries(merged)) {
             if (k !== 'type' && k !== 'prompt') dictAuthMechanism.Add(k, v);
         }
-        const req = (AbxrLibInit as any).m_abxrLibAuthentication?.m_objAuthTokenRequest;
+        const req = AbxrLibInit.m_abxrLibAuthentication?.m_objAuthTokenRequest;
         if (req) {
             req.m_szUserId = finalUserId;
             req.m_dictAuthMechanism = dictAuthMechanism;
@@ -4333,7 +4333,6 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
     const useAppTokens = !!options.appToken;
 
     if (useAppTokens) {
-        // Token mode
         if (!AbxrIsValidJwt(options.appToken!)) {
             console.error('AbxrLib: appToken is not a valid JWT (expected 3 dot-separated segments)');
             return;
@@ -4342,7 +4341,6 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
             console.warn('AbxrLib: Both appToken and legacy credentials (appId/orgId/authSecret) provided. Using appToken; legacy fields will be ignored.');
         }
     } else {
-        // Legacy mode
         if (!options.appId) {
             console.error('AbxrLib: appId is required for initialization (legacy mode) or provide appToken for token mode');
             return;
@@ -4387,7 +4385,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
 
         // Extract assessment PIN from orgToken JWT (if present)
         (Abxr as any).storedAssessmentPin = (Abxr as any).extractPinFromOrgToken(orgToken);
-        (Abxr as any).pinAutoSubmitAttempted = false;
+        Abxr.setPinAutoSubmitAttempted(false);
         if (Abxr.getStoredAssessmentPin()) {
             console.log('AbxrLib: Assessment PIN found in orgToken JWT');
         }
