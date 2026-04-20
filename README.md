@@ -63,13 +63,13 @@ npm install abxrlib-for-webxr
 ### CDN Installation
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/abxrlib-for-webxr@latest/dist/abxrlib-for-webxr.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/abxrlib-for-webxr@latest/Abxr.js"></script>
 ```
 
 ### Manual Installation
 
 1. Download the latest release from the GitHub repository.
-2. Include the `abxrlib-for-webxr.js` file in your project.
+2. Include the `Abxr.js` file in your project.
 3. Initialize the library in your application.
 
 ---
