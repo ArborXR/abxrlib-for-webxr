@@ -75,9 +75,24 @@ function AbxrGetPackageVersion(): string {
 // Utility function to get URL parameters
 function AbxrGetUrlParameter(name: string): string | null {
     if (typeof window === 'undefined') return null;
-    
+
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
+}
+
+// Remove a query parameter from the current URL in place. Used to scrub
+// sensitive params (e.g. JWTs) after read so they don't leak via Referer
+// headers, browser history, or third-party scripts reading window.location.
+function AbxrStripUrlParameter(name: string): void {
+    if (typeof window === 'undefined' || !window.history?.replaceState) return;
+    try {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has(name)) return;
+        url.searchParams.delete(name);
+        window.history.replaceState(null, '', url.toString());
+    } catch {
+        // Best-effort; ignore failures
+    }
 }
 
 // Cookie utility functions
@@ -270,6 +285,12 @@ function AbxrGetParameter(name: string, fallback?: string): string | undefined {
     // Priority 1: GET parameters
     const urlParam = AbxrGetUrlParameter(name);
     if (urlParam) {
+        // Scrub sensitive params from the URL on read. The token is a JWT
+        // carrying an assessment PIN claim; leaving it in the URL exposes
+        // it via Referer headers and browser history.
+        if (name === 'abxr_org_token') {
+            AbxrStripUrlParameter(name);
+        }
         const sanitizedParam = AbxrValidateAndSanitizeParameter(name, urlParam);
         if (sanitizedParam) {
             // Save to cookie for future use
