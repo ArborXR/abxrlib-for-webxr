@@ -7,7 +7,7 @@
 - **App Token Authentication** -- `Abxr_init()` now accepts `AbxrInitOptions` with `appToken` and `orgToken` (JWT) for modern token-based authentication. Legacy `appId`/`orgId`/`authSecret` is still supported via the same options object or deprecated positional arguments.
 - **PIN Auto-Submit** -- When `orgToken` JWT contains a `pin` claim, the SDK auto-submits it when the backend requests assessmentPin authentication, bypassing the PIN dialog on the first attempt.
 - **SetUserData()** -- New method to merge additional user data and trigger re-authentication, aligning with Unity SDK.
-- **URL parameter `abxr_org_token`** -- Org token can be provided via URL parameter, matching `abxr_orgid` and `abxr_auth_secret` patterns.
+- **URL parameter `abxr_org_token`** -- Org token can be provided via URL parameter, matching `abxr_orgid` and `abxr_auth_secret` patterns. The SDK scrubs this parameter from the URL immediately after reading it (via `history.replaceState`) to prevent the JWT from leaking through `Referer` headers, browser history, or third-party scripts reading `window.location`. The value is still cached to a cookie for repeat visits, and auth proceeds normally.
 
 ### Fixed
 
