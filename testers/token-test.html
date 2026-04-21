@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AbxrLib Token Auth Test</title>
+  <script src="dist/abxrlib-for-webxr.js"></script>
+</head>
+<body>
+  <h1>AbxrLib Token Authentication Test</h1>
+  <div id="status">Initializing...</div>
+  <pre id="log"></pre>
+  <script>
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    function log(msg) {
+      logEl.textContent += msg + '\n';
+      console.log(msg);
+    }
+
+    // Only listen for the real auth result (skip the reset callback)
+    let initCalled = false;
+    Abxr.OnAuthCompleted(function(authData) {
+      if (!initCalled) return;
+      log('Auth completed: ' + JSON.stringify(authData, null, 2));
+      statusEl.textContent = authData.success ? 'Authenticated!' : 'Auth failed: ' + (authData.error || 'unknown');
+    });
+
+    const appToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6IjFjMDU5MzlkLTAxMGEtNGRhNC04YWE5LTU4ZmZmYjNjYjczYyIsIm9yZ0lkIjoiN2E3NmYwOGMtMDAyNy00ZTdiLTllNTItNTgyNTQ1NmM4MjgzIiwianRpIjoiZmEzNTRlMGUtMmIzMy00NjAxLTk2ZDctYWM3YmQ2NDE0NTA2In0.RNym2_mVXeNOOkOBEW5nNkxu_sbdZzX9_MpkIz7hXYE';
+
+    log('Token mode init...');
+    log('Backend URL from: abxr_rest_url param > cookie > default (lib-backend.xrdm.app)');
+    log('Org token from: abxr_org_token param > cookie');
+    log('');
+
+    initCalled = true;
+    Abxr_init({ appToken: appToken });
+  </script>
+</body>
+</html>

@@ -63,13 +63,13 @@ npm install abxrlib-for-webxr
 ### CDN Installation
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/abxrlib-for-webxr@latest/dist/abxrlib-for-webxr.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/abxrlib-for-webxr@latest/Abxr.js"></script>
 ```
 
 ### Manual Installation
 
 1. Download the latest release from the GitHub repository.
-2. Include the `abxrlib-for-webxr.js` file in your project.
+2. Include the `Abxr.js` file in your project.
 3. Initialize the library in your application.
 
 ---
@@ -81,58 +81,63 @@ npm install abxrlib-for-webxr
 To use the ABXRLib SDK with ArborXR Insights:
 
 #### Get Your Credentials
-1. Go to the ArborXR Insights web app and log in.
-2. Grab these three values from the **View Data** screen of the specific app you are configuring:
-- App ID
-- Organization ID
-- Authentication Secret
+
+The SDK authenticates using a JWT **App Token** and **Org Token**.
+
+- **App Token:** Available in the ArborXR portal under **Content Library** → **Managed** app → **Insights Hub**.
+- **Org Token:** Not currently exposed in the portal UI. Contact ArborXR support to request a customer-specific Org Token for single-customer production builds.
 
 #### Configure Web Application
 
-The ABXRLib SDK now provides a simplified initialization API. The `appId` is required, while `orgId` and `authSecret` are optional and can be provided via URL parameters.
+The SDK accepts an `AbxrInitOptions` object. Three deployment paths are supported, differing in how the Org Token is supplied. The App Token identifies the application; the Org Token directs which organization receives the data.
 
-> **⚠️ Security Note:** For production builds distributed to third parties, avoid compiling `orgId` and `authSecret` directly into your application code. Instead, use URL parameters or environment variables to provide these credentials at runtime. Only compile credentials directly into the build when creating custom applications for specific individual clients.
+**Path A: Developer mode**
+
+For local development, internal testing, or apps where the developer is also the customer organization, pass the App Token as both values. All data routes to the developer's own organization.
 
 ```typescript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
-// RECOMMENDED: Use URL parameters for production builds
-// URL: https://yourdomain.com/?abxr_orgid=YOUR_ORG_ID&abxr_auth_secret=YOUR_AUTH_SECRET
-Abxr_init('your-app-id');
+Abxr_init({ appToken: 'your-app-token', orgToken: 'your-app-token' });
 
-// DEVELOPMENT ONLY: Direct initialization with all parameters
-Abxr_init('your-app-id', 'your-org-id', 'your-auth-secret');
-
-// Now you can use the Abxr class
 Abxr.Event('user_action', { action: 'button_click' });
 Abxr.LogDebug('Debug message');
 ```
 
-#### URL Parameter Authentication
+**Path B: LMS integration**
 
-You can provide authentication credentials via URL parameters, which take precedence over function parameters:
+For enterprise rollouts through a Learning Management System, the customer configures your WebXR link inside their LMS activity. When a learner launches the activity, the LMS generates a dynamic Org Token scoped to that session and supplies it to the SDK automatically. Data routes to the customer's organization.
 
-```
-https://yourdomain.com/?abxr_orgid=YOUR_ORG_ID&abxr_auth_secret=YOUR_AUTH_SECRET
-```
+Initialize with only the App Token. The LMS handles the Org Token.
 
-Then initialize with just the App ID:
 ```typescript
 import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
 
-// URL parameters will be automatically detected
-Abxr_init('your-app-id');
-
-// Now you can use the Abxr class
-Abxr.Event('user_action', { action: 'button_click' });
+Abxr_init({ appToken: 'your-app-token' });
 ```
 
-#### Alternative for Managed Devices:
-If you're using an ArborXR-managed device, only the App ID is required:
+**Path C: Per-customer embedded build**
+
+For single-customer production deployments not launched through an LMS, embed the customer's Org Token in the build. Request the Org Token from ArborXR support, as the portal UI does not currently expose it. Ship one build per customer organization.
+
 ```typescript
-Abxr_init('your-app-id');
-// orgId and authSecret are automatically provided
+import { Abxr_init, Abxr } from 'abxrlib-for-webxr';
+
+Abxr_init({
+    appToken: 'your-app-token',
+    orgToken: 'customer-org-token-from-support'
+});
 ```
+
+#### Additional Init Options
+
+The `AbxrInitOptions` object accepts the following optional fields for advanced use cases:
+
+- `appConfig` (string): Custom app configuration JSON string.
+- `dialogOptions` (`AbxrAuthMechanismDialogOptions`): Styling and behavior overrides for the built-in auth mechanism dialog.
+- `authMechanismCallback` (`AbxrAuthMechanismCallback`): Replace the built-in auth dialog with a custom handler. Invoked when the backend requests user input (for example, a PIN or email prompt).
+
+Refer to the full documentation for details on each option.
 
 ### Using with Other Backend Services
 For information on implementing your own backend service or using other compatible services, please refer to the ABXR protocol specification.
@@ -200,7 +205,8 @@ The full documentation includes:
 
 ### FAQ
 
-#### How do I retrieve my Application ID and Authorization Secret?
-Your Application ID can be found in the Web Dashboard under the application details. For the Authorization Secret, navigate to Settings > Organization Codes on the same dashboard.
+#### How do I retrieve my credentials?
+
+The **App Token** is available in the ArborXR portal under **Content Library** → **Managed** app → **Insights Hub**. The **Org Token** is not currently exposed in the portal UI; contact ArborXR support to request a customer-specific Org Token. For local development, the App Token may be used as the Org Token, in which case data routes to your own organization.
 
 For more troubleshooting help and detailed FAQs, see the [full documentation](https://developers.arborxr.com/docs/insights/full-documentation/).

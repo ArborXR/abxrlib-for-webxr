@@ -1,5 +1,30 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **App Token Authentication** -- `Abxr_init()` now accepts `AbxrInitOptions` with `appToken` and `orgToken` (JWT) for modern token-based authentication. Legacy `appId`/`orgId`/`authSecret` is still supported via the same options object or deprecated positional arguments.
+- **PIN Auto-Submit** -- When `orgToken` JWT contains a `pin` claim, the SDK auto-submits it when the backend requests assessmentPin authentication, bypassing the PIN dialog on the first attempt.
+- **SetUserData()** -- New method to merge additional user data and trigger re-authentication, aligning with Unity SDK.
+- **URL parameter `abxr_org_token`** -- Org token can be provided via URL parameter, matching `abxr_orgid` and `abxr_auth_secret` patterns. The SDK scrubs this parameter from the URL immediately after reading it (via `history.replaceState`) to prevent the JWT from leaking through `Referer` headers, browser history, or third-party scripts reading `window.location`. The value is still cached to a cookie for repeat visits, and auth proceeds normally.
+
+### Fixed
+
+- **formatAuthDataForSubmission** -- PIN type now correctly sends `{ pin: value }` and email sends `{ prompt: email }` instead of forcing all types into a `prompt` field.
+- **completeFinalAuth** -- Empty user input is now rejected before POSTing, preventing 400 errors from backend.
+- **authMechanism merge** -- Auth mechanism data now preserves correct field names (pin/prompt/email) instead of collapsing everything to `prompt`.
+
+### Deprecated
+
+- **ConnectionActive()** -- Prefer subscribing to **OnAuthCompleted** to know when auth has completed and you can start sending events. The library queues pre-auth assessment/objective/interaction events and replays them when auth succeeds. `ConnectionActive()` remains available but is deprecated and may be removed in a future release.
+- **Positional arguments to Abxr_init()** -- Use `AbxrInitOptions` object instead.
+
+### Refactoring
+
+- Testers (advanced.html, device-detection-test.html) now use **OnAuthCompleted** instead of polling **ConnectionActive()**.
+- Auth mechanism callbacks now receive normalized types (`pin`/`email`/`text`) instead of raw backend types.
+
 ## [1.0.48] - 2025-12-16
 
 ### ♻️ Refactoring

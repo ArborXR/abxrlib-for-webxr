@@ -26,6 +26,10 @@ class Authentication
 	public m_ePartner:			Partner;
 	// ---
 	public m_szAuthSecret:		string = "";			// Not exposed via properties or anything else, only available to AbxrLibInit for use in 2-stage authentication (dictAuthMechanism flows)... in C++, no friend classes in TypeScript so public.
+	// --- App token auth mode fields.
+	public m_szAppToken:		string = "";			// JWT app token for modern auth mode.
+	public m_szOrgToken:		string = "";			// JWT org token for modern auth mode.
+	public m_bUseAppTokens:		boolean = false;		// true = modern JWT auth, false = legacy appId/orgId/authSecret.
 	// ---
 	public m_objAuthTokenRequest:	AuthTokenRequest;	// For setting the environment/session members of AuthTokenRequest as global properties that then get incorporated into the specific auth request on Authenticate().
 	// ---
@@ -106,37 +110,38 @@ export class AbxrLibInit
 	/// <summary>
 	/// Hit the authentication endpoint with the passed in data and if successful, store the (token, secret)
 	///		which will then get incorporated into the header information of every POST event call.
+	///		Credentials are read from AbxrLibInit.m_abxrLibAuthentication (set by caller).
 	/// </summary>
-	/// <param name="szAppId">Identifies the application running on the headset</param>
-	/// <param name="szOrgId">Identifies the organization that owns the application running on the headset</param>
-	/// <param name="szCurrId">Current ID</param>
-	/// <param name="szAuthSecret">Auth secret... obtained from, e.g., Arbor or whomever</param>
-	/// <param name="szPartner">Blank if just Abxr, "arborxr" or whomever if partner... this is how backend knows to do further AuthSecret validation with partner.</param>
 	/// <param name="bNewSession">true on initial authentication, false (use current) on reauthenticate.</param>
 	/// <param name="bLookForAuthMechanism">true on initial authentication that uses AuthMechanism, i.e. need PIN from headset, false for standard single-step authentication.</param>
 	/// <returns>AbxrResult enum</returns>
-	private static async AuthenticateGuts(szAppId: string, szOrgId: string, szDeviceId: string, szAuthSecret: string, ePartner: Partner, bNewSession: boolean, bLookForAuthMechanism: boolean): Promise<AbxrResult>
+	private static async AuthenticateGuts(bNewSession: boolean, bLookForAuthMechanism: boolean): Promise<AbxrResult>
 	{
 		var objAuthTokenRequest:	AuthTokenRequest = new AuthTokenRequest();
 		var eRet:					AbxrResult = AbxrResult.eOk;
 		var rpResponse:				{szResponse: string} = {szResponse: ""};
 
-		// Stuff these into this object's property variables for future ReAuthenticate().
-		this.set_AppID(szAppId);
-		this.set_OrgID(szOrgId);
 		if (!bNewSession)
 		{
 			// Using pre-existing session, countermand constructed new one.
 			objAuthTokenRequest.m_szSessionId = AbxrLibInit.m_abxrLibAuthentication.m_szSessionId;
 		}
-		AbxrLibAnalytics.set_DeviceId(szDeviceId);
-		this.set_Partner(ePartner);
-		// Set the core auth fields.
-		objAuthTokenRequest.m_szAppId = szAppId;
-		objAuthTokenRequest.m_szOrgId = szOrgId;
-		objAuthTokenRequest.m_szAuthSecret = szAuthSecret;
-		objAuthTokenRequest.m_szDeviceId = szDeviceId;	// May also need UserId at some point.
-		objAuthTokenRequest.m_szPartner = PartnerToString(ePartner);
+		// Set credentials based on auth mode.
+		if (AbxrLibInit.m_abxrLibAuthentication.m_bUseAppTokens)
+		{
+			objAuthTokenRequest.m_szAppToken = AbxrLibInit.m_abxrLibAuthentication.m_szAppToken;
+			objAuthTokenRequest.m_szOrgToken = AbxrLibInit.m_abxrLibAuthentication.m_szOrgToken;
+			// Legacy fields stay null — bfSkipIfNull omits them from JSON.
+		}
+		else
+		{
+			objAuthTokenRequest.m_szAppId = AbxrLibInit.m_abxrLibAuthentication.m_szAppID;
+			objAuthTokenRequest.m_szOrgId = AbxrLibInit.m_abxrLibAuthentication.m_szOrgID;
+			objAuthTokenRequest.m_szAuthSecret = AbxrLibInit.m_abxrLibAuthentication.m_szAuthSecret;
+			// Token fields stay null — bfSkipIfNull omits them from JSON.
+		}
+		objAuthTokenRequest.m_szDeviceId = AbxrLibAnalytics.get_DeviceId();
+		objAuthTokenRequest.m_szPartner = PartnerToString(AbxrLibInit.m_abxrLibAuthentication.m_ePartner);
 		// Set the environment/session fields that come along for the ride in the auth payload.
 		objAuthTokenRequest.m_szOsVersion = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szOsVersion;
 		objAuthTokenRequest.m_szIpAddress = AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_szIpAddress;
@@ -206,8 +211,6 @@ export class AbxrLibInit
 						moduleTarget: null
 					});
 				}
-				// This is purely internal to this object... for two-step authentications using dictAuthMechanism so FinalAuthenticate() can use the same one used here.
-				AbxrLibInit.m_abxrLibAuthentication.m_szAuthSecret = szAuthSecret;
 				// Set current session only on successful login.
 				AbxrLibInit.m_abxrLibAuthentication.m_szSessionId = objAuthTokenRequest.m_szSessionId;
 				// --- AbxrLibInit.m_abxrLibAuthentication.m_szApiToken is a JWT token that contains, among other things, an "exp"
@@ -256,22 +259,42 @@ export class AbxrLibInit
 	/// <returns>AbxrResult enum</returns>
 	public static async Authenticate(szAppId: string, szOrgId: string, szDeviceId: string, szAuthSecret: string, ePartner: Partner): Promise<AbxrResult>
 	{
-		return await AbxrLibInit.AuthenticateGuts(szAppId, szOrgId, szDeviceId, szAuthSecret, ePartner, true, true);
+		AbxrLibInit.set_AppID(szAppId);
+		AbxrLibInit.set_OrgID(szOrgId);
+		AbxrLibAnalytics.set_DeviceId(szDeviceId);
+		AbxrLibInit.set_Partner(ePartner);
+		AbxrLibInit.m_abxrLibAuthentication.m_szAuthSecret = szAuthSecret;
+		AbxrLibInit.m_abxrLibAuthentication.m_bUseAppTokens = false;
+		return await AbxrLibInit.AuthenticateGuts(true, true);
+	}
+	/// <summary>
+	/// Hit the authentication endpoint with token credentials and if successful, store the (token, secret)
+	///		which will then get incorporated into the header information of every POST event call.
+	///		Uses modern JWT app/org tokens instead of legacy appId/orgId/authSecret.
+	/// </summary>
+	/// <param name="szAppToken">JWT app token</param>
+	/// <param name="szOrgToken">JWT org token</param>
+	/// <param name="szDeviceId">Identifies the device</param>
+	/// <param name="ePartner">Partner enum</param>
+	/// <returns>AbxrResult enum</returns>
+	public static async AuthenticateWithTokens(szAppToken: string, szOrgToken: string, szDeviceId: string, ePartner: Partner): Promise<AbxrResult>
+	{
+		AbxrLibInit.set_AppToken(szAppToken);
+		AbxrLibInit.set_OrgToken(szOrgToken);
+		AbxrLibAnalytics.set_DeviceId(szDeviceId);
+		AbxrLibInit.set_Partner(ePartner);
+		AbxrLibInit.m_abxrLibAuthentication.m_bUseAppTokens = true;
+		return await AbxrLibInit.AuthenticateGuts(true, true);
 	}
 	/// <summary>
 	/// Hit the authentication endpoint with the passed in data and if successful, store the (token, secret)
 	///		which will then get incorporated into the header information of every POST event call.
 	///		THIS IS SECOND/FINAL STEP OF EXTRAUTH CASE:  Authenticate() with session and m_dictExtraAuthData copied into the auth session field from Authenticate().
 	/// </summary>
-	/// <param name="szAppId">Identifies the application running on the headset</param>
-	/// <param name="szOrgId">Identifies the organization that owns the application running on the headset</param>
-	/// <param name="szCurrId">Current ID</param>
-	/// <param name="szAuthSecret">Auth secret... obtained from, e.g., Arbor or whomever</param>
-	/// <param name="szPartner">Blank if just Abxr, "arborxr" or whomever if partner... this is how backend knows to do further AuthSecret validation with partner.</param>
 	/// <returns>AbxrResult enum</returns>
 	public static async FinalAuthenticate(): Promise<AbxrResult>
 	{
-		return await AbxrLibInit.AuthenticateGuts(AbxrLibInit.get_AppID(), AbxrLibInit.get_OrgID(), AbxrLibAnalytics.get_DeviceId(), AbxrLibInit.m_abxrLibAuthentication.m_szAuthSecret, AbxrLibInit.get_Partner(), false, false);
+		return await AbxrLibInit.AuthenticateGuts(false, false);
 	}
 	/// <summary>
 	/// Called by POST/PUT/WHATEVER objects to backend when backend returns an auth error.
@@ -283,19 +306,35 @@ export class AbxrLibInit
 	/// <returns>AbxrResult enum.</returns>
 	public static async ReAuthenticate(bObtainAuthSecret: boolean): Promise<AbxrResult>
 	{
-		var szAuthSecret: string;
-
+		if (AbxrLibInit.m_abxrLibAuthentication.m_bUseAppTokens)
+		{
+			// Token mode: re-authenticate with stored tokens.
+			return await AbxrLibInit.AuthenticateGuts(false, false);
+		}
+		// Legacy mode: optionally obtain new auth secret via callback.
 		if (bObtainAuthSecret)
 		{
-			szAuthSecret = AbxrLibAnalytics.m_pfnGetAuthSecretCallback(AbxrLibAnalytics.m_pvGetAuthSecretCallbackData);
+			var szAuthSecret: string = AbxrLibAnalytics.m_pfnGetAuthSecretCallback(AbxrLibAnalytics.m_pvGetAuthSecretCallbackData);
 			if (!szAuthSecret || szAuthSecret === '')
 			{
 				return AbxrResult.eCouldNotObtainAuthSecret;
 			}
-			return await AbxrLibInit.AuthenticateGuts(AbxrLibInit.get_AppID(), AbxrLibInit.get_OrgID(), AbxrLibAnalytics.get_DeviceId(), szAuthSecret, AbxrLibInit.get_Partner(), false, false);
+			AbxrLibInit.m_abxrLibAuthentication.m_szAuthSecret = szAuthSecret;
 		}
-		// ---
-		return await AbxrLibInit.AuthenticateGuts(AbxrLibInit.get_AppID(), AbxrLibInit.get_OrgID(), AbxrLibAnalytics.get_DeviceId(), AbxrLibInit.get_ApiSecret(), AbxrLibInit.get_Partner(), false, false);
+		return await AbxrLibInit.AuthenticateGuts(false, false);
+	}
+	/// <summary>
+	/// Clears session-specific auth state (token, secret, sessionId, expiry) but preserves
+	///		app/org credentials and mode flag so a new Authenticate call can re-use them.
+	/// </summary>
+	public static ClearSessionAndPrepareForNew(): void
+	{
+		const auth = AbxrLibInit.m_abxrLibAuthentication;
+		auth.m_szApiToken = "";
+		auth.m_szApiSecret = "";
+		auth.m_szSessionId = "";
+		auth.m_dtTokenExpiration.setFullYear(DATEMAXVALUE);
+		AbxrLibClient.clearAuthResponseData();
 	}
 	/// <summary>
 	/// Wrapper for Core-core function to force send unsent objects synchronously.  Used to be inlined in ^^^ TimerCallback().
@@ -361,6 +400,15 @@ export class AbxrLibInit
 	// ---
 	public static get_AuthMechanism(): AbxrDictStrings { return AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism; }
 	public static set_AuthMechanism(dictAuthMechanism: AbxrDictStrings): void { AbxrLibInit.m_abxrLibAuthentication.m_objAuthTokenRequest.m_dictAuthMechanism = dictAuthMechanism; }
+	// ---
+	public static get_AppToken(): string { return AbxrLibInit.m_abxrLibAuthentication.m_szAppToken; }
+	public static set_AppToken(szAppToken: string): void { AbxrLibInit.m_abxrLibAuthentication.m_szAppToken = szAppToken; }
+	// ---
+	public static get_OrgToken(): string { return AbxrLibInit.m_abxrLibAuthentication.m_szOrgToken; }
+	public static set_OrgToken(szOrgToken: string): void { AbxrLibInit.m_abxrLibAuthentication.m_szOrgToken = szOrgToken; }
+	// ---
+	public static get_UseAppTokens(): boolean { return AbxrLibInit.m_abxrLibAuthentication.m_bUseAppTokens; }
+	public static set_UseAppTokens(bUseAppTokens: boolean): void { AbxrLibInit.m_abxrLibAuthentication.m_bUseAppTokens = bUseAppTokens; }
 	// --- End Authentication fields.
 };
 
