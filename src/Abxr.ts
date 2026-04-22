@@ -223,7 +223,6 @@ function AbxrValidateAndSanitizeParameter(name: string, value: string): string |
             break;
             
         case 'abxr_orgid':
-        case 'abxr_appid':
         case 'abxr_auth_secret':
             if (!AbxrIsValidAlphanumericId(value)) {
                 console.warn(`AbxrLib: Invalid format for ${name}: ${AbxrSanitizeForLog(value)}`);
@@ -3328,22 +3327,21 @@ export class Abxr {
         }
     }
     
-    // INTERNAL USE ONLY - Helper method to format auth data for completeFinalAuth based on type
-    // lib-backend expects auth_mechanism.prompt for type "text"; pin for assessmentPin; etc.
+    // INTERNAL USE ONLY - Helper method to format auth data for completeFinalAuth based on type.
+    // Backend reuses the `prompt` field across all auth types: on the initial response it carries
+    // the assessment label / instruction, on the final submission it carries the user's input.
     private static formatAuthDataForSubmission(inputValue: string, authType: string, domain?: string): any {
         const authData: any = {};
-
-        if (authType === 'email') {
-            const fullEmail = domain ? `${inputValue}@${domain}` : inputValue;
-            authData.prompt = fullEmail;
-        } else if (authType === 'assessmentPin' || authType === 'assessment_pin' || authType === 'pin') {
-            authData.pin = inputValue;
-        } else if (authType === 'text' || authType === 'custom') {
-            authData.prompt = inputValue;
-        } else {
-            authData.prompt = inputValue;
+        const trimmed = typeof inputValue === 'string' ? inputValue.trim() : '';
+        if (trimmed === '') {
+            authData.prompt = '';
+            return authData;
         }
-
+        if (authType === 'email') {
+            authData.prompt = domain ? `${trimmed}@${domain}` : trimmed;
+        } else {
+            authData.prompt = trimmed;
+        }
         return authData;
     }
     
@@ -3401,47 +3399,25 @@ export class Abxr {
         }
 
         try {
-            // Get the device ID that was used during initial authentication
-            const deviceId = AbxrGetOrCreateDeviceId();
-            
-            // Get the sessionId and app_id from the stored authentication object
-            const sessionId = AbxrLibInit.m_abxrLibAuthentication.m_szSessionId;
-            const appId = AbxrLibInit.m_abxrLibAuthentication.m_szAppID;
-            
-            // Get the existing authMechanism to preserve the type field
+            // Backend wants the response shape { type, <user-input-key>, domain? } — the
+            // original 'prompt' (assessment identifier) is NOT echoed back. Preserve type
+            // and domain (for email flows), drop everything else, layer user input on top.
             const authMechanism = AbxrLibInit.get_AuthMechanism();
-            
-            // Preserve original authMechanism metadata (type, domain, etc.)
             const originalType = authMechanism.get('type');
             const originalDomain = authMechanism.get('domain');
-            
-            // Clear existing data and rebuild with metadata preserved
             authMechanism.clear();
-            
-            // Re-add the type field first (required by server)  
-            if (originalType) {
-                authMechanism.Add('type', originalType);
-            }
-            
-            // Merge formatted user input (pin, email, or value) into authMechanism; backend expects type + domain + pin/email/etc.
+            if (originalType) authMechanism.Add('type', originalType);
             for (const [key, value] of Object.entries(authData)) {
                 authMechanism.Add(key, String(value));
             }
-            
-            // Re-add any additional metadata (like domain for email)
-            if (originalDomain) {
-                authMechanism.Add('domain', originalDomain);
-            }
-            
-            // Note: device_id, sessionId, app_id are already at the top level of the request
-            // They should NOT be duplicated inside authMechanism per API specification
-            
+            if (originalDomain) authMechanism.Add('domain', originalDomain);
+
             AbxrLibInit.set_AuthMechanism(authMechanism);
-            
+
             // Perform final authentication
             const result = await AbxrLibInit.FinalAuthenticate();
             if (result === 0) {
-                console.log('AbxrLib: Final authentication successful - library ready');
+                if (this.enableDebug) console.log('AbxrLib: Final authentication successful - library ready');
                 
                 // Extract module targets from auth response data (similar to Unity version)
                 const authResponseData = AbxrLibClient.getAuthResponseData();
@@ -4361,7 +4337,9 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
 
     if (useAppTokens) {
         if (!AbxrIsValidJwt(options.appToken!)) {
-            console.error('AbxrLib: appToken is not a valid JWT (expected 3 dot-separated segments)');
+            const errorMessage = 'appToken is not a valid JWT (expected 3 dot-separated segments)';
+            console.error(`AbxrLib: ${errorMessage}`);
+            Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
             return;
         }
         if (options.appId || options.orgId || options.authSecret) {
@@ -4369,7 +4347,9 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
         }
     } else {
         if (!options.appId) {
-            console.error('AbxrLib: appId is required for initialization (legacy mode) or provide appToken for token mode');
+            const errorMessage = 'appId is required for initialization (legacy mode) or provide appToken for token mode';
+            console.error(`AbxrLib: ${errorMessage}`);
+            Abxr.NotifyAuthCompleted(false, false, undefined, errorMessage);
             return;
         }
     }
@@ -4413,7 +4393,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
         // Extract assessment PIN from orgToken JWT (if present)
         (Abxr as any).storedAssessmentPin = (Abxr as any).extractPinFromOrgToken(orgToken);
         Abxr.setPinAutoSubmitAttempted(false);
-        if (Abxr.getStoredAssessmentPin()) {
+        if (Abxr.getStoredAssessmentPin() && Abxr.GetDebugMode()) {
             console.log('AbxrLib: Assessment PIN found in orgToken JWT');
         }
 
@@ -4431,7 +4411,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
 
             AbxrLibClient.clearLastAuthError();
 
-            console.log('AbxrLib: Detecting device information...');
+            if (Abxr.GetDebugMode()) console.log('AbxrLib: Detecting device information...');
             AbxrDetectAllDeviceInfo(false)
                 .then((deviceInfo) => {
                     AbxrLibInit.set_OsVersion(deviceInfo.osVersion);
@@ -4454,7 +4434,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                 })
                 .then(async (result: number) => {
                     if (result === 0) {
-                        console.log('AbxrLib: Initial authentication successful');
+                        if (Abxr.GetDebugMode()) console.log('AbxrLib: Initial authentication successful');
 
                         const authMechanism = AbxrLibInit.get_AuthMechanism();
                         const hasAuthMechanism = authMechanism && (
@@ -4472,15 +4452,12 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                                 // PIN auto-submit: if we have a PIN from orgToken JWT and backend wants a PIN
                                 if (normalizedType === 'pin' && Abxr.getStoredAssessmentPin() && !Abxr.getPinAutoSubmitAttempted()) {
                                     Abxr.setPinAutoSubmitAttempted(true);
-                                    console.log('AbxrLib: Auto-submitting assessment PIN from orgToken JWT');
-                                    const pinData = { pin: Abxr.getStoredAssessmentPin()! };
+                                    if (Abxr.GetDebugMode()) console.log('AbxrLib: Auto-submitting assessment PIN from orgToken JWT');
+                                    const pinData = (Abxr as any).formatAuthDataForSubmission(Abxr.getStoredAssessmentPin()!, authData.type, authData.domain);
                                     const success = await (Abxr as any).completeFinalAuth(pinData);
-                                    if (success) {
-                                        // PIN auto-submit succeeded — auth complete, no dialog needed
-                                        // NotifyAuthCompleted(true) is called inside completeFinalAuth
-                                    } else {
+                                    if (!success) {
                                         // PIN auto-submit failed — fall through to show dialog
-                                        console.log('AbxrLib: PIN auto-submit failed, showing dialog for manual entry');
+                                        console.warn('AbxrLib: PIN auto-submit failed, showing dialog for manual entry');
                                         const callback = Abxr.getAuthMechanismCallback();
                                         if (callback && typeof callback === 'function') {
                                             try {
@@ -4492,7 +4469,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                                     }
                                 } else {
                                     // No auto-submit — show dialog as normal
-                                    console.log(`AbxrLib: Additional authentication required - ${forCallback.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
+                                    if (Abxr.GetDebugMode()) console.log(`AbxrLib: Additional authentication required - ${forCallback.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
                                     const callback = Abxr.getAuthMechanismCallback();
                                     if (callback && typeof callback === 'function') {
                                         try {
@@ -4504,7 +4481,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                                 }
                             }
                         } else {
-                            console.log('AbxrLib: Authentication complete - library ready');
+                            if (Abxr.GetDebugMode()) console.log('AbxrLib: Authentication complete - library ready');
                             const authResponseData = AbxrLibClient.getAuthResponseData();
                             const moduleTargets = Abxr.ExtractModuleTargets(authResponseData?.modules || []);
                             Abxr.NotifyAuthCompleted(true, false, moduleTargets);
@@ -4550,7 +4527,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
 
                 AbxrLibClient.clearLastAuthError();
 
-                console.log('AbxrLib: Detecting device information...');
+                if (Abxr.GetDebugMode()) console.log('AbxrLib: Detecting device information...');
                 AbxrDetectAllDeviceInfo(false)
                     .then((deviceInfo) => {
                         AbxrLibInit.set_OsVersion(deviceInfo.osVersion);
@@ -4573,7 +4550,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                     })
                     .then(async (result: number) => {
                         if (result === 0) {
-                            console.log('AbxrLib: Initial authentication successful');
+                            if (Abxr.GetDebugMode()) console.log('AbxrLib: Initial authentication successful');
 
                             const authMechanism = AbxrLibInit.get_AuthMechanism();
                             const hasAuthMechanism = authMechanism && (
@@ -4587,7 +4564,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                                 if (authData) {
                                     const normalizedType = Abxr.normalizeAuthMechanismTypeForInput(authData.type) || 'text';
                                     const forCallback = { ...authData, type: normalizedType };
-                                    console.log(`AbxrLib: Additional authentication required - ${forCallback.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
+                                    if (Abxr.GetDebugMode()) console.log(`AbxrLib: Additional authentication required - ${forCallback.type}${authData.domain ? ` (domain: ${authData.domain})` : ''}`);
                                     const callback = Abxr.getAuthMechanismCallback();
                                     if (callback && typeof callback === 'function') {
                                         try {
@@ -4596,13 +4573,13 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                                             console.error('AbxrLib: Error in authMechanism callback:', error);
                                         }
                                     } else if (!callback) {
-                                        console.log('AbxrLib: No callback configured for additional authentication');
+                                        console.warn('AbxrLib: No callback configured for additional authentication');
                                     }
-                                } else {
+                                } else if (Abxr.GetDebugMode()) {
                                     console.log('AbxrLib: Additional authentication required (authMechanism detected)');
                                 }
                             } else {
-                                console.log('AbxrLib: Authentication complete - library ready');
+                                if (Abxr.GetDebugMode()) console.log('AbxrLib: Authentication complete - library ready');
                                 const authResponseData = AbxrLibClient.getAuthResponseData();
                                 const moduleTargets = Abxr.ExtractModuleTargets(authResponseData?.modules || []);
                                 Abxr.NotifyAuthCompleted(true, false, moduleTargets);
@@ -4612,7 +4589,7 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
                             const errorMessage = detailedError || `Authentication failed with code ${result}`;
 
                             if (AbxrShouldTryVersionFallback(errorMessage)) {
-                                console.log('AbxrLib: Attempting version fallback...');
+                                if (Abxr.GetDebugMode()) console.log('AbxrLib: Attempting version fallback...');
                                 const fallbackSuccess = await Abxr.attemptVersionFallback();
                                 if (!fallbackSuccess) {
                                     console.error('AbxrLib: Authentication failed:', errorMessage);

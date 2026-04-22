@@ -89,7 +89,7 @@ export class AuthTokenRequest extends DataObjectBase
 	 	{m_szUserId: new FieldProperties("userId")},
 	 	{m_lszTags: new FieldProperties("tags")},
 	 	{m_dictGeoLocation: new FieldProperties("geolocation")},
-	 	{m_dictAuthMechanism: new FieldProperties("authMechanism")}));
+	 	{m_dictAuthMechanism: new FieldProperties("authMechanism", FieldPropertyFlags.bfStringOnly)}));
 	// ---
 	public GetMapProperties(): FieldPropertiesRecordContainer // virtual
 	{
