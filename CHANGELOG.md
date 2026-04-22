@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **PIN auto-submit now completes end-to-end.** Three connected bugs prevented the assessmentPin flow from succeeding:
+  - `completeFinalAuth` was preserving the backend's original `prompt` (assessment label) and echoing it back; backend expects `prompt` replaced with the user's input.
+  - `formatAuthDataForSubmission` in 1.0.50 wrote PIN to a separate `pin` key; backend reuses the `prompt` key across all auth types.
+  - `AuthTokenRequest.m_dictAuthMechanism` lacked the `bfStringOnly` serialization flag, causing numeric-string PINs (e.g. `"995244"`) to be coerced to JSON numbers and rejected by the backend.
+- **Silent failures on invalid credentials.** Invalid `appToken` and missing `appId` paths in `Abxr_init` now fire `OnAuthCompleted(false, ..., errorMessage)` instead of returning silently.
+- **Empty email input** no longer builds a malformed `"@domain"` and bypasses the empty-input guard in `completeFinalAuth`.
+
+### Changed
+
+- **Removed `abxr_appid` URL parameter support.** `appId` is an app-embedded identifier and was never actually consumed from URL by `Abxr_init`. Callers passing `abxr_appid` via URL/cookie were already being ignored; the validation allowlist entry is now dropped.
+- **Routine informational logs in the auth flow** (device detection, initial auth success, auth complete, etc.) are now gated behind `Abxr.GetDebugMode()`. Errors and warnings remain always-on. Reduces console noise in production.
+
 ## [1.0.50] - 2026-04-20
 
 ### Added
