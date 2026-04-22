@@ -98,13 +98,29 @@ function AbxrStripUrlParameter(name: string): void {
 // Cookie utility functions
 function AbxrSetCookie(name: string, value: string, days: number = 30): void {
     if (typeof document === 'undefined') return;
-    
+
     const expires = new Date();
     expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
     const expiresStr = expires.toUTCString();
-    
+
     // No URL encoding needed for our simple configuration values
     document.cookie = `${name}=${value}; expires=${expiresStr}; path=/; SameSite=Lax`;
+}
+
+function AbxrDeleteCookie(name: string): void {
+    if (typeof document === 'undefined') return;
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+}
+
+// sessionStorage is used for short-lived secrets like abxr_org_token that must
+// survive page refresh within a tab but must NOT persist across tabs or days.
+// Unlike cookies, sessionStorage is per-tab, auto-expires on tab close, and is
+// not sent on any network request.
+function AbxrSetSessionStorage(name: string, value: string): void {
+    try { window.sessionStorage?.setItem(name, value); } catch { /* quota/private mode */ }
+}
+function AbxrGetSessionStorage(name: string): string | null {
+    try { return window.sessionStorage?.getItem(name) ?? null; } catch { return null; }
 }
 
 function AbxrGetCookie(name: string): string | null {
@@ -279,34 +295,44 @@ function AbxrGetRestUrlWithFallback(fallback?: string): string {
     return restUrl || fallback || 'https://lib-backend.xrdm.app/v1/';
 }
 
-// Utility function to get abxr parameter with priority: GET params -> cookies -> fallback
+// Utility function to get abxr parameter with priority: GET params -> persistent store -> fallback.
+// For abxr_org_token (short-lived JWT), the persistent store is sessionStorage — scoped to the
+// tab, cleared on tab close, so stale tokens can't leak into a fresh navigation.
+// For longer-lived config (abxr_rest_url, abxr_orgid, abxr_auth_secret), the store is a cookie.
 function AbxrGetParameter(name: string, fallback?: string): string | undefined {
+    const useSessionStorage = name === 'abxr_org_token';
+
     // Priority 1: GET parameters
     const urlParam = AbxrGetUrlParameter(name);
     if (urlParam) {
-        // Scrub sensitive params from the URL on read. The token is a JWT
-        // carrying an assessment PIN claim; leaving it in the URL exposes
-        // it via Referer headers and browser history.
-        if (name === 'abxr_org_token') {
+        if (useSessionStorage) {
+            // Remove the JWT from the URL immediately to prevent leakage via
+            // Referer headers, browser history, or third-party scripts.
             AbxrStripUrlParameter(name);
         }
         const sanitizedParam = AbxrValidateAndSanitizeParameter(name, urlParam);
         if (sanitizedParam) {
-            // Save to cookie for future use
-            AbxrSetCookie(name, sanitizedParam);
+            if (useSessionStorage) {
+                // Cache to sessionStorage for page refreshes within this tab.
+                AbxrSetSessionStorage(name, sanitizedParam);
+                // Defensively clear any legacy cookie left over from prior SDK versions.
+                AbxrDeleteCookie(name);
+            } else {
+                AbxrSetCookie(name, sanitizedParam);
+            }
             return sanitizedParam;
         }
     }
-    
-    // Priority 2: Cookies
-    const cookieParam = AbxrGetCookie(name);
-    if (cookieParam) {
-        const sanitizedParam = AbxrValidateAndSanitizeParameter(name, cookieParam);
+
+    // Priority 2: persistent store
+    const storedParam = useSessionStorage ? AbxrGetSessionStorage(name) : AbxrGetCookie(name);
+    if (storedParam) {
+        const sanitizedParam = AbxrValidateAndSanitizeParameter(name, storedParam);
         if (sanitizedParam) {
             return sanitizedParam;
         }
     }
-    
+
     // Priority 3: Fallback value
     return fallback;
 }
@@ -4334,6 +4360,12 @@ export function Abxr_init(optionsOrAppId: AbxrInitOptions | string, orgId?: stri
 
     // Mode detection
     const useAppTokens = !!options.appToken;
+
+    // Defensively clear any legacy abxr_org_token cookie left over from SDK
+    // versions that persisted the JWT for 30 days. Short-lived tokens now live
+    // in sessionStorage instead; keeping the old cookie around would produce
+    // stale-token 401s on subsequent page loads.
+    AbxrDeleteCookie('abxr_org_token');
 
     if (useAppTokens) {
         if (!AbxrIsValidJwt(options.appToken!)) {

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **`abxr_org_token` is now stored in `sessionStorage` instead of a cookie.** The orgToken is a short-lived signed JWT; caching it in a 30-day cookie caused stale-token 401s on subsequent page loads without a fresh URL param. `sessionStorage` survives in-tab refresh but clears on tab close, which matches the LMS launch flow. On `Abxr_init` the SDK also deletes any legacy `abxr_org_token` cookie so existing users are healed automatically.
+
 ### Fixed
 
 - **PIN auto-submit now completes end-to-end.** Three connected bugs prevented the assessmentPin flow from succeeding:
