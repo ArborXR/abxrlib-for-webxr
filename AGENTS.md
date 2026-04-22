@@ -24,7 +24,7 @@ When editing this repo, treat it as a standalone Web SDK: no references to Arbor
 
 ### Auth and endpoints
 
-- **Init:** Default path uses **app tokens**: `Abxr_init({ appToken, orgToken? })`. Legacy path: `Abxr_init({ appId, orgId?, authSecret? })` or deprecated positional args. orgToken can come from `abxr_org_token` URL param; that param is scrubbed from the URL on read (via `history.replaceState`) to prevent the JWT leaking through Referer/history/third-party scripts. The value is cached to a cookie for repeat visits.
+- **Init:** Default path uses **app tokens**: `Abxr_init({ appToken, orgToken? })`. Legacy path: `Abxr_init({ appId, orgId?, authSecret? })` or deprecated positional args. orgToken can come from `abxr_org_token` URL param; that param is scrubbed from the URL on read (via `history.replaceState`) to prevent the JWT leaking through Referer/history/third-party scripts. The value is cached to **`sessionStorage`** (per-tab, cleared on tab close) — not a cookie — because the orgToken is a short-lived JWT and a 30-day cookie would cause stale-token 401s. On init, any legacy `abxr_org_token` cookie is proactively deleted.
 - **Data:** Events, logs, and telemetry are batched and sent to the unified **`/v1/collect/data`** endpoint. Storage and other non-batched types use their per-type endpoints.
 - **AuthMechanism:** Callback receives normalized type (`"text"` | `"pin"` | `"email"`). Backend may send `assessmentPin` or `assessment_pin`; both normalize to `"pin"`.
 - **PIN Auto-Submit:** When orgToken JWT contains a `pin` claim, the SDK auto-submits it on the first assessmentPin auth attempt.
