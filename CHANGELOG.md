@@ -1,10 +1,6 @@
 # Changelog
 
-## [Unreleased]
-
-### Changed
-
-- **`abxr_org_token` is now stored in `sessionStorage` instead of a cookie.** The orgToken is a short-lived signed JWT; caching it in a 30-day cookie caused stale-token 401s on subsequent page loads without a fresh URL param. `sessionStorage` survives in-tab refresh but clears on tab close, which matches the LMS launch flow. On `Abxr_init` the SDK also deletes any legacy `abxr_org_token` cookie so existing users are healed automatically.
+## [1.0.51] - 2026-04-22
 
 ### Fixed
 
@@ -17,6 +13,7 @@
 
 ### Changed
 
+- **`abxr_org_token` is now stored in `sessionStorage` instead of a cookie.** The orgToken is a short-lived signed JWT; caching it in a 30-day cookie caused stale-token 401s on subsequent page loads without a fresh URL param. `sessionStorage` survives in-tab refresh but clears on tab close, which matches the LMS launch flow. On `Abxr_init` the SDK also deletes any legacy `abxr_org_token` cookie so existing users are healed automatically.
 - **Removed `abxr_appid` URL parameter support.** `appId` is an app-embedded identifier and was never actually consumed from URL by `Abxr_init`. Callers passing `abxr_appid` via URL/cookie were already being ignored; the validation allowlist entry is now dropped.
 - **Routine informational logs in the auth flow** (device detection, initial auth success, auth complete, etc.) are now gated behind `Abxr.GetDebugMode()`. Errors and warnings remain always-on. Reduces console noise in production.
 
